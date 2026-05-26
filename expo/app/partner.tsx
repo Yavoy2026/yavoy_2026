@@ -80,10 +80,6 @@ export default function PartnerScreen() {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState<boolean>(false);
   const [acceptedOffer, setAcceptedOffer] = useState<boolean>(false);
   const [openDoc, setOpenDoc] = useState<LegalDocKey | null>(null);
-  const [emailInput, setEmailInput] = useState<string>("");
-  const [phoneInput, setPhoneInput] = useState<string>("");
-  const [telegramInput, setTelegramInput] = useState<string>("");
-  const [contactsError, setContactsError] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<Tab>("tours");
   const [period, setPeriod] = useState<Period>("month");
@@ -193,19 +189,10 @@ export default function PartnerScreen() {
     Alert.alert("Отправлено", "Экскурсия отправлена администратору на модерацию.");
   }, [partners, fTitle, fDesc, fCity, fPrice, fGroupSize, fMeeting, fDuration, fTransport, fInterest, fCategory, fSeason, fMedia]);
 
-  const submitContacts = useCallback(() => {
-    setContactsError(null);
-    const email = emailInput.trim();
-    const phone = phoneInput.trim();
-    const telegram = telegramInput.trim();
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const phoneValid = phone.replace(/\D/g, "").length >= 10;
-    if (!emailValid) { setContactsError("Введите корректный email."); return; }
-    if (!phoneValid) { setContactsError("Введите корректный телефон (минимум 10 цифр)."); return; }
-    if (!telegram) { setContactsError("Укажите никнейм в Telegram."); return; }
-    partners.submitContacts({ email, phone, telegram });
+  const submitContactsHandler = useCallback((data: { email: string; phone: string; telegram: string }) => {
+    partners.submitContacts(data);
     Alert.alert("Заявка отправлена", "Ваш аккаунт направлен администратору на проверку. Уведомление придёт на указанный email.");
-  }, [emailInput, phoneInput, telegramInput, partners]);
+  }, [partners]);
 
   // ============ REGISTRATION VIEW ============
   if (!partners.isRegistered) {
@@ -316,89 +303,13 @@ export default function PartnerScreen() {
 
   // ============ CONTACTS REQUIRED ============
   if (partners.profile && partners.profile.approvalStatus === "contacts_required") {
-    const pp = partners.profile;
     return (
-      <>
-        <Stack.Screen options={{ title: "Контактные данные", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
-        <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <ScrollView contentContainerStyle={styles.regContent} keyboardShouldPersistTaps="handled">
-            <View style={[styles.heroCard, { backgroundColor: colors.headerBg }]}>
-              <View style={[styles.heroIcon, { backgroundColor: colors.teal + "30" }]}>
-                <ShieldCheck size={36} color={colors.tealLight} />
-              </View>
-              <Text style={styles.heroTitle}>Шаг 2 · Контакты</Text>
-              <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>ФНС подтвердила {pp.legalName}. Заполните контактные данные — после проверки администратором вы получите доступ к кабинету.</Text>
-            </View>
-
-            <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
-              <View style={styles.regHeader}>
-                <MessageCircle size={20} color={colors.teal} />
-                <Text style={[styles.regHeaderText, { color: colors.text }]}>Контактные данные партнёра</Text>
-              </View>
-              <Text style={[styles.regDesc, { color: colors.textSecondary }]}>Эти данные нужны администратору для проверки и связи с вами.</Text>
-              <TextInput
-                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-                placeholder="Email"
-                placeholderTextColor={colors.textMuted}
-                value={emailInput}
-                onChangeText={(t) => { setEmailInput(t); setContactsError(null); }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                keyboardType="email-address"
-                editable={true}
-                returnKeyType="next"
-                testID="partner-email-input"
-              />
-              <TextInput
-                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10 }]}
-                placeholder="Телефон (+7 ...)"
-                placeholderTextColor={colors.textMuted}
-                value={phoneInput}
-                onChangeText={(t) => { setPhoneInput(t); setContactsError(null); }}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-                textContentType="telephoneNumber"
-                editable={true}
-                returnKeyType="next"
-                testID="partner-phone-input"
-              />
-              <TextInput
-                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10 }]}
-                placeholder="Telegram (никнейм без @)"
-                placeholderTextColor={colors.textMuted}
-                value={telegramInput}
-                onChangeText={(t) => { setTelegramInput(t); setContactsError(null); }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="username"
-                editable={true}
-                returnKeyType="done"
-                testID="partner-telegram-input"
-              />
-              {contactsError ? (
-                <View style={styles.errorRow}>
-                  <AlertCircle size={14} color={colors.red} />
-                  <Text style={[styles.errorText, { color: colors.red }]}>{contactsError}</Text>
-                </View>
-              ) : null}
-              <TouchableOpacity
-                style={[styles.regSubmitBtn, { backgroundColor: colors.teal }]}
-                onPress={submitContacts}
-                activeOpacity={0.8}
-                testID="partner-contacts-submit"
-              >
-                <Send size={16} color="#FFFFFF" />
-                <Text style={styles.regSubmitText}>Отправить администратору</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => partners.logout()} style={{ marginTop: 12, alignSelf: "center" }}>
-                <Text style={[styles.regNote, { color: colors.textMuted, textDecorationLine: "underline" }]}>Выйти и начать заново</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </>
+      <ContactsForm
+        colors={colors}
+        legalName={partners.profile.legalName}
+        onSubmit={submitContactsHandler}
+        onLogout={() => partners.logout()}
+      />
     );
   }
 
@@ -1129,6 +1040,10 @@ const styles = StyleSheet.create({
   replyInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 60, textAlignVertical: "top" as const },
   replySendBtn: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 6, paddingVertical: 10, borderRadius: 10 },
   replySendBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" as const },
+  fieldLabel: { fontSize: 11, fontWeight: "700" as const, textTransform: "uppercase" as const, marginBottom: 6, marginTop: 4 },
+  phoneRow: { flexDirection: "row" as const, gap: 8, alignItems: "center" as const },
+  countryBtn: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6, paddingHorizontal: 12, paddingVertical: 13, borderRadius: 12, borderWidth: 1 },
+  countryDial: { fontSize: 14, fontWeight: "700" as const },
 });
 
 interface LegalCheckboxProps {
@@ -1196,5 +1111,242 @@ function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModa
         </View>
       </View>
     </Modal>
+  );
+}
+
+interface Country {
+  code: string;
+  dial: string;
+  flag: string;
+  name: string;
+}
+
+const COUNTRIES: Country[] = [
+  { code: "RU", dial: "+7", flag: "🇦🇦", name: "Россия" },
+  { code: "KZ", dial: "+7", flag: "🇦🇦", name: "Казахстан" },
+  { code: "BY", dial: "+375", flag: "🇦🇦", name: "Беларусь" },
+  { code: "UA", dial: "+380", flag: "🇦🇦", name: "Украина" },
+  { code: "UZ", dial: "+998", flag: "🇦🇦", name: "Узбекистан" },
+  { code: "KG", dial: "+996", flag: "🇦🇦", name: "Кыргызстан" },
+  { code: "AM", dial: "+374", flag: "🇦🇦", name: "Армения" },
+  { code: "AZ", dial: "+994", flag: "🇦🇦", name: "Азербайджан" },
+  { code: "GE", dial: "+995", flag: "🇦🇦", name: "Грузия" },
+  { code: "MD", dial: "+373", flag: "🇦🇦", name: "Молдова" },
+  { code: "TJ", dial: "+992", flag: "🇦🇦", name: "Таджикистан" },
+  { code: "TM", dial: "+993", flag: "🇦🇦", name: "Туркменистан" },
+  { code: "TR", dial: "+90", flag: "🇦🇦", name: "Турция" },
+  { code: "AE", dial: "+971", flag: "🇦🇦", name: "ОАЭ" },
+  { code: "IL", dial: "+972", flag: "🇦🇦", name: "Израиль" },
+  { code: "DE", dial: "+49", flag: "🇦🇦", name: "Германия" },
+  { code: "FR", dial: "+33", flag: "🇦🇦", name: "Франция" },
+  { code: "IT", dial: "+39", flag: "🇦🇦", name: "Италия" },
+  { code: "ES", dial: "+34", flag: "🇦🇦", name: "Испания" },
+  { code: "GB", dial: "+44", flag: "🇦🇦", name: "Великобритания" },
+  { code: "US", dial: "+1", flag: "🇦🇦", name: "США" },
+  { code: "CA", dial: "+1", flag: "🇦🇦", name: "Канада" },
+  { code: "CN", dial: "+86", flag: "🇦🇦", name: "Китай" },
+  { code: "JP", dial: "+81", flag: "🇦🇦", name: "Япония" },
+  { code: "KR", dial: "+82", flag: "🇦🇦", name: "Южная Корея" },
+  { code: "IN", dial: "+91", flag: "🇦🇦", name: "Индия" },
+  { code: "TH", dial: "+66", flag: "🇦🇦", name: "Таиланд" },
+  { code: "VN", dial: "+84", flag: "🇦🇦", name: "Вьетнам" },
+  { code: "EG", dial: "+20", flag: "🇦🇦", name: "Египет" },
+  { code: "BR", dial: "+55", flag: "🇦🇦", name: "Бразилия" },
+];
+
+interface CountryPickerProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (c: Country) => void;
+  colors: ColorsType;
+}
+
+function CountryPicker({ visible, onClose, onSelect, colors }: CountryPickerProps) {
+  const [query, setQuery] = useState<string>("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return COUNTRIES;
+    return COUNTRIES.filter((c) => c.name.toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q));
+  }, [query]);
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.docModalOverlay}>
+        <Pressable style={styles.docModalBackdrop} onPress={onClose} />
+        <View style={[styles.docModalCard, { backgroundColor: colors.surface }]}>
+          <View style={[styles.docModalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.docModalTitle, { color: colors.text }]}>Выберите страну</Text>
+            <TouchableOpacity onPress={onClose} style={[styles.docModalClose, { backgroundColor: colors.surfaceSecondary }]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <XIcon size={16} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ paddingHorizontal: 14, paddingTop: 10 }}>
+            <TextInput
+              style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              placeholder="Поиск страны или кода"
+              placeholderTextColor={colors.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+          <ScrollView style={styles.docModalScroll} contentContainerStyle={{ paddingVertical: 8 }} keyboardShouldPersistTaps="handled">
+            {filtered.map((c) => (
+              <TouchableOpacity
+                key={c.code}
+                onPress={() => { onSelect(c); onClose(); }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 22 }}>{c.flag}</Text>
+                <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: colors.text }}>{c.name}</Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.teal }}>{c.dial}</Text>
+              </TouchableOpacity>
+            ))}
+            {filtered.length === 0 ? (
+              <Text style={{ textAlign: "center", padding: 24, color: colors.textMuted, fontSize: 13 }}>Ничего не найдено</Text>
+            ) : null}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+interface ContactsFormProps {
+  colors: ColorsType;
+  legalName: string;
+  onSubmit: (data: { email: string; phone: string; telegram: string }) => void;
+  onLogout: () => void;
+}
+
+function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormProps) {
+  const [email, setEmail] = useState<string>("");
+  const [country, setCountry] = useState<Country>(COUNTRIES[0]);
+  const [phoneDigits, setPhoneDigits] = useState<string>("");
+  const [telegram, setTelegram] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState<boolean>(false);
+
+  const handlePhoneChange = useCallback((t: string) => {
+    const digitsOnly = t.replace(/\D/g, "").slice(0, 14);
+    setPhoneDigits(digitsOnly);
+    setError(null);
+  }, []);
+
+  const submit = useCallback(() => {
+    setError(null);
+    const e = email.trim();
+    const tg = telegram.trim().replace(/^@/, "");
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+    if (!emailValid) { setError("Введите корректный email."); return; }
+    if (phoneDigits.length < 7) { setError("Введите корректный номер телефона."); return; }
+    if (!tg) { setError("Укажите никнейм в Telegram."); return; }
+    const fullPhone = `${country.dial}${phoneDigits}`;
+    onSubmit({ email: e, phone: fullPhone, telegram: tg });
+  }, [email, phoneDigits, telegram, country, onSubmit]);
+
+  return (
+    <>
+      <Stack.Screen options={{ title: "Контактные данные", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+      <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}>
+        <ScrollView contentContainerStyle={styles.regContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          <View style={[styles.heroCard, { backgroundColor: colors.headerBg }]}>
+            <View style={[styles.heroIcon, { backgroundColor: colors.teal + "30" }]}>
+              <ShieldCheck size={36} color={colors.tealLight} />
+            </View>
+            <Text style={styles.heroTitle}>Шаг 2 · Контакты</Text>
+            <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>ФНС подтвердила {legalName}. Заполните контактные данные — после проверки администратором вы получите доступ к кабинету.</Text>
+          </View>
+
+          <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
+            <View style={styles.regHeader}>
+              <MessageCircle size={20} color={colors.teal} />
+              <Text style={[styles.regHeaderText, { color: colors.text }]}>Контактные данные партнёра</Text>
+            </View>
+            <Text style={[styles.regDesc, { color: colors.textSecondary }]}>Эти данные нужны администратору для проверки и связи с вами.</Text>
+
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Email</Text>
+            <TextInput
+              style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              placeholder="name@example.com"
+              placeholderTextColor={colors.textMuted}
+              value={email}
+              onChangeText={(t) => { setEmail(t); setError(null); }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              textContentType="emailAddress"
+              keyboardType="email-address"
+              inputMode="email"
+              returnKeyType="next"
+              testID="partner-email-input"
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 12 }]}>Телефон</Text>
+            <View style={styles.phoneRow}>
+              <TouchableOpacity
+                onPress={() => setPickerOpen(true)}
+                activeOpacity={0.75}
+                style={[styles.countryBtn, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+                testID="partner-country-btn"
+              >
+                <Text style={{ fontSize: 18 }}>{country.flag}</Text>
+                <Text style={[styles.countryDial, { color: colors.text }]}>{country.dial}</Text>
+                <ChevronRight size={14} color={colors.textMuted} style={{ transform: [{ rotate: "90deg" }] }} />
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.regInput, { flex: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+                placeholder="Номер телефона"
+                placeholderTextColor={colors.textMuted}
+                value={phoneDigits}
+                onChangeText={handlePhoneChange}
+                keyboardType="phone-pad"
+                inputMode="tel"
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+                returnKeyType="next"
+                testID="partner-phone-input"
+              />
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 12 }]}>Telegram</Text>
+            <TextInput
+              style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              placeholder="никнейм без @"
+              placeholderTextColor={colors.textMuted}
+              value={telegram}
+              onChangeText={(t) => { setTelegram(t); setError(null); }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username"
+              returnKeyType="done"
+              testID="partner-telegram-input"
+            />
+
+            {error ? (
+              <View style={styles.errorRow}>
+                <AlertCircle size={14} color={colors.red} />
+                <Text style={[styles.errorText, { color: colors.red }]}>{error}</Text>
+              </View>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.regSubmitBtn, { backgroundColor: colors.teal }]}
+              onPress={submit}
+              activeOpacity={0.8}
+              testID="partner-contacts-submit"
+            >
+              <Send size={16} color="#FFFFFF" />
+              <Text style={styles.regSubmitText}>Отправить администратору</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onLogout} style={{ marginTop: 12, alignSelf: "center" }}>
+              <Text style={[styles.regNote, { color: colors.textMuted, textDecorationLine: "underline" }]}>Выйти и начать заново</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <CountryPicker visible={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={setCountry} colors={colors} />
+    </>
   );
 }
