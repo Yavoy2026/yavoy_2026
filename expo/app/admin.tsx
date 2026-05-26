@@ -26,19 +26,22 @@ import {
   UserCog,
   BarChart3,
   ShoppingBag,
+  Star,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAdmin } from "@/providers/AdminProvider";
 import { useReels } from "@/providers/ReelsProvider";
+import { usePartners } from "@/providers/PartnersProvider";
 import { UserRole } from "@/types/tour";
 
-type Tab = "stats" | "users" | "reels" | "partner" | "chatUsers" | "chatPartners";
+type Tab = "stats" | "users" | "reels" | "partner" | "replies" | "chatUsers" | "chatPartners";
 
 const TABS: { key: Tab; label: string; Icon: React.ComponentType<{ size: number; color: string }> }[] = [
   { key: "stats", label: "Статистика", Icon: BarChart3 },
   { key: "users", label: "Пользователи", Icon: Users },
   { key: "reels", label: "Reels", Icon: Video },
   { key: "partner", label: "Туры партнёров", Icon: Briefcase },
+  { key: "replies", label: "Ответы на отзывы", Icon: Star },
   { key: "chatUsers", label: "Чат: пользователи", Icon: MessageSquare },
   { key: "chatPartners", label: "Чат: партнёры", Icon: MessageSquare },
 ];
@@ -51,6 +54,7 @@ export default function AdminScreen() {
   const router = useRouter();
   const admin = useAdmin();
   const { reels, moderationReels, approveReel, rejectReel } = useReels();
+  const partners = usePartners();
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [tab, setTab] = useState<Tab>("stats");
@@ -160,6 +164,7 @@ export default function AdminScreen() {
               <StatCard label="Reels опубликовано" value={publishedReels} icon={<Video size={18} color={colors.coral} />} colors={colors} />
               <StatCard label="Reels на модерации" value={moderationReels.length} icon={<Video size={18} color={colors.orange} />} colors={colors} />
               <StatCard label="Туры партнёров (ждут)" value={stats.pendingPartnerTours} icon={<Briefcase size={18} color={colors.teal} />} colors={colors} />
+              <StatCard label="Ответы на отзывы (ждут)" value={partners.pendingReplies.length} icon={<Star size={18} color={colors.gold} />} colors={colors} />
             </View>
             <Text style={[styles.h2, { color: colors.text }]}>{"Последние регистрации"}</Text>
             {admin.users.slice(0, 5).map((u) => (
@@ -296,6 +301,60 @@ export default function AdminScreen() {
                 </View>
               </View>
             ))}
+          </View>
+        ) : null}
+
+        {tab === "replies" ? (
+          <View>
+            <Text style={[styles.h1, { color: colors.text }]}>{"Ответы партнёров на отзывы"}</Text>
+            <Text style={[styles.helper, { color: colors.textMuted }]}>{`${partners.pendingReplies.length} ответов ожидает публикации`}</Text>
+            {partners.pendingReplies.length === 0 ? (
+              <Text style={[styles.empty, { color: colors.textMuted }]}>{"Нет ответов на модерации"}</Text>
+            ) : (
+              partners.pendingReplies.map((rv) => {
+                if (!rv.reply) return null;
+                return (
+                  <View key={rv.reply.id} style={[styles.partnerCard, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: "column" as const, alignItems: "stretch" as const }]}>
+                    <View style={styles.replyOriginalBox}>
+                      <View style={styles.replyStarsRow}>
+                        {[1,2,3,4,5].map((i) => (
+                          <Star key={i} size={12} color={colors.gold} fill={i <= rv.rating ? colors.gold : "transparent"} />
+                        ))}
+                        <Text style={[styles.replyOriginalAuthor, { color: colors.text }]}>{rv.author}</Text>
+                        <Text style={[styles.replyOriginalDate, { color: colors.textMuted }]}>{rv.createdAt}</Text>
+                      </View>
+                      <Text style={[styles.replyOriginalText, { color: colors.textSecondary }]}>{rv.text}</Text>
+                    </View>
+                    <View style={[styles.replyAdminBox, { backgroundColor: colors.tealSoft, borderColor: colors.teal }]}>
+                      <Text style={[styles.replyAdminLabel, { color: colors.teal }]}>{`Ответ партнёра · ИНН ${rv.reply.partnerInn}`}</Text>
+                      <Text style={[styles.replyAdminText, { color: colors.text }]}>{rv.reply.content}</Text>
+                    </View>
+                    <View style={styles.modActions}>
+                      <TouchableOpacity style={[styles.modBtn, { backgroundColor: colors.green }]} onPress={() => partners.approveReply(rv.id)} activeOpacity={0.8} testID={`reply-approve-${rv.id}`}>
+                        <CheckCircle2 size={14} color="#FFFFFF" />
+                        <Text style={styles.modBtnText}>{"Опубликовать"}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.modBtn, { backgroundColor: colors.red }]}
+                        onPress={() => {
+                          Alert.prompt?.(
+                            "Отклонить ответ",
+                            "Укажите причину отказа (опционально)",
+                            (text?: string) => partners.rejectReply(rv.id, text)
+                          );
+                          if (!Alert.prompt) partners.rejectReply(rv.id);
+                        }}
+                        activeOpacity={0.8}
+                        testID={`reply-reject-${rv.id}`}
+                      >
+                        <XCircle size={14} color="#FFFFFF" />
+                        <Text style={styles.modBtnText}>{"Отклонить"}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
           </View>
         ) : null}
 
@@ -441,4 +500,12 @@ const styles = StyleSheet.create({
   chatInputRow: { flexDirection: "row", gap: 8, marginTop: 8 },
   chatInput: { flex: 1, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
   chatSendBtn: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  replyOriginalBox: { padding: 4, gap: 6 },
+  replyStarsRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, flexWrap: "wrap" as const },
+  replyOriginalAuthor: { fontSize: 13, fontWeight: "700" as const, marginLeft: 4 },
+  replyOriginalDate: { fontSize: 11, marginLeft: "auto" as const },
+  replyOriginalText: { fontSize: 13, lineHeight: 18 },
+  replyAdminBox: { borderRadius: 12, padding: 10, borderWidth: 1, gap: 4, marginTop: 10 },
+  replyAdminLabel: { fontSize: 11, fontWeight: "700" as const },
+  replyAdminText: { fontSize: 13, lineHeight: 18 },
 });

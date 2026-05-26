@@ -270,6 +270,31 @@ export interface PartnerTransaction {
   status: "completed" | "pending" | "refunded";
 }
 
+export type PartnerReplyStatus = "pending" | "approved" | "rejected";
+
+export interface PartnerReviewReply {
+  id: string;
+  reviewId: string;
+  partnerInn: string;
+  content: string;
+  status: PartnerReplyStatus;
+  createdAt: string;
+  moderatedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface PartnerReview {
+  id: string;
+  tourId: string;
+  partnerInn: string;
+  author: string;
+  avatar?: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+  reply?: PartnerReviewReply;
+}
+
 export interface PartnerChatMessage {
   id: string;
   tourId: string;

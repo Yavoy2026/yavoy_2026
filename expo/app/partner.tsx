@@ -10,6 +10,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Pressable,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -35,6 +37,12 @@ import {
   Video as VideoIcon,
   X as XIcon,
   Play,
+  Check,
+  Square,
+  CheckSquare,
+  Star,
+  FileText,
+  MessageSquare,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
 import { usePartners } from "@/providers/PartnersProvider";
@@ -48,7 +56,26 @@ import {
   SeasonType,
 } from "@/types/tour";
 
-type Tab = "tours" | "guests" | "transactions" | "chat";
+type Tab = "tours" | "guests" | "transactions" | "reviews" | "chat";
+type LegalDoc = "terms" | "privacy" | "offer";
+
+const LEGAL_DOCS: Record<LegalDoc, { title: string; short: string; body: string }> = {
+  terms: {
+    title: "Пользовательское соглашение",
+    short: "Пользовательское соглашение",
+    body: `1. ОБЩИЕ ПОЛОЖЕНИЯ\n\n1.1. Настоящее Пользовательское соглашение (далее — Соглашение) регулирует отношения между ООО «YAVOY» (далее — Платформа) и Партнёром при использовании сервиса YAVOY Travel Group.\n\n1.2. Регистрируясь в качестве Партнёра, вы подтверждаете, что ознакомились с условиями Соглашения и принимаете их в полном объёме.\n\n2. ПРЕДМЕТ СОГЛАШЕНИЯ\n\n2.1. Платформа предоставляет Партнёру технологический сервис для размещения и продажи экскурсий, а Партнёр обязуется размещать достоверную информацию и предоставлять услуги надлежащего качества.\n\n2.2. Партнёр самостоятельно несёт ответственность за качество и безопасность оказываемых услуг.\n\n3. ПРАВА И ОБЯЗАННОСТИ СТОРОН\n\n3.1. Партнёр обязуется: предоставлять актуальную информацию, своевременно отвечать на запросы клиентов, соблюдать законодательство РФ.\n\n3.2. Платформа вправе модерировать контент Партнёра, отказывать в публикации недостоверных материалов и приостанавливать аккаунт при нарушении правил.\n\n4. ОТВЕТСТВЕННОСТЬ\n\n4.1. Партнёр несёт ответственность за достоверность сведений о компании, ИНН/ОГРН и налоговом статусе.\n\n4.2. Платформа не несёт ответственности за действия Партнёра перед клиентами.\n\n5. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ\n\n5.1. Соглашение вступает в силу с момента акцепта и действует бессрочно.\n\n5.2. Платформа вправе изменять условия с уведомлением Партнёра за 10 дней.\n\n5.3. Все споры рассматриваются в порядке, предусмотренном законодательством РФ.`,
+  },
+  privacy: {
+    title: "Согласие на обработку персональных данных",
+    short: "Обработка персональных данных",
+    body: `1. Действуя свободно, своей волей и в своём интересе, а также подтверждая свою дееспособность, Партнёр даёт согласие ООО «YAVOY» на обработку своих персональных данных в соответствии с ФЗ-152 «О персональных данных».\n\n2. Состав персональных данных: ФИО, ИНН, ОГРН, юридический и фактический адрес, контактные телефоны, адрес электронной почты, банковские реквизиты, сведения о государственной регистрации.\n\n3. Цели обработки: идентификация Партнёра, заключение и исполнение договора, проведение взаиморасчётов, маркетинговая аналитика, обеспечение работы сервиса, рассылка уведомлений и информационных сообщений.\n\n4. Действия с персональными данными: сбор, запись, систематизация, накопление, хранение, уточнение, использование, передача (предоставление, доступ), обезличивание, блокирование, удаление, уничтожение.\n\n5. Способы обработки: автоматизированная и неавтоматизированная обработка с использованием средств вычислительной техники.\n\n6. Партнёр согласен на передачу персональных данных третьим лицам, привлекаемым Платформой для оказания услуг (ФНС, банки-эквайеры, операторы фискальных данных, сервисы рассылок).\n\n7. Согласие действует с момента акцепта и до момента его отзыва Партнёром письменным заявлением.\n\n8. Партнёр уведомлён о своих правах в соответствии со ст. 14 ФЗ-152.`,
+  },
+  offer: {
+    title: "Договор оферты",
+    short: "Договор оферты",
+    body: `1. ПРЕДМЕТ ДОГОВОРА\n\n1.1. ООО «YAVOY» (Платформа) предлагает Партнёру заключить договор на использование платформы YAVOY Travel Group для размещения и продажи экскурсий конечным клиентам.\n\n1.2. Настоящий документ является публичной офертой в соответствии со ст. 437 ГК РФ.\n\n2. ПОРЯДОК АКЦЕПТА\n\n2.1. Акцептом оферты считается прохождение Партнёром процедуры регистрации, включая подтверждение настоящего согласия и проверку через ФНС.\n\n3. ВОЗНАГРАЖДЕНИЕ ПЛАТФОРМЫ\n\n3.1. Платформа удерживает комиссию в размере 15% от стоимости каждой оплаченной экскурсии.\n\n3.2. Выплаты Партнёру осуществляются раз в неделю на указанный расчётный счёт.\n\n4. ОБЯЗАННОСТИ ПАРТНЁРА\n\n4.1. Размещение достоверной информации об экскурсии.\n\n4.2. Своевременное проведение экскурсии в соответствии с расписанием.\n\n4.3. Реагирование на отзывы и обращения клиентов.\n\n5. ПОРЯДОК РАЗРЕШЕНИЯ СПОРОВ\n\n5.1. Все споры разрешаются путём переговоров. При недостижении согласия — в судебном порядке по месту нахождения Платформы.\n\n6. СРОК ДЕЙСТВИЯ\n\n6.1. Договор заключается на неопределённый срок и действует до момента расторжения одной из сторон.\n\n6.2. Расторжение возможно с уведомлением другой стороны за 30 календарных дней.`,
+  },
+};
 type Period = "week" | "month" | "halfYear" | "year" | "all";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=400&fit=crop";
@@ -67,6 +94,11 @@ export default function PartnerScreen() {
   const partners = usePartners();
   const [innInput, setInnInput] = useState<string>("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState<boolean>(false);
+  const [acceptedOffer, setAcceptedOffer] = useState<boolean>(false);
+  const [openDoc, setOpenDoc] = useState<LegalDoc | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<Tab>("tours");
   const [period, setPeriod] = useState<Period>("month");
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
@@ -113,15 +145,29 @@ export default function PartnerScreen() {
     setFMedia((prev) => prev.filter((m) => m.uri !== uri));
   }, []);
 
+  const allAccepted = acceptedTerms && acceptedPrivacy && acceptedOffer;
+
   const handleVerify = useCallback(async () => {
     setVerifyError(null);
+    if (!acceptedTerms || !acceptedPrivacy || !acceptedOffer) {
+      setVerifyError("Необходимо принять все условия ниже.");
+      return;
+    }
     const res = await partners.verifyAndRegister(innInput);
     if (!res.ok) {
       setVerifyError(res.error ?? "Ошибка проверки");
     } else {
       setInnInput("");
     }
-  }, [innInput, partners]);
+  }, [innInput, partners, acceptedTerms, acceptedPrivacy, acceptedOffer]);
+
+  const submitReply = useCallback((reviewId: string) => {
+    const text = (replyDrafts[reviewId] ?? "").trim();
+    if (!text) return;
+    partners.submitReviewReply(reviewId, text);
+    setReplyDrafts((prev) => ({ ...prev, [reviewId]: "" }));
+    Alert.alert("Отправлено на модерацию", "Ваш ответ будет опубликован после проверки администратором.");
+  }, [partners, replyDrafts]);
 
   const submitNewTour = useCallback(() => {
     if (!fTitle.trim() || !fCity.trim() || !fPrice.trim()) {
@@ -205,10 +251,37 @@ export default function PartnerScreen() {
                   <Text style={[styles.errorText, { color: colors.red }]}>{verifyError}</Text>
                 </View>
               ) : null}
+              <View style={styles.legalBlock}>
+                <LegalCheckbox
+                  colors={colors}
+                  checked={acceptedTerms}
+                  onToggle={() => setAcceptedTerms((v) => !v)}
+                  onOpenDoc={() => setOpenDoc("terms")}
+                  label="пользовательским соглашением"
+                  testID="chk-terms"
+                />
+                <LegalCheckbox
+                  colors={colors}
+                  checked={acceptedPrivacy}
+                  onToggle={() => setAcceptedPrivacy((v) => !v)}
+                  onOpenDoc={() => setOpenDoc("privacy")}
+                  label="правилами обработки персональных данных"
+                  testID="chk-privacy"
+                />
+                <LegalCheckbox
+                  colors={colors}
+                  checked={acceptedOffer}
+                  onToggle={() => setAcceptedOffer((v) => !v)}
+                  onOpenDoc={() => setOpenDoc("offer")}
+                  label="договором-офертой"
+                  testID="chk-offer"
+                />
+              </View>
+
               <TouchableOpacity
-                style={[styles.regSubmitBtn, { backgroundColor: colors.teal, opacity: partners.verifying || innInput.length < 10 ? 0.6 : 1 }]}
+                style={[styles.regSubmitBtn, { backgroundColor: colors.teal, opacity: partners.verifying || innInput.length < 10 || !allAccepted ? 0.6 : 1 }]}
                 onPress={handleVerify}
-                disabled={partners.verifying || innInput.length < 10}
+                disabled={partners.verifying || innInput.length < 10 || !allAccepted}
                 activeOpacity={0.8}
                 testID="partner-verify-btn"
               >
@@ -230,6 +303,13 @@ export default function PartnerScreen() {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        <LegalDocumentModal
+          colors={colors}
+          visible={openDoc !== null}
+          onClose={() => setOpenDoc(null)}
+          doc={openDoc ? LEGAL_DOCS[openDoc] : null}
+        />
       </>
     );
   }
@@ -285,6 +365,21 @@ export default function PartnerScreen() {
             </View>
           </View>
 
+          {/* Rating block */}
+          <View style={[styles.ratingBlock, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
+            <View style={[styles.ratingIcon, { backgroundColor: colors.gold + "22" }]}>
+              <Star size={22} color={colors.gold} fill={colors.gold} />
+            </View>
+            <View style={styles.ratingInfo}>
+              <Text style={[styles.ratingTitle, { color: colors.text }]}>Рейтинг партнёра</Text>
+              <Text style={[styles.ratingSub, { color: colors.textMuted }]}>На основе отзывов клиентов</Text>
+            </View>
+            <View style={styles.ratingValueWrap}>
+              <Text style={[styles.ratingValue, { color: colors.text }]}>{partners.partnerRating.count > 0 ? partners.partnerRating.average.toFixed(1) : "—"}</Text>
+              <Text style={[styles.ratingCount, { color: colors.textMuted }]}>{partners.partnerRating.count} отз.</Text>
+            </View>
+          </View>
+
           {/* KPI cards */}
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
@@ -328,9 +423,9 @@ export default function PartnerScreen() {
 
           {/* Tabs */}
           <View style={[styles.tabsBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {(["tours", "guests", "transactions", "chat"] as Tab[]).map((t) => {
+            {(["tours", "guests", "transactions", "reviews", "chat"] as Tab[]).map((t) => {
               const active = activeTab === t;
-              const label = t === "tours" ? "Туры" : t === "guests" ? "Клиенты" : t === "transactions" ? "Транзакции" : "Чат";
+              const label = t === "tours" ? "Туры" : t === "guests" ? "Клиенты" : t === "transactions" ? "Транзакции" : t === "reviews" ? "Отзывы" : "Чат";
               return (
                 <TouchableOpacity
                   key={t}
@@ -488,6 +583,72 @@ export default function PartnerScreen() {
                         <Text style={[styles.txStatusText, { color: sc }]}>{tr.status === "completed" ? "Зачислено" : tr.status === "pending" ? "В обработке" : "Возврат"}</Text>
                       </View>
                     </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {activeTab === "reviews" ? (
+            <View style={styles.tabContent}>
+              {partners.reviews.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Пока нет отзывов</Text>
+              ) : partners.reviews.map((rv) => {
+                const tour = partners.tours.find((t) => t.id === rv.tourId);
+                const reply = rv.reply;
+                const draft = replyDrafts[rv.id] ?? "";
+                return (
+                  <View key={rv.id} style={[styles.reviewCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
+                    <View style={styles.reviewHeader}>
+                      <View style={styles.reviewHeaderLeft}>
+                        <Text style={[styles.reviewAuthor, { color: colors.text }]}>{rv.author}</Text>
+                        <View style={styles.reviewStars}>
+                          {[1,2,3,4,5].map((i) => (
+                            <Star key={i} size={12} color={colors.gold} fill={i <= rv.rating ? colors.gold : "transparent"} />
+                          ))}
+                        </View>
+                      </View>
+                      <Text style={[styles.reviewDate, { color: colors.textMuted }]}>{rv.createdAt}</Text>
+                    </View>
+                    {tour ? (
+                      <Text style={[styles.reviewTourTitle, { color: colors.teal }]} numberOfLines={1}>{tour.title}</Text>
+                    ) : null}
+                    <Text style={[styles.reviewText, { color: colors.textSecondary }]}>{rv.text}</Text>
+
+                    {reply ? (
+                      <View style={[styles.replyBox, { backgroundColor: reply.status === "approved" ? colors.tealSoft : reply.status === "pending" ? colors.gold + "15" : "rgba(231,76,60,0.10)", borderColor: reply.status === "approved" ? colors.teal : reply.status === "pending" ? colors.gold : colors.red }]}>
+                        <View style={styles.replyHeader}>
+                          <MessageSquare size={12} color={reply.status === "approved" ? colors.teal : reply.status === "pending" ? colors.gold : colors.red} />
+                          <Text style={[styles.replyHeaderText, { color: reply.status === "approved" ? colors.teal : reply.status === "pending" ? colors.gold : colors.red }]}>
+                            Ваш ответ · {reply.status === "approved" ? "Опубликован" : reply.status === "pending" ? "На модерации" : "Отклонён"}
+                          </Text>
+                        </View>
+                        <Text style={[styles.replyText, { color: colors.text }]}>{reply.content}</Text>
+                        {reply.status === "rejected" && reply.rejectionReason ? (
+                          <Text style={[styles.replyReason, { color: colors.red }]}>Причина: {reply.rejectionReason}</Text>
+                        ) : null}
+                      </View>
+                    ) : (
+                      <View style={styles.replyForm}>
+                        <TextInput
+                          style={[styles.replyInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+                          placeholder="Ответить на отзыв…"
+                          placeholderTextColor={colors.textMuted}
+                          value={draft}
+                          onChangeText={(t) => setReplyDrafts((prev) => ({ ...prev, [rv.id]: t }))}
+                          multiline
+                        />
+                        <TouchableOpacity
+                          style={[styles.replySendBtn, { backgroundColor: colors.teal, opacity: draft.trim() ? 1 : 0.5 }]}
+                          onPress={() => submitReply(rv.id)}
+                          disabled={!draft.trim()}
+                          testID={`reply-send-${rv.id}`}
+                        >
+                          <Send size={14} color="#FFFFFF" />
+                          <Text style={styles.replySendBtnText}>На модерацию</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 );
               })}
@@ -785,4 +946,117 @@ const styles = StyleSheet.create({
   chatInputRow: { flexDirection: "row" as const, gap: 8, padding: 10, borderTopWidth: 1, alignItems: "flex-end" as const },
   chatInput: { flex: 1, borderWidth: 1, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, maxHeight: 100 },
   chatSendBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center" as const, justifyContent: "center" as const },
+
+  legalBlock: { marginTop: 14, gap: 10 },
+  legalRow: { flexDirection: "row" as const, alignItems: "flex-start" as const, gap: 10 },
+  legalCheckbox: { width: 22, height: 22, borderRadius: 6, alignItems: "center" as const, justifyContent: "center" as const, marginTop: 1 },
+  legalTextWrap: { flex: 1, flexDirection: "row" as const, flexWrap: "wrap" as const, alignItems: "center" as const },
+  legalText: { fontSize: 12, lineHeight: 18 },
+  legalLink: { fontSize: 12, fontWeight: "700" as const, textDecorationLine: "underline" as const, lineHeight: 18 },
+
+  docModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center" as const, padding: 16 },
+  docModalCard: { borderRadius: 18, maxHeight: "86%" as const, overflow: "hidden" as const },
+  docModalHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+  docModalIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center" as const, justifyContent: "center" as const },
+  docModalTitle: { fontSize: 14, fontWeight: "800" as const, flex: 1 },
+  docModalClose: { width: 32, height: 32, borderRadius: 10, alignItems: "center" as const, justifyContent: "center" as const },
+  docModalBody: { padding: 16 },
+  docModalText: { fontSize: 13, lineHeight: 20 },
+  docModalFooter: { padding: 14, borderTopWidth: 1, alignItems: "center" as const },
+  docModalFooterBtn: { paddingHorizontal: 28, paddingVertical: 11, borderRadius: 12 },
+  docModalFooterText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" as const },
+
+  ratingBlock: { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, marginHorizontal: 16, marginTop: 14, padding: 14, borderRadius: 16, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  ratingIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center" as const, justifyContent: "center" as const },
+  ratingInfo: { flex: 1 },
+  ratingTitle: { fontSize: 14, fontWeight: "700" as const },
+  ratingSub: { fontSize: 11, marginTop: 2 },
+  ratingValueWrap: { alignItems: "flex-end" as const },
+  ratingValue: { fontSize: 22, fontWeight: "800" as const },
+  ratingCount: { fontSize: 11, marginTop: 1 },
+
+  reviewCard: { borderRadius: 14, padding: 14, gap: 8, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  reviewHeader: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const },
+  reviewHeaderLeft: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 },
+  reviewAuthor: { fontSize: 14, fontWeight: "700" as const },
+  reviewStars: { flexDirection: "row" as const, gap: 2 },
+  reviewDate: { fontSize: 11 },
+  reviewTourTitle: { fontSize: 12, fontWeight: "600" as const },
+  reviewText: { fontSize: 13, lineHeight: 19 },
+  replyBox: { borderRadius: 12, padding: 10, borderWidth: 1, gap: 4, marginTop: 4 },
+  replyHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6 },
+  replyHeaderText: { fontSize: 11, fontWeight: "700" as const },
+  replyText: { fontSize: 13, lineHeight: 18 },
+  replyReason: { fontSize: 11, marginTop: 4, fontStyle: "italic" as const },
+  replyForm: { marginTop: 6, gap: 8 },
+  replyInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 60, textAlignVertical: "top" as const },
+  replySendBtn: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 6, paddingVertical: 10, borderRadius: 10 },
+  replySendBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" as const },
 });
+
+interface LegalCheckboxProps {
+  colors: ColorsType;
+  checked: boolean;
+  onToggle: () => void;
+  onOpenDoc: () => void;
+  label: string;
+  testID?: string;
+}
+
+function LegalCheckbox({ colors, checked, onToggle, onOpenDoc, label, testID }: LegalCheckboxProps) {
+  return (
+    <View style={styles.legalRow}>
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.7}
+        style={[styles.legalCheckbox, { backgroundColor: checked ? colors.teal : "transparent", borderWidth: 1.5, borderColor: checked ? colors.teal : colors.border }]}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        testID={testID}
+      >
+        {checked ? <Check size={14} color="#FFFFFF" /> : null}
+      </TouchableOpacity>
+      <Text style={[styles.legalText, { color: colors.textSecondary }]}>
+        Я ознакомлен и соглашаюсь с{" "}
+        <Text style={[styles.legalLink, { color: colors.teal }]} onPress={onOpenDoc}>
+          {label}
+        </Text>
+      </Text>
+    </View>
+  );
+}
+
+interface LegalDocumentModalProps {
+  colors: ColorsType;
+  visible: boolean;
+  onClose: () => void;
+  doc: { title: string; body: string } | null;
+}
+
+function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModalProps) {
+  if (!doc) return null;
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.docModalOverlay} onPress={onClose}>
+        <Pressable style={[styles.docModalCard, { backgroundColor: colors.surface }]} onPress={(e) => e.stopPropagation()}>
+          <View style={[styles.docModalHeader, { borderBottomColor: colors.border }]}>
+            <View style={[styles.docModalIcon, { backgroundColor: colors.tealSoft }]}>
+              <FileText size={16} color={colors.teal} />
+            </View>
+            <Text style={[styles.docModalTitle, { color: colors.text }]} numberOfLines={2}>{doc.title}</Text>
+            <TouchableOpacity onPress={onClose} style={[styles.docModalClose, { backgroundColor: colors.surfaceSecondary }]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <XIcon size={16} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.docModalBody} showsVerticalScrollIndicator>
+            <Text style={[styles.docModalText, { color: colors.textSecondary }]}>{doc.body}</Text>
+          </ScrollView>
+          <View style={[styles.docModalFooter, { borderTopColor: colors.border }]}>
+            <TouchableOpacity onPress={onClose} activeOpacity={0.8} style={[styles.docModalFooterBtn, { backgroundColor: colors.teal }]}>
+              <Text style={styles.docModalFooterText}>Закрыть</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}

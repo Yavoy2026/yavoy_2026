@@ -7,6 +7,8 @@ import {
   PartnerGuest,
   PartnerTransaction,
   PartnerChatMessage,
+  PartnerReview,
+  PartnerReviewReply,
 } from "@/types/tour";
 
 const initialTours: PartnerTourSubmission[] = [
@@ -72,10 +74,45 @@ const initialChat: PartnerChatMessage[] = [
   { id: "pcm3", tourId: "psub1", authorType: "admin", authorName: "Администратор YAVOY", content: "Подключился к диалогу для контроля качества. Всё на связи.", createdAt: "2026-04-18 14:33" },
 ];
 
-/**
- * Mock проверка ИНН/ОГРН через ФНС.
- * В реальной реализации делается запрос к API egrul.nalog.ru / api-fns.ru.
- */
+const initialReviews: PartnerReview[] = [
+  {
+    id: "prev1",
+    tourId: "psub1",
+    partnerInn: "7707123456",
+    author: "Анна Соколова",
+    rating: 5,
+    text: "Восхитительная экскурсия! Гид — настоящий профессионал, сыры — пальчики оближешь. Спасибо!",
+    createdAt: "2026-04-21",
+    reply: {
+      id: "prep1",
+      reviewId: "prev1",
+      partnerInn: "7707123456",
+      content: "Анна, спасибо большое! Ждём вас снова — летом запустим виноградные дегустации.",
+      status: "approved",
+      createdAt: "2026-04-22",
+      moderatedAt: "2026-04-22",
+    },
+  },
+  {
+    id: "prev2",
+    tourId: "psub1",
+    partnerInn: "7707123456",
+    author: "Дмитрий Кузнецов",
+    rating: 4,
+    text: "Очень понравилось, но хотелось бы чуть больше времени на дегустации.",
+    createdAt: "2026-05-05",
+  },
+  {
+    id: "prev3",
+    tourId: "psub2",
+    partnerInn: "7707123456",
+    author: "Игорь Лебедев",
+    rating: 5,
+    text: "Сложный, но безумно красивый маршрут. Виды с вершины — космос!",
+    createdAt: "2026-03-15",
+  },
+];
+
 async function checkFnsRegistry(value: string): Promise<{
   ok: boolean;
   data?: { legalName: string; ceo?: string; address: string; entityType: PartnerEntityType; taxRegistrationDate: string; ogrn?: string; inn: string };
@@ -113,6 +150,7 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
   const [guests] = useState<PartnerGuest[]>(initialGuests);
   const [transactions] = useState<PartnerTransaction[]>(initialTransactions);
   const [chat, setChat] = useState<PartnerChatMessage[]>(initialChat);
+  const [reviews, setReviews] = useState<PartnerReview[]>(initialReviews);
   const [verifying, setVerifying] = useState<boolean>(false);
 
   const verifyAndRegister = useCallback(async (value: string): Promise<{ ok: boolean; error?: string }> => {
@@ -179,6 +217,43 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
     setChat((prev) => [...prev, partnerMsg]);
   }, []);
 
+  const submitReviewReply = useCallback((reviewId: string, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    const inn = profile?.inn ?? "";
+    const reply: PartnerReviewReply = {
+      id: `prep-${Date.now()}`,
+      reviewId,
+      partnerInn: inn,
+      content: trimmed,
+      status: "pending",
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, reply } : r)));
+    console.log("[PartnersProvider] Reply submitted for moderation", reviewId);
+  }, [profile]);
+
+  const approveReply = useCallback((reviewId: string) => {
+    setReviews((prev) => prev.map((r) => (r.id === reviewId && r.reply ? { ...r, reply: { ...r.reply, status: "approved" as const, moderatedAt: new Date().toISOString().slice(0, 10) } } : r)));
+  }, []);
+
+  const rejectReply = useCallback((reviewId: string, reason?: string) => {
+    setReviews((prev) => prev.map((r) => (r.id === reviewId && r.reply ? { ...r, reply: { ...r.reply, status: "rejected" as const, moderatedAt: new Date().toISOString().slice(0, 10), rejectionReason: reason } } : r)));
+  }, []);
+
+  const ownerReviews = useMemo(() => {
+    const inn = profile?.inn ?? "";
+    return reviews.filter((r) => r.partnerInn === inn);
+  }, [reviews, profile]);
+
+  const partnerRating = useMemo(() => {
+    if (ownerReviews.length === 0) return { average: 0, count: 0 };
+    const sum = ownerReviews.reduce((s, r) => s + r.rating, 0);
+    return { average: Math.round((sum / ownerReviews.length) * 10) / 10, count: ownerReviews.length };
+  }, [ownerReviews]);
+
+  const pendingReplies = useMemo(() => reviews.filter((r) => r.reply && r.reply.status === "pending"), [reviews]);
+
   const stats = useMemo(() => {
     const completed = transactions.filter((t) => t.status === "completed");
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -211,8 +286,15 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
       transactions,
       chat,
       sendChatMessage,
+      reviews: ownerReviews,
+      allReviews: reviews,
+      partnerRating,
+      submitReviewReply,
+      approveReply,
+      rejectReply,
+      pendingReplies,
       stats,
     }),
-    [profile, verifying, verifyAndRegister, logout, tours, submitTour, guests, transactions, chat, sendChatMessage, stats],
+    [profile, verifying, verifyAndRegister, logout, tours, submitTour, guests, transactions, chat, sendChatMessage, ownerReviews, reviews, partnerRating, submitReviewReply, approveReply, rejectReply, pendingReplies, stats],
   );
 });
