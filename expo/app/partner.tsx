@@ -54,28 +54,10 @@ import {
   InterestType,
   CategoryType,
   SeasonType,
+  LegalDocKey,
 } from "@/types/tour";
 
 type Tab = "tours" | "guests" | "transactions" | "reviews" | "chat";
-type LegalDoc = "terms" | "privacy" | "offer";
-
-const LEGAL_DOCS: Record<LegalDoc, { title: string; short: string; body: string }> = {
-  terms: {
-    title: "Пользовательское соглашение",
-    short: "Пользовательское соглашение",
-    body: `1. ОБЩИЕ ПОЛОЖЕНИЯ\n\n1.1. Настоящее Пользовательское соглашение (далее — Соглашение) регулирует отношения между ООО «YAVOY» (далее — Платформа) и Партнёром при использовании сервиса YAVOY Travel Group.\n\n1.2. Регистрируясь в качестве Партнёра, вы подтверждаете, что ознакомились с условиями Соглашения и принимаете их в полном объёме.\n\n2. ПРЕДМЕТ СОГЛАШЕНИЯ\n\n2.1. Платформа предоставляет Партнёру технологический сервис для размещения и продажи экскурсий, а Партнёр обязуется размещать достоверную информацию и предоставлять услуги надлежащего качества.\n\n2.2. Партнёр самостоятельно несёт ответственность за качество и безопасность оказываемых услуг.\n\n3. ПРАВА И ОБЯЗАННОСТИ СТОРОН\n\n3.1. Партнёр обязуется: предоставлять актуальную информацию, своевременно отвечать на запросы клиентов, соблюдать законодательство РФ.\n\n3.2. Платформа вправе модерировать контент Партнёра, отказывать в публикации недостоверных материалов и приостанавливать аккаунт при нарушении правил.\n\n4. ОТВЕТСТВЕННОСТЬ\n\n4.1. Партнёр несёт ответственность за достоверность сведений о компании, ИНН/ОГРН и налоговом статусе.\n\n4.2. Платформа не несёт ответственности за действия Партнёра перед клиентами.\n\n5. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ\n\n5.1. Соглашение вступает в силу с момента акцепта и действует бессрочно.\n\n5.2. Платформа вправе изменять условия с уведомлением Партнёра за 10 дней.\n\n5.3. Все споры рассматриваются в порядке, предусмотренном законодательством РФ.`,
-  },
-  privacy: {
-    title: "Согласие на обработку персональных данных",
-    short: "Обработка персональных данных",
-    body: `1. Действуя свободно, своей волей и в своём интересе, а также подтверждая свою дееспособность, Партнёр даёт согласие ООО «YAVOY» на обработку своих персональных данных в соответствии с ФЗ-152 «О персональных данных».\n\n2. Состав персональных данных: ФИО, ИНН, ОГРН, юридический и фактический адрес, контактные телефоны, адрес электронной почты, банковские реквизиты, сведения о государственной регистрации.\n\n3. Цели обработки: идентификация Партнёра, заключение и исполнение договора, проведение взаиморасчётов, маркетинговая аналитика, обеспечение работы сервиса, рассылка уведомлений и информационных сообщений.\n\n4. Действия с персональными данными: сбор, запись, систематизация, накопление, хранение, уточнение, использование, передача (предоставление, доступ), обезличивание, блокирование, удаление, уничтожение.\n\n5. Способы обработки: автоматизированная и неавтоматизированная обработка с использованием средств вычислительной техники.\n\n6. Партнёр согласен на передачу персональных данных третьим лицам, привлекаемым Платформой для оказания услуг (ФНС, банки-эквайеры, операторы фискальных данных, сервисы рассылок).\n\n7. Согласие действует с момента акцепта и до момента его отзыва Партнёром письменным заявлением.\n\n8. Партнёр уведомлён о своих правах в соответствии со ст. 14 ФЗ-152.`,
-  },
-  offer: {
-    title: "Договор оферты",
-    short: "Договор оферты",
-    body: `1. ПРЕДМЕТ ДОГОВОРА\n\n1.1. ООО «YAVOY» (Платформа) предлагает Партнёру заключить договор на использование платформы YAVOY Travel Group для размещения и продажи экскурсий конечным клиентам.\n\n1.2. Настоящий документ является публичной офертой в соответствии со ст. 437 ГК РФ.\n\n2. ПОРЯДОК АКЦЕПТА\n\n2.1. Акцептом оферты считается прохождение Партнёром процедуры регистрации, включая подтверждение настоящего согласия и проверку через ФНС.\n\n3. ВОЗНАГРАЖДЕНИЕ ПЛАТФОРМЫ\n\n3.1. Платформа удерживает комиссию в размере 15% от стоимости каждой оплаченной экскурсии.\n\n3.2. Выплаты Партнёру осуществляются раз в неделю на указанный расчётный счёт.\n\n4. ОБЯЗАННОСТИ ПАРТНЁРА\n\n4.1. Размещение достоверной информации об экскурсии.\n\n4.2. Своевременное проведение экскурсии в соответствии с расписанием.\n\n4.3. Реагирование на отзывы и обращения клиентов.\n\n5. ПОРЯДОК РАЗРЕШЕНИЯ СПОРОВ\n\n5.1. Все споры разрешаются путём переговоров. При недостижении согласия — в судебном порядке по месту нахождения Платформы.\n\n6. СРОК ДЕЙСТВИЯ\n\n6.1. Договор заключается на неопределённый срок и действует до момента расторжения одной из сторон.\n\n6.2. Расторжение возможно с уведомлением другой стороны за 30 календарных дней.`,
-  },
-};
 type Period = "week" | "month" | "halfYear" | "year" | "all";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=400&fit=crop";
@@ -97,7 +79,11 @@ export default function PartnerScreen() {
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState<boolean>(false);
   const [acceptedOffer, setAcceptedOffer] = useState<boolean>(false);
-  const [openDoc, setOpenDoc] = useState<LegalDoc | null>(null);
+  const [openDoc, setOpenDoc] = useState<LegalDocKey | null>(null);
+  const [emailInput, setEmailInput] = useState<string>("");
+  const [phoneInput, setPhoneInput] = useState<string>("");
+  const [telegramInput, setTelegramInput] = useState<string>("");
+  const [contactsError, setContactsError] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<Tab>("tours");
   const [period, setPeriod] = useState<Period>("month");
@@ -207,6 +193,20 @@ export default function PartnerScreen() {
     Alert.alert("Отправлено", "Экскурсия отправлена администратору на модерацию.");
   }, [partners, fTitle, fDesc, fCity, fPrice, fGroupSize, fMeeting, fDuration, fTransport, fInterest, fCategory, fSeason, fMedia]);
 
+  const submitContacts = useCallback(() => {
+    setContactsError(null);
+    const email = emailInput.trim();
+    const phone = phoneInput.trim();
+    const telegram = telegramInput.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const phoneValid = phone.replace(/\D/g, "").length >= 10;
+    if (!emailValid) { setContactsError("Введите корректный email."); return; }
+    if (!phoneValid) { setContactsError("Введите корректный телефон (минимум 10 цифр)."); return; }
+    if (!telegram) { setContactsError("Укажите никнейм в Telegram."); return; }
+    partners.submitContacts({ email, phone, telegram });
+    Alert.alert("Заявка отправлена", "Ваш аккаунт направлен администратору на проверку. Уведомление придёт на указанный email.");
+  }, [emailInput, phoneInput, telegramInput, partners]);
+
   // ============ REGISTRATION VIEW ============
   if (!partners.isRegistered) {
     return (
@@ -233,7 +233,7 @@ export default function PartnerScreen() {
                 <Text style={[styles.regHeaderText, { color: colors.text }]}>Регистрация через ФНС</Text>
               </View>
               <Text style={[styles.regDesc, { color: colors.textSecondary }]}>
-                Введите ИНН или ОГРН компании, индивидуального предпринимателя или самозанятого. Мы проверим данные через API Федеральной налоговой службы.
+                {partners.registrationText}
               </Text>
               <TextInput
                 style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
@@ -308,8 +308,130 @@ export default function PartnerScreen() {
           colors={colors}
           visible={openDoc !== null}
           onClose={() => setOpenDoc(null)}
-          doc={openDoc ? LEGAL_DOCS[openDoc] : null}
+          doc={openDoc ? partners.legalDocs[openDoc] : null}
         />
+      </>
+    );
+  }
+
+  // ============ CONTACTS REQUIRED ============
+  if (partners.profile && partners.profile.approvalStatus === "contacts_required") {
+    const pp = partners.profile;
+    return (
+      <>
+        <Stack.Screen options={{ title: "Контактные данные", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+        <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <ScrollView contentContainerStyle={styles.regContent} keyboardShouldPersistTaps="handled">
+            <View style={[styles.heroCard, { backgroundColor: colors.headerBg }]}>
+              <View style={[styles.heroIcon, { backgroundColor: colors.teal + "30" }]}>
+                <ShieldCheck size={36} color={colors.tealLight} />
+              </View>
+              <Text style={styles.heroTitle}>Шаг 2 · Контакты</Text>
+              <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>ФНС подтвердила {pp.legalName}. Заполните контактные данные — после проверки администратором вы получите доступ к кабинету.</Text>
+            </View>
+
+            <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
+              <View style={styles.regHeader}>
+                <MessageCircle size={20} color={colors.teal} />
+                <Text style={[styles.regHeaderText, { color: colors.text }]}>Контактные данные партнёра</Text>
+              </View>
+              <Text style={[styles.regDesc, { color: colors.textSecondary }]}>Эти данные нужны администратору для проверки и связи с вами.</Text>
+              <TextInput
+                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, letterSpacing: 0 }]}
+                placeholder="Email"
+                placeholderTextColor={colors.textMuted}
+                value={emailInput}
+                onChangeText={(t) => { setEmailInput(t); setContactsError(null); }}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                testID="partner-email-input"
+              />
+              <TextInput
+                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10, letterSpacing: 0 }]}
+                placeholder="Телефон (+7 ...)"
+                placeholderTextColor={colors.textMuted}
+                value={phoneInput}
+                onChangeText={(t) => { setPhoneInput(t); setContactsError(null); }}
+                keyboardType="phone-pad"
+                testID="partner-phone-input"
+              />
+              <TextInput
+                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10, letterSpacing: 0 }]}
+                placeholder="Telegram (никнейм без @)"
+                placeholderTextColor={colors.textMuted}
+                value={telegramInput}
+                onChangeText={(t) => { setTelegramInput(t); setContactsError(null); }}
+                autoCapitalize="none"
+                testID="partner-telegram-input"
+              />
+              {contactsError ? (
+                <View style={styles.errorRow}>
+                  <AlertCircle size={14} color={colors.red} />
+                  <Text style={[styles.errorText, { color: colors.red }]}>{contactsError}</Text>
+                </View>
+              ) : null}
+              <TouchableOpacity
+                style={[styles.regSubmitBtn, { backgroundColor: colors.teal }]}
+                onPress={submitContacts}
+                activeOpacity={0.8}
+                testID="partner-contacts-submit"
+              >
+                <Send size={16} color="#FFFFFF" />
+                <Text style={styles.regSubmitText}>Отправить администратору</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => partners.logout()} style={{ marginTop: 12, alignSelf: "center" }}>
+                <Text style={[styles.regNote, { color: colors.textMuted, textDecorationLine: "underline" }]}>Выйти и начать заново</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </>
+    );
+  }
+
+  // ============ AWAITING APPROVAL ============
+  if (partners.profile && partners.profile.approvalStatus === "pending_approval") {
+    return (
+      <>
+        <Stack.Screen options={{ title: "Заявка на проверке", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+        <View style={[styles.flex, { backgroundColor: colors.background, padding: 20, justifyContent: "center" as const }]}>
+          <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow, alignItems: "center" as const }]}>
+            <View style={[styles.heroIcon, { backgroundColor: colors.gold + "22" }]}>
+              <Clock size={36} color={colors.gold} />
+            </View>
+            <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>Заявка отправлена</Text>
+            <Text style={[styles.regDesc, { color: colors.textSecondary, textAlign: "center" as const, marginTop: 8 }]}>
+              Данные ФНС подтверждены, контактная информация принята. Администратор проверит ваш профиль и пришлёт письмо на {partners.profile.email}.
+            </Text>
+            <TouchableOpacity onPress={() => partners.logout()} style={[styles.regSubmitBtn, { backgroundColor: colors.surfaceSecondary, marginTop: 16 }]}>
+              <LogOut size={16} color={colors.text} />
+              <Text style={[styles.regSubmitText, { color: colors.text }]}>Выйти</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </>
+    );
+  }
+
+  // ============ REJECTED ============
+  if (partners.profile && partners.profile.approvalStatus === "rejected") {
+    return (
+      <>
+        <Stack.Screen options={{ title: "Заявка отклонена", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+        <View style={[styles.flex, { backgroundColor: colors.background, padding: 20, justifyContent: "center" as const }]}>
+          <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow, alignItems: "center" as const }]}>
+            <View style={[styles.heroIcon, { backgroundColor: colors.red + "22" }]}>
+              <XCircle size={36} color={colors.red} />
+            </View>
+            <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>Заявка отклонена</Text>
+            {partners.profile.rejectionReason ? (
+              <Text style={[styles.regDesc, { color: colors.textSecondary, textAlign: "center" as const, marginTop: 8 }]}>Причина: {partners.profile.rejectionReason}</Text>
+            ) : null}
+            <TouchableOpacity onPress={() => partners.logout()} style={[styles.regSubmitBtn, { backgroundColor: colors.teal, marginTop: 16 }]}>
+              <Text style={styles.regSubmitText}>Начать заново</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </>
     );
   }
@@ -955,7 +1077,8 @@ const styles = StyleSheet.create({
   legalLink: { fontSize: 12, fontWeight: "700" as const, textDecorationLine: "underline" as const, lineHeight: 18 },
 
   docModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center" as const, padding: 16 },
-  docModalCard: { borderRadius: 18, maxHeight: "86%" as const, overflow: "hidden" as const },
+  docModalCard: { borderRadius: 18, height: "86%" as const, overflow: "hidden" as const, flexDirection: "column" as const },
+  docModalScroll: { flex: 1 },
   docModalHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   docModalIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center" as const, justifyContent: "center" as const },
   docModalTitle: { fontSize: 14, fontWeight: "800" as const, flex: 1 },
@@ -1047,7 +1170,7 @@ function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModa
               <XIcon size={16} color={colors.text} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={styles.docModalBody} showsVerticalScrollIndicator>
+          <ScrollView style={styles.docModalScroll} contentContainerStyle={styles.docModalBody} showsVerticalScrollIndicator nestedScrollEnabled>
             <Text style={[styles.docModalText, { color: colors.textSecondary }]}>{doc.body}</Text>
           </ScrollView>
           <View style={[styles.docModalFooter, { borderTopColor: colors.border }]}>

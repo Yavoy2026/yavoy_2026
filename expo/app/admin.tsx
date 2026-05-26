@@ -27,21 +27,28 @@ import {
   BarChart3,
   ShoppingBag,
   Star,
+  FileText,
+  Mail,
+  UserCheck,
+  Save,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAdmin } from "@/providers/AdminProvider";
 import { useReels } from "@/providers/ReelsProvider";
 import { usePartners } from "@/providers/PartnersProvider";
-import { UserRole } from "@/types/tour";
+import { UserRole, LegalDocKey } from "@/types/tour";
 
-type Tab = "stats" | "users" | "reels" | "partner" | "replies" | "chatUsers" | "chatPartners";
+type Tab = "stats" | "users" | "reels" | "partner" | "partnerApprovals" | "docs" | "emails" | "replies" | "chatUsers" | "chatPartners";
 
 const TABS: { key: Tab; label: string; Icon: React.ComponentType<{ size: number; color: string }> }[] = [
   { key: "stats", label: "Статистика", Icon: BarChart3 },
   { key: "users", label: "Пользователи", Icon: Users },
+  { key: "partnerApprovals", label: "Анкеты партнёров", Icon: UserCheck },
   { key: "reels", label: "Reels", Icon: Video },
   { key: "partner", label: "Туры партнёров", Icon: Briefcase },
   { key: "replies", label: "Ответы на отзывы", Icon: Star },
+  { key: "docs", label: "Документы", Icon: FileText },
+  { key: "emails", label: "Email-рассылки", Icon: Mail },
   { key: "chatUsers", label: "Чат: пользователи", Icon: MessageSquare },
   { key: "chatPartners", label: "Чат: партнёры", Icon: MessageSquare },
 ];
@@ -60,6 +67,16 @@ export default function AdminScreen() {
   const [tab, setTab] = useState<Tab>("stats");
   const [chatInputUsers, setChatInputUsers] = useState<string>("");
   const [chatInputPartners, setChatInputPartners] = useState<string>("");
+  const [regTextDraft, setRegTextDraft] = useState<string>(partners.registrationText);
+  const [docKey, setDocKey] = useState<LegalDocKey>("terms");
+  const [docTitleDraft, setDocTitleDraft] = useState<string>(partners.legalDocs["terms"].title);
+  const [docBodyDraft, setDocBodyDraft] = useState<string>(partners.legalDocs["terms"].body);
+
+  const switchDoc = useCallback((k: LegalDocKey) => {
+    setDocKey(k);
+    setDocTitleDraft(partners.legalDocs[k].title);
+    setDocBodyDraft(partners.legalDocs[k].body);
+  }, [partners.legalDocs]);
 
   const handleLogin = useCallback(() => {
     if (!admin.login(username, password)) {
@@ -165,6 +182,8 @@ export default function AdminScreen() {
               <StatCard label="Reels на модерации" value={moderationReels.length} icon={<Video size={18} color={colors.orange} />} colors={colors} />
               <StatCard label="Туры партнёров (ждут)" value={stats.pendingPartnerTours} icon={<Briefcase size={18} color={colors.teal} />} colors={colors} />
               <StatCard label="Ответы на отзывы (ждут)" value={partners.pendingReplies.length} icon={<Star size={18} color={colors.gold} />} colors={colors} />
+              <StatCard label="Анкеты партнёров" value={partners.pendingPartners.length} icon={<UserCheck size={18} color={colors.teal} />} colors={colors} />
+              <StatCard label="Email отправлено" value={partners.emailNotifications.length} icon={<Mail size={18} color={colors.gold} />} colors={colors} />
             </View>
             <Text style={[styles.h2, { color: colors.text }]}>{"Последние регистрации"}</Text>
             {admin.users.slice(0, 5).map((u) => (
@@ -358,6 +377,173 @@ export default function AdminScreen() {
           </View>
         ) : null}
 
+        {tab === "partnerApprovals" ? (
+          <View>
+            <Text style={[styles.h1, { color: colors.text }]}>{"Анкеты партнёров на проверке"}</Text>
+            <Text style={[styles.helper, { color: colors.textMuted }]}>{"Проверьте данные ФНС и контакты, затем подтвердите или отклоните регистрацию"}</Text>
+            {partners.pendingPartners.length === 0 ? (
+              <Text style={[styles.empty, { color: colors.textMuted }]}>{"Нет анкет на проверке"}</Text>
+            ) : (
+              partners.pendingPartners.map((pp) => (
+                <View key={pp.inn} style={[styles.partnerCard, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: "column" as const, alignItems: "stretch" as const, gap: 8 }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={[styles.statIcon, { backgroundColor: colors.tealSoft, marginBottom: 0 }]}>
+                      <ShieldCheck size={18} color={colors.teal} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.partnerTitle, { color: colors.text }]} numberOfLines={2}>{pp.legalName}</Text>
+                      <Text style={[styles.partnerMeta, { color: colors.textMuted }]}>{pp.entityType === "company" ? "Юр. лицо" : pp.entityType === "ip" ? "ИП" : "Самозанятый"}</Text>
+                    </View>
+                    <View style={[styles.partnerStatusPill, { backgroundColor: colors.orangeLight }]}>
+                      <Text style={[styles.partnerStatusText, { color: colors.orange }]}>{"На проверке"}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.approvalGrid}>
+                    <ApprovalField colors={colors} label="ИНН" value={pp.inn} />
+                    {pp.ogrn ? <ApprovalField colors={colors} label="ОГРН" value={pp.ogrn} /> : null}
+                    {pp.ceo ? <ApprovalField colors={colors} label="Руководитель" value={pp.ceo} /> : null}
+                    <ApprovalField colors={colors} label="Адрес" value={pp.address} />
+                    <ApprovalField colors={colors} label="Дата в ФНС" value={pp.taxRegistrationDate ?? "—"} />
+                    <ApprovalField colors={colors} label="Email" value={pp.email ?? "—"} />
+                    <ApprovalField colors={colors} label="Телефон" value={pp.phone ?? "—"} />
+                    <ApprovalField colors={colors} label="Telegram" value={pp.telegram ? `@${pp.telegram}` : "—"} />
+                  </View>
+                  <View style={styles.modActions}>
+                    <TouchableOpacity style={[styles.modBtn, { backgroundColor: colors.green }]} onPress={() => { partners.approvePartner(pp.inn); Alert.alert("Подтверждено", `Партнёр ${pp.legalName} подтверждён. Уведомление отправлено на ${pp.email ?? "email"}.`); }} activeOpacity={0.8} testID={`approve-partner-${pp.inn}`}>
+                      <CheckCircle2 size={14} color="#FFFFFF" />
+                      <Text style={styles.modBtnText}>{"Подтвердить"}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modBtn, { backgroundColor: colors.red }]}
+                      onPress={() => {
+                        const doReject = (reason?: string) => { partners.rejectPartner(pp.inn, reason); Alert.alert("Отклонено", `Анкета ${pp.legalName} отклонена.`); };
+                        if (Alert.prompt) {
+                          Alert.prompt("Отклонить анкету", "Укажите причину (опционально)", (text?: string) => doReject(text));
+                        } else { doReject(); }
+                      }}
+                      activeOpacity={0.8}
+                      testID={`reject-partner-${pp.inn}`}
+                    >
+                      <XCircle size={14} color="#FFFFFF" />
+                      <Text style={styles.modBtnText}>{"Отклонить"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        ) : null}
+
+        {tab === "docs" ? (
+          <View>
+            <Text style={[styles.h1, { color: colors.text }]}>{"Редактор текстов и документов"}</Text>
+            <Text style={[styles.helper, { color: colors.textMuted }]}>{"Изменения в договорах можно разослать всем партнёрам по email"}</Text>
+
+            <Text style={[styles.h2, { color: colors.text }]}>{"Текст на экране регистрации"}</Text>
+            <TextInput
+              style={[styles.docTextarea, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              value={regTextDraft}
+              onChangeText={setRegTextDraft}
+              multiline
+              testID="admin-reg-text"
+            />
+            <TouchableOpacity
+              style={[styles.modBtn, { backgroundColor: colors.teal, alignSelf: "flex-start" as const, marginTop: 8 }]}
+              onPress={() => { partners.updateRegistrationText(regTextDraft); Alert.alert("Сохранено", "Текст регистрации обновлён."); }}
+              activeOpacity={0.8}
+              testID="admin-save-reg-text"
+            >
+              <Save size={14} color="#FFFFFF" />
+              <Text style={styles.modBtnText}>{"Сохранить"}</Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.h2, { color: colors.text }]}>{"Юридические документы"}</Text>
+            <View style={styles.docTabs}>
+              {(["terms","privacy","offer"] as LegalDocKey[]).map((k) => {
+                const active = docKey === k;
+                const label = k === "terms" ? "Соглашение" : k === "privacy" ? "ПД" : "Оферта";
+                return (
+                  <TouchableOpacity
+                    key={k}
+                    onPress={() => switchDoc(k)}
+                    style={[styles.docTabBtn, { backgroundColor: active ? colors.teal : colors.surface, borderColor: active ? colors.teal : colors.border }]}
+                    activeOpacity={0.75}
+                    testID={`doc-tab-${k}`}
+                  >
+                    <Text style={[styles.docTabText, { color: active ? "#FFFFFF" : colors.textSecondary }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={[styles.docFieldLabel, { color: colors.textMuted }]}>{"Заголовок"}</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              value={docTitleDraft}
+              onChangeText={setDocTitleDraft}
+              testID="admin-doc-title"
+            />
+            <Text style={[styles.docFieldLabel, { color: colors.textMuted }]}>{"Текст документа"}</Text>
+            <TextInput
+              style={[styles.docTextarea, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, minHeight: 260 }]}
+              value={docBodyDraft}
+              onChangeText={setDocBodyDraft}
+              multiline
+              testID="admin-doc-body"
+            />
+            <Text style={[styles.helper, { color: colors.textMuted, marginTop: 8 }]}>{`Обновлён: ${partners.legalDocs[docKey].updatedAt}`}</Text>
+            <View style={styles.modActions}>
+              <TouchableOpacity
+                style={[styles.modBtn, { backgroundColor: colors.teal }]}
+                onPress={() => { partners.updateLegalDoc(docKey, { title: docTitleDraft, body: docBodyDraft }, false); Alert.alert("Сохранено", "Документ обновлён без уведомления."); }}
+                activeOpacity={0.8}
+                testID="admin-save-doc"
+              >
+                <Save size={14} color="#FFFFFF" />
+                <Text style={styles.modBtnText}>{"Сохранить"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modBtn, { backgroundColor: colors.gold }]}
+                onPress={() => {
+                  partners.updateLegalDoc(docKey, { title: docTitleDraft, body: docBodyDraft }, true);
+                  Alert.alert("Отправлено", "Документ обновлён, уведомления отправлены партнёрам по email.");
+                }}
+                activeOpacity={0.8}
+                testID="admin-save-doc-notify"
+              >
+                <Mail size={14} color="#FFFFFF" />
+                <Text style={styles.modBtnText}>{"Сохранить и уведомить"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {tab === "emails" ? (
+          <View>
+            <Text style={[styles.h1, { color: colors.text }]}>{"Email-рассылки партнёрам"}</Text>
+            <Text style={[styles.helper, { color: colors.textMuted }]}>{`Всего отправлено: ${partners.emailNotifications.length}`}</Text>
+            {partners.emailNotifications.length === 0 ? (
+              <Text style={[styles.empty, { color: colors.textMuted }]}>{"Рассылок пока не было"}</Text>
+            ) : (
+              [...partners.emailNotifications].reverse().map((m) => (
+                <View key={m.id} style={[styles.userCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+                    <View style={[styles.statIcon, { backgroundColor: colors.tealSoft, marginBottom: 0 }]}>
+                      <Mail size={16} color={colors.teal} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.userName, { color: colors.text }]} numberOfLines={2}>{m.subject}</Text>
+                      <Text style={[styles.userMeta, { color: colors.textMuted }]}>{`Кому: ${m.email} · ИНН ${m.partnerInn}`}</Text>
+                      <Text style={[styles.userMeta, { color: colors.textMuted }]}>{m.sentAt}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.docFieldLabel, { color: colors.textMuted, marginTop: 8 }]}>{"Текст письма"}</Text>
+                  <Text style={[styles.replyAdminText, { color: colors.text }]}>{m.body}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        ) : null}
+
         {tab === "chatUsers" || tab === "chatPartners" ? (
           <ChatPane
             title={tab === "chatUsers" ? "Чат с пользователями" : "Чат с партнёрами"}
@@ -508,4 +694,22 @@ const styles = StyleSheet.create({
   replyAdminBox: { borderRadius: 12, padding: 10, borderWidth: 1, gap: 4, marginTop: 10 },
   replyAdminLabel: { fontSize: 11, fontWeight: "700" as const },
   replyAdminText: { fontSize: 13, lineHeight: 18 },
+  docTextarea: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 100, textAlignVertical: "top" as const, marginTop: 6 },
+  docTabs: { flexDirection: "row" as const, gap: 8, marginTop: 6, marginBottom: 6 },
+  docTabBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
+  docTabText: { fontSize: 12, fontWeight: "700" as const },
+  docFieldLabel: { fontSize: 11, fontWeight: "700" as const, marginTop: 10, marginBottom: 4, textTransform: "uppercase" as const, letterSpacing: 0.4 },
+  approvalGrid: { gap: 4, paddingVertical: 6 },
+  approvalRow: { flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "flex-start" as const, gap: 12, paddingVertical: 3 },
+  approvalLabel: { fontSize: 11, fontWeight: "600" as const, flexShrink: 0 },
+  approvalValue: { fontSize: 12, fontWeight: "700" as const, flex: 1, textAlign: "right" as const },
 });
+
+function ApprovalField({ colors, label, value }: { colors: ReturnType<typeof useTheme>["colors"]; label: string; value: string }) {
+  return (
+    <View style={styles.approvalRow}>
+      <Text style={[styles.approvalLabel, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.approvalValue, { color: colors.text }]}>{value}</Text>
+    </View>
+  );
+}

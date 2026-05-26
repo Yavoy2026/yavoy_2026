@@ -9,6 +9,10 @@ import {
   PartnerChatMessage,
   PartnerReview,
   PartnerReviewReply,
+  PartnerApprovalStatus,
+  LegalDocKey,
+  LegalDocContent,
+  PartnerEmailNotification,
 } from "@/types/tour";
 
 const initialTours: PartnerTourSubmission[] = [
@@ -113,6 +117,27 @@ const initialReviews: PartnerReview[] = [
   },
 ];
 
+const DEFAULT_REGISTRATION_TEXT: string =
+  "Введите ИНН или ОГРН компании, индивидуального предпринимателя или самозанятого. Мы проверим данные через API Федеральной налоговой службы.";
+
+const DEFAULT_LEGAL_DOCS: Record<LegalDocKey, LegalDocContent> = {
+  terms: {
+    title: "Пользовательское соглашение",
+    updatedAt: "2026-01-01",
+    body: `1. ОБЩИЕ ПОЛОЖЕНИЯ\n\n1.1. Настоящее Пользовательское соглашение (далее — Соглашение) регулирует отношения между ООО «YAVOY» (далее — Платформа) и Партнёром при использовании сервиса YAVOY Travel Group.\n\n1.2. Регистрируясь в качестве Партнёра, вы подтверждаете, что ознакомились с условиями Соглашения и принимаете их в полном объёме.\n\n2. ПРЕДМЕТ СОГЛАШЕНИЯ\n\n2.1. Платформа предоставляет Партнёру технологический сервис для размещения и продажи экскурсий, а Партнёр обязуется размещать достоверную информацию и предоставлять услуги надлежащего качества.\n\n2.2. Партнёр самостоятельно несёт ответственность за качество и безопасность оказываемых услуг.\n\n3. ПРАВА И ОБЯЗАННОСТИ СТОРОН\n\n3.1. Партнёр обязуется: предоставлять актуальную информацию, своевременно отвечать на запросы клиентов, соблюдать законодательство РФ.\n\n3.2. Платформа вправе модерировать контент Партнёра, отказывать в публикации недостоверных материалов и приостанавливать аккаунт при нарушении правил.\n\n4. ОТВЕТСТВЕННОСТЬ\n\n4.1. Партнёр несёт ответственность за достоверность сведений о компании, ИНН/ОГРН и налоговом статусе.\n\n4.2. Платформа не несёт ответственности за действия Партнёра перед клиентами.\n\n5. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ\n\n5.1. Соглашение вступает в силу с момента акцепта и действует бессрочно.\n\n5.2. Платформа вправе изменять условия с уведомлением Партнёра за 10 дней.\n\n5.3. Все споры рассматриваются в порядке, предусмотренном законодательством РФ.`,
+  },
+  privacy: {
+    title: "Согласие на обработку персональных данных",
+    updatedAt: "2026-01-01",
+    body: `1. Действуя свободно, своей волей и в своём интересе, а также подтверждая свою дееспособность, Партнёр даёт согласие ООО «YAVOY» на обработку своих персональных данных в соответствии с ФЗ-152 «О персональных данных».\n\n2. Состав персональных данных: ФИО, ИНН, ОГРН, юридический и фактический адрес, контактные телефоны, адрес электронной почты, банковские реквизиты, сведения о государственной регистрации.\n\n3. Цели обработки: идентификация Партнёра, заключение и исполнение договора, проведение взаиморасчётов, маркетинговая аналитика, обеспечение работы сервиса, рассылка уведомлений и информационных сообщений.\n\n4. Действия с персональными данными: сбор, запись, систематизация, накопление, хранение, уточнение, использование, передача (предоставление, доступ), обезличивание, блокирование, удаление, уничтожение.\n\n5. Способы обработки: автоматизированная и неавтоматизированная обработка с использованием средств вычислительной техники.\n\n6. Партнёр согласен на передачу персональных данных третьим лицам, привлекаемым Платформой для оказания услуг (ФНС, банки-эквайеры, операторы фискальных данных, сервисы рассылок).\n\n7. Согласие действует с момента акцепта и до момента его отзыва Партнёром письменным заявлением.\n\n8. Партнёр уведомлён о своих правах в соответствии со ст. 14 ФЗ-152.`,
+  },
+  offer: {
+    title: "Договор оферты",
+    updatedAt: "2026-01-01",
+    body: `1. ПРЕДМЕТ ДОГОВОРА\n\n1.1. ООО «YAVOY» (Платформа) предлагает Партнёру заключить договор на использование платформы YAVOY Travel Group для размещения и продажи экскурсий конечным клиентам.\n\n1.2. Настоящий документ является публичной офертой в соответствии со ст. 437 ГК РФ.\n\n2. ПОРЯДОК АКЦЕПТА\n\n2.1. Акцептом оферты считается прохождение Партнёром процедуры регистрации, включая подтверждение настоящего согласия и проверку через ФНС.\n\n3. ВОЗНАГРАЖДЕНИЕ ПЛАТФОРМЫ\n\n3.1. Платформа удерживает комиссию в размере 15% от стоимости каждой оплаченной экскурсии.\n\n3.2. Выплаты Партнёру осуществляются раз в неделю на указанный расчётный счёт.\n\n4. ОБЯЗАННОСТИ ПАРТНЁРА\n\n4.1. Размещение достоверной информации об экскурсии.\n\n4.2. Своевременное проведение экскурсии в соответствии с расписанием.\n\n4.3. Реагирование на отзывы и обращения клиентов.\n\n5. ПОРЯДОК РАЗРЕШЕНИЯ СПОРОВ\n\n5.1. Все споры разрешаются путём переговоров. При недостижении согласия — в судебном порядке по месту нахождения Платформы.\n\n6. СРОК ДЕЙСТВИЯ\n\n6.1. Договор заключается на неопределённый срок и действует до момента расторжения одной из сторон.\n\n6.2. Расторжение возможно с уведомлением другой стороны за 30 календарных дней.`,
+  },
+};
+
 async function checkFnsRegistry(value: string): Promise<{
   ok: boolean;
   data?: { legalName: string; ceo?: string; address: string; entityType: PartnerEntityType; taxRegistrationDate: string; ogrn?: string; inn: string };
@@ -146,12 +171,16 @@ async function checkFnsRegistry(value: string): Promise<{
 
 export const [PartnersProvider, usePartners] = createContextHook(() => {
   const [profile, setProfile] = useState<PartnerProfile | null>(null);
+  const [pendingPartners, setPendingPartners] = useState<PartnerProfile[]>([]);
   const [tours, setTours] = useState<PartnerTourSubmission[]>(initialTours);
   const [guests] = useState<PartnerGuest[]>(initialGuests);
   const [transactions] = useState<PartnerTransaction[]>(initialTransactions);
   const [chat, setChat] = useState<PartnerChatMessage[]>(initialChat);
   const [reviews, setReviews] = useState<PartnerReview[]>(initialReviews);
   const [verifying, setVerifying] = useState<boolean>(false);
+  const [registrationText, setRegistrationText] = useState<string>(DEFAULT_REGISTRATION_TEXT);
+  const [legalDocs, setLegalDocs] = useState<Record<LegalDocKey, LegalDocContent>>(DEFAULT_LEGAL_DOCS);
+  const [emailNotifications, setEmailNotifications] = useState<PartnerEmailNotification[]>([]);
 
   const verifyAndRegister = useCallback(async (value: string): Promise<{ ok: boolean; error?: string }> => {
     setVerifying(true);
@@ -170,9 +199,10 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
         registeredAt: new Date().toISOString().slice(0, 10),
         verifiedByFns: true,
         taxRegistrationDate: res.data.taxRegistrationDate,
+        approvalStatus: "contacts_required",
       };
       setProfile(p);
-      console.log("[PartnersProvider] Registered", p.inn);
+      console.log("[PartnersProvider] FNS verified", p.inn);
       return { ok: true };
     } catch (e) {
       console.log("[PartnersProvider] verify error", e);
@@ -181,6 +211,104 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
       setVerifying(false);
     }
   }, []);
+
+  const submitContacts = useCallback((data: { email: string; phone: string; telegram: string }) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const updated: PartnerProfile = {
+        ...prev,
+        email: data.email.trim(),
+        phone: data.phone.trim(),
+        telegram: data.telegram.trim().replace(/^@/, ""),
+        approvalStatus: "pending_approval",
+      };
+      setPendingPartners((list) => {
+        const without = list.filter((p) => p.inn !== updated.inn);
+        return [...without, updated];
+      });
+      console.log("[PartnersProvider] Contacts submitted, awaiting admin approval", updated.inn);
+      return updated;
+    });
+  }, []);
+
+  const approvePartner = useCallback((inn: string) => {
+    const date = new Date().toISOString().slice(0, 10);
+    setPendingPartners((list) => list.filter((p) => p.inn !== inn));
+    setProfile((prev) => (prev && prev.inn === inn ? { ...prev, approvalStatus: "approved" as const, approvedAt: date } : prev));
+    setEmailNotifications((list) => {
+      const target = pendingPartners.find((p) => p.inn === inn);
+      if (!target || !target.email) return list;
+      return [
+        ...list,
+        {
+          id: `mail-${Date.now()}`,
+          partnerInn: inn,
+          email: target.email,
+          subject: "Ваш партнёрский аккаунт YAVOY подтверждён",
+          body: `Здравствуйте! Ваш аккаунт партнёра (ИНН ${inn}) успешно подтверждён администратором YAVOY. Теперь вы можете публиковать экскурсии и принимать бронирования.`,
+          sentAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+        },
+      ];
+    });
+    console.log("[PartnersProvider] Partner approved", inn);
+  }, [pendingPartners]);
+
+  const rejectPartner = useCallback((inn: string, reason?: string) => {
+    setPendingPartners((list) => list.filter((p) => p.inn !== inn));
+    setProfile((prev) => (prev && prev.inn === inn ? { ...prev, approvalStatus: "rejected" as const, rejectionReason: reason } : prev));
+    setEmailNotifications((list) => {
+      const target = pendingPartners.find((p) => p.inn === inn);
+      if (!target || !target.email) return list;
+      return [
+        ...list,
+        {
+          id: `mail-${Date.now()}`,
+          partnerInn: inn,
+          email: target.email,
+          subject: "Заявка партнёра YAVOY отклонена",
+          body: `Здравствуйте! К сожалению, ваша заявка партнёра (ИНН ${inn}) отклонена.${reason ? ` Причина: ${reason}` : ""} Вы можете связаться с поддержкой для уточнения.`,
+          sentAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+        },
+      ];
+    });
+    console.log("[PartnersProvider] Partner rejected", inn);
+  }, [pendingPartners]);
+
+  const updateRegistrationText = useCallback((text: string) => {
+    setRegistrationText(text);
+  }, []);
+
+  const updateLegalDoc = useCallback((key: LegalDocKey, patch: { title?: string; body?: string }, notify: boolean) => {
+    const today = new Date().toISOString().slice(0, 10);
+    let updatedDoc: LegalDocContent | null = null;
+    setLegalDocs((prev) => {
+      const next = { ...prev[key], ...patch, updatedAt: today } as LegalDocContent;
+      updatedDoc = next;
+      return { ...prev, [key]: next };
+    });
+    if (notify) {
+      const title = patch.title ?? updatedDoc?.title ?? key;
+      const recipients: PartnerProfile[] = [
+        ...(profile && profile.email ? [profile] : []),
+        ...pendingPartners.filter((p) => p.email),
+      ];
+      if (recipients.length === 0) {
+        console.log("[PartnersProvider] No partner emails to notify");
+        return;
+      }
+      const sentAt = new Date().toISOString().replace("T", " ").slice(0, 16);
+      const mails: PartnerEmailNotification[] = recipients.map((r, i) => ({
+        id: `mail-${Date.now()}-${i}`,
+        partnerInn: r.inn,
+        email: r.email as string,
+        subject: `Обновление документа: ${title}`,
+        body: `Здравствуйте! Документ «${title}» был обновлён администратором YAVOY ${today}. Пожалуйста, ознакомьтесь с новой версией в кабинете партнёра.`,
+        sentAt,
+      }));
+      setEmailNotifications((list) => [...list, ...mails]);
+      console.log("[PartnersProvider] Notified", mails.length, "partners about", key);
+    }
+  }, [profile, pendingPartners]);
 
   const logout = useCallback(() => {
     setProfile(null);
@@ -277,8 +405,10 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
     () => ({
       profile,
       isRegistered: profile !== null,
+      isApproved: profile?.approvalStatus === "approved",
       verifying,
       verifyAndRegister,
+      submitContacts,
       logout,
       tours,
       submitTour,
@@ -294,7 +424,15 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
       rejectReply,
       pendingReplies,
       stats,
+      registrationText,
+      updateRegistrationText,
+      legalDocs,
+      updateLegalDoc,
+      pendingPartners,
+      approvePartner,
+      rejectPartner,
+      emailNotifications,
     }),
-    [profile, verifying, verifyAndRegister, logout, tours, submitTour, guests, transactions, chat, sendChatMessage, ownerReviews, reviews, partnerRating, submitReviewReply, approveReply, rejectReply, pendingReplies, stats],
+    [profile, verifying, verifyAndRegister, submitContacts, logout, tours, submitTour, guests, transactions, chat, sendChatMessage, ownerReviews, reviews, partnerRating, submitReviewReply, approveReply, rejectReply, pendingReplies, stats, registrationText, updateRegistrationText, legalDocs, updateLegalDoc, pendingPartners, approvePartner, rejectPartner, emailNotifications],
   );
 });

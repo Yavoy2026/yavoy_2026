@@ -210,6 +210,8 @@ export interface AdminChatMessage {
 
 export type PartnerEntityType = "company" | "ip" | "self_employed";
 
+export type PartnerApprovalStatus = "contacts_required" | "pending_approval" | "approved" | "rejected";
+
 export interface PartnerProfile {
   inn: string;
   ogrn?: string;
@@ -220,6 +222,29 @@ export interface PartnerProfile {
   registeredAt: string;
   verifiedByFns: boolean;
   taxRegistrationDate?: string;
+  email?: string;
+  phone?: string;
+  telegram?: string;
+  approvalStatus: PartnerApprovalStatus;
+  rejectionReason?: string;
+  approvedAt?: string;
+}
+
+export type LegalDocKey = "terms" | "privacy" | "offer";
+
+export interface LegalDocContent {
+  title: string;
+  body: string;
+  updatedAt: string;
+}
+
+export interface PartnerEmailNotification {
+  id: string;
+  partnerInn: string;
+  email: string;
+  subject: string;
+  body: string;
+  sentAt: string;
 }
 
 export interface PartnerMediaItem {
