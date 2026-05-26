@@ -1076,7 +1076,8 @@ const styles = StyleSheet.create({
   legalText: { fontSize: 12, lineHeight: 18 },
   legalLink: { fontSize: 12, fontWeight: "700" as const, textDecorationLine: "underline" as const, lineHeight: 18 },
 
-  docModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center" as const, padding: 16 },
+  docModalOverlay: { flex: 1, justifyContent: "center" as const, padding: 16 },
+  docModalBackdrop: { position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.55)" },
   docModalCard: { borderRadius: 18, height: "86%" as const, overflow: "hidden" as const, flexDirection: "column" as const },
   docModalScroll: { flex: 1 },
   docModalHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
@@ -1159,8 +1160,9 @@ function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModa
   if (!doc) return null;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.docModalOverlay} onPress={onClose}>
-        <Pressable style={[styles.docModalCard, { backgroundColor: colors.surface }]} onPress={(e) => e.stopPropagation()}>
+      <View style={styles.docModalOverlay}>
+        <Pressable style={styles.docModalBackdrop} onPress={onClose} />
+        <View style={[styles.docModalCard, { backgroundColor: colors.surface }]}>
           <View style={[styles.docModalHeader, { borderBottomColor: colors.border }]}>
             <View style={[styles.docModalIcon, { backgroundColor: colors.tealSoft }]}>
               <FileText size={16} color={colors.teal} />
@@ -1178,8 +1180,8 @@ function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModa
               <Text style={styles.docModalFooterText}>Закрыть</Text>
             </TouchableOpacity>
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
