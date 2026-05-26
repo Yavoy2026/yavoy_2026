@@ -337,31 +337,44 @@ export default function PartnerScreen() {
               </View>
               <Text style={[styles.regDesc, { color: colors.textSecondary }]}>Эти данные нужны администратору для проверки и связи с вами.</Text>
               <TextInput
-                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, letterSpacing: 0 }]}
+                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
                 placeholder="Email"
                 placeholderTextColor={colors.textMuted}
                 value={emailInput}
                 onChangeText={(t) => { setEmailInput(t); setContactsError(null); }}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
                 keyboardType="email-address"
+                editable={true}
+                returnKeyType="next"
                 testID="partner-email-input"
               />
               <TextInput
-                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10, letterSpacing: 0 }]}
+                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10 }]}
                 placeholder="Телефон (+7 ...)"
                 placeholderTextColor={colors.textMuted}
                 value={phoneInput}
                 onChangeText={(t) => { setPhoneInput(t); setContactsError(null); }}
                 keyboardType="phone-pad"
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+                editable={true}
+                returnKeyType="next"
                 testID="partner-phone-input"
               />
               <TextInput
-                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10, letterSpacing: 0 }]}
+                style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, marginTop: 10 }]}
                 placeholder="Telegram (никнейм без @)"
                 placeholderTextColor={colors.textMuted}
                 value={telegramInput}
                 onChangeText={(t) => { setTelegramInput(t); setContactsError(null); }}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                editable={true}
+                returnKeyType="done"
                 testID="partner-telegram-input"
               />
               {contactsError ? (
@@ -948,7 +961,7 @@ const styles = StyleSheet.create({
   regHeader: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, marginBottom: 8 },
   regHeaderText: { fontSize: 16, fontWeight: "700" as const },
   regDesc: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
-  regInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, letterSpacing: 1 },
+  regInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
   errorRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6, marginTop: 8 },
   errorText: { fontSize: 12, fontWeight: "600" as const, flex: 1 },
   regSubmitBtn: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 14 },
