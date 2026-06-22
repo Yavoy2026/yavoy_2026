@@ -20,6 +20,11 @@
       "name": "YaVoy Travel Group Web",
       "path": "web",
       "framework": "web"
+    },
+    {
+      "name": "YaVoy Travel Group",
+      "path": "android",
+      "framework": "kotlin"
     }
   ]
 }
