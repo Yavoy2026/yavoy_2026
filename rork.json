@@ -10,6 +10,11 @@
       "name": "YaVoy Travel Group",
       "path": "expo",
       "framework": "react-native"
+    },
+    {
+      "name": "YaVoy Travel Group",
+      "path": "ios",
+      "framework": "swift"
     }
   ]
 }
