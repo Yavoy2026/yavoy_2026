@@ -15,6 +15,11 @@
       "name": "YaVoy Travel Group",
       "path": "ios",
       "framework": "swift"
+    },
+    {
+      "name": "YaVoy Travel Group Web",
+      "path": "web",
+      "framework": "web"
     }
   ]
 }
