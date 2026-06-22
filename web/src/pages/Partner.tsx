@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Building2, CheckCircle2, Plus, Users, Receipt, Star,
-  ShieldCheck, Loader2, MessageSquare, TrendingUp,
+  ShieldCheck, Loader2, MessageSquare, TrendingUp, LogOut,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { tours } from "@/data/tours";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { PartnerTourSubmission, PartnerGuest, PartnerTransaction } from "@/types";
@@ -38,6 +39,7 @@ const reviews = [
 
 export default function Partner() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [stage, setStage] = useState<Stage>("register");
   const [tab, setTab] = useState<Tab>("tours");
   const [inn, setInn] = useState("");
@@ -88,6 +90,28 @@ export default function Partner() {
       <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
         <ArrowLeft size={18} /> Назад
       </button>
+
+      {authLoading ? (
+        <div className="flex items-center justify-center py-16"><Loader2 size={32} className="animate-spin text-teal" /></div>
+      ) : !isAuthenticated ? (
+        <div className="mx-auto max-w-xl rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
+          <Building2 size={48} className="mx-auto mb-4 text-muted-foreground" />
+          <h2 className="mb-2 text-xl font-extrabold">Требуется авторизация</h2>
+          <p className="mb-4 text-sm text-muted-foreground">Войдите в аккаунт, чтобы получить доступ к партнёрскому кабинету.</p>
+          <button onClick={() => navigate("/auth")} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">Войти / Регистрация</button>
+        </div>
+      ) : (
+        <>
+          {isAuthenticated && user && (
+            <div className="mb-4 flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{user.first_name?.[0] ?? "?"}</div>
+              <div className="flex-1">
+                <div className="font-semibold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</div>
+                <div className="text-xs text-muted-foreground">{user.email} · {user.role === "admin" ? "Админ" : user.role === "moderator" ? "Модератор" : "Пользователь"}</div>
+              </div>
+              <button onClick={async () => { await logout(); navigate("/"); }} className="rounded-lg bg-coral/10 p-2 text-coral transition-colors hover:bg-coral/20"><LogOut size={16} /></button>
+            </div>
+          )}
 
       {stage === "register" && (
         <div className="mx-auto max-w-xl">
@@ -162,6 +186,9 @@ export default function Partner() {
             Перейти в кабинет (демо)
           </button>
         </div>
+      )}
+
+        </>
       )}
 
       {stage === "cabinet" && (

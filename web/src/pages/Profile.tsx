@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import {
   Heart, Receipt, ChevronRight, ChevronDown, Plane, Gift, Share2, Video,
   CheckCircle, Clock, XCircle, Building2, ShieldCheck, Sun, Moon, Smartphone,
-  Coins, Upload, Award, MessageSquare, Star,
+  Coins, Upload, Award, MessageSquare, Star, LogOut, Edit3, Camera,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { tours, transactions } from "@/data/tours";
 import { cityNameMap } from "@/data/cities";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getPhotoUrl } from "@/services/api";
 
 type Section = "favorites" | "transactions" | "reviews" | "reels" | "promos" | null;
 
@@ -21,6 +23,7 @@ const userReviews = [
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading, logout, updateMyProfile } = useAuth();
   const { favorites, points, themeMode, setThemeMode, moderationReels, submitReel } = useApp();
   const [open, setOpen] = useState<Section>(null);
   const [reelTitle, setReelTitle] = useState("");
@@ -42,13 +45,36 @@ export default function Profile() {
     <Layout>
       {/* Header card */}
       <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-6 text-white shadow-xl">
-        <div className="flex items-center gap-4">
-          <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop" alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-teal" />
-          <div>
-            <h1 className="text-xl font-extrabold">Александр Иванов</h1>
-            <p className="text-sm text-white/60">alex@yavoy.ru</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-2 border-teal border-t-transparent" /></div>
+        ) : isAuthenticated && user ? (
+          <>
+            <div className="flex items-center gap-4">
+              {user.photo ? (
+                <img src={getPhotoUrl(user.photo)} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-teal" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal/20 text-2xl font-extrabold text-teal-light ring-2 ring-teal">
+                  {user.first_name?.[0] ?? "?"}
+                </div>
+              )}
+              <div>
+                <h1 className="text-xl font-extrabold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</h1>
+                <p className="text-sm text-white/60">{user.email}</p>
+                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "moderator" ? "bg-mint/20 text-mint" : "bg-white/10 text-white/70")}>
+                  {user.role === "admin" ? "Админ" : user.role === "moderator" ? "Модератор" : "Пользователь"}
+                </span>
+              </div>
+            </div>
+            <button onClick={async () => { await logout(); navigate("/"); }} className="mt-4 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition-colors hover:bg-white/20">
+              <LogOut size={15} /> Выйти
+            </button>
+          </>
+        ) : (
+          <div className="text-center py-4">
+            <p className="mb-3 text-white/70">Войдите, чтобы увидеть свой профиль</p>
+            <button onClick={() => navigate("/auth")} className="rounded-xl bg-teal px-6 py-2.5 font-bold text-white">Войти / Регистрация</button>
           </div>
-        </div>
+        )}
         <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-navy-light p-4">
           <Stat value={String(transactions.length)} label="Поездки" color="text-teal-light" />
           <Stat value={String(points)} label="Баллы" color="text-gold" />

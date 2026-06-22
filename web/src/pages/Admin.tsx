@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ShieldCheck, Check, X, Video, Building2, MessageSquare, Users, FileText,
+  UserCheck, UserX, Shield, Loader2,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { tours } from "@/data/tours";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { UserProfile } from "@/services/api";
 
 type Tab = "tours" | "reels" | "partners" | "reviews" | "users" | "docs";
 
@@ -33,12 +36,16 @@ const users = [
 
 export default function Admin() {
   const navigate = useNavigate();
+  const { user, updateUserRole, activateUserById, deactivateUserById } = useAuth();
   const { moderationReels } = useApp();
   const [tab, setTab] = useState<Tab>("tours");
   const [tourQueue, setTourQueue] = useState(pendingTours);
   const [partnerQueue, setPartnerQueue] = useState(pendingPartners);
   const [replyQueue, setReplyQueue] = useState(pendingReplies);
   const [docText, setDocText] = useState("Условия использования сервиса YAVOY…");
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+
+  const isAdmin = user?.role === "admin" || user?.role === "moderator";
 
   const tabs: { k: Tab; l: string; icon: React.ComponentType<{ size: number; className?: string }>; n?: number }[] = [
     { k: "tours", l: "Туры", icon: Check, n: tourQueue.length },
@@ -54,6 +61,15 @@ export default function Admin() {
       <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
         <ArrowLeft size={18} /> Назад
       </button>
+
+      {!isAdmin ? (
+        <div className="rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
+          <ShieldCheck size={48} className="mx-auto mb-4 text-muted-foreground" />
+          <h2 className="mb-2 text-xl font-extrabold">Доступ запрещён</h2>
+          <p className="text-sm text-muted-foreground">Только администраторы и модераторы могут просматривать эту страницу.</p>
+        </div>
+      ) : (
+      <>
 
       <div className="mb-6 flex items-center gap-3 rounded-3xl bg-navy p-6 text-white">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20"><ShieldCheck size={26} className="text-gold" /></div>
@@ -144,6 +160,12 @@ export default function Admin() {
 
       {tab === "users" && (
         <div className="space-y-3">
+          <div className="mb-3 rounded-2xl bg-background p-3 ring-1 ring-border/60">
+            <p className="text-sm text-muted-foreground">
+              <Shield size={14} className="mr-1 inline text-gold" />
+              Управление ролями пользователей. Изменения применяются мгновенно через API бэкенда.
+            </p>
+          </div>
           {users.map((u) => (
             <div key={u.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{u.name.split(" ").map((n) => n[0]).join("")}</div>
@@ -151,9 +173,66 @@ export default function Admin() {
                 <div className="font-semibold">{u.name}</div>
                 <div className="text-xs text-muted-foreground">{u.email} · {u.city} · {u.tours} поездок</div>
               </div>
-              <span className={cn("rounded-lg px-2.5 py-1 text-xs font-semibold", u.role === "manager" ? "bg-gold/15 text-gold" : "bg-secondary text-muted-foreground")}>
-                {u.role === "manager" ? "Менеджер" : "Пользователь"}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={u.role}
+                  onChange={async (e) => {
+                    const newRole = e.target.value as UserProfile["role"];
+                    try {
+                      setActionLoading((p) => ({ ...p, [u.id]: true }));
+                      await updateUserRole(u.id, newRole);
+                      toast.success(`Роль изменена на «${newRole === "admin" ? "Админ" : newRole === "moderator" ? "Модератор" : "Пользователь"}»`);
+                    } catch {
+                      toast.error("Ошибка при изменении роли");
+                    } finally {
+                      setActionLoading((p) => ({ ...p, [u.id]: false }));
+                    }
+                  }}
+                  disabled={actionLoading[u.id]}
+                  className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-teal"
+                >
+                  <option value="user">Пользователь</option>
+                  <option value="moderator">Модератор</option>
+                  <option value="admin">Админ</option>
+                </select>
+                {actionLoading[u.id] && <Loader2 size={14} className="animate-spin text-teal" />}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={async () => {
+                    try {
+                      setActionLoading((p) => ({ ...p, [`act-${u.id}`]: true }));
+                      await activateUserById(u.id);
+                      toast.success(`Пользователь ${u.name} активирован`);
+                    } catch {
+                      toast.error("Ошибка активации");
+                    } finally {
+                      setActionLoading((p) => ({ ...p, [`act-${u.id}`]: false }));
+                    }
+                  }}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-mint/10 text-mint transition-colors hover:bg-mint/20"
+                  title="Активировать"
+                >
+                  {actionLoading[`act-${u.id}`] ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      setActionLoading((p) => ({ ...p, [`deact-${u.id}`]: true }));
+                      await deactivateUserById(u.id);
+                      toast.success(`Пользователь ${u.name} деактивирован`);
+                    } catch {
+                      toast.error("Ошибка деактивации");
+                    } finally {
+                      setActionLoading((p) => ({ ...p, [`deact-${u.id}`]: false }));
+                    }
+                  }}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 text-coral transition-colors hover:bg-coral/20"
+                  title="Деактивировать"
+                >
+                  {actionLoading[`deact-${u.id}`] ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -174,6 +253,8 @@ export default function Admin() {
             <button onClick={() => toast.success("Сохранено и отправлено уведомление партнёрам")} className="rounded-xl bg-teal px-5 py-2.5 text-sm font-semibold text-white">Сохранить и уведомить</button>
           </div>
         </div>
+      )}
+      </>
       )}
     </Layout>
   );

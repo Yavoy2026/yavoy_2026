@@ -1,23 +1,41 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, Mail, Lock, User as UserIcon, ArrowLeft } from "lucide-react";
+import { Compass, Mail, Lock, User as UserIcon, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/services/api";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { login, register } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim() || (mode === "signup" && !name.trim())) {
       toast.error("Заполните все поля");
       return;
     }
-    toast.success(mode === "signin" ? "Вход выполнен" : "Аккаунт создан");
-    navigate("/profile");
+    setLoading(true);
+    try {
+      if (mode === "signin") {
+        await login(email.trim(), password);
+        toast.success("Вход выполнен");
+      } else {
+        await register(email.trim(), password, name.trim());
+        toast.success("Аккаунт создан");
+      }
+      navigate("/profile");
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Ошибка соединения с сервером";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,8 +67,8 @@ export default function Auth() {
           )}
           <Field icon={Mail} placeholder="Email" type="email" value={email} onChange={setEmail} />
           <Field icon={Lock} placeholder="Пароль" type="password" value={password} onChange={setPassword} />
-          <button type="submit" className="w-full rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform hover:scale-[1.02]">
-            {mode === "signin" ? "Войти" : "Зарегистрироваться"}
+          <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform enabled:hover:scale-[1.02] disabled:opacity-60">
+            {loading ? <><Loader2 size={18} className="animate-spin" /> Загрузка…</> : (mode === "signin" ? "Войти" : "Зарегистрироваться")}
           </button>
         </form>
 
