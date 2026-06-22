@@ -33,6 +33,7 @@ import {
   Save,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import { useAdmin } from "@/providers/AdminProvider";
 import { useReels } from "@/providers/ReelsProvider";
 import { usePartners } from "@/providers/PartnersProvider";
@@ -59,6 +60,7 @@ const ROLE_LABEL: Record<UserRole, string> = { user: "Пользователь",
 export default function AdminScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const auth = useAuth();
   const admin = useAdmin();
   const { reels, moderationReels, approveReel, rejectReel } = useReels();
   const partners = usePartners();
@@ -89,13 +91,16 @@ export default function AdminScreen() {
 
   const handleLogout = useCallback(() => {
     admin.logout();
+    auth.logout().catch(() => {});
     router.back();
-  }, [admin, router]);
+  }, [admin, auth, router]);
+
+  const isBackendAdmin = auth.isAuthenticated && (auth.role === "admin" || auth.role === "moderator");
 
   const stats = admin.stats;
   const publishedReels = useMemo(() => reels.filter((r) => r.status === "published").length, [reels]);
 
-  if (!admin.isAuthenticated) {
+  if (!admin.isAuthenticated && !isBackendAdmin) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ title: "Админ-панель", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: "#FFFFFF" }} />
@@ -105,7 +110,17 @@ export default function AdminScreen() {
               <ShieldCheck size={36} color={colors.teal} />
             </View>
             <Text style={[styles.loginTitle, { color: colors.text }]}>{"Вход в панель администратора"}</Text>
-            <Text style={[styles.loginSubtitle, { color: colors.textMuted }]}>{"Используйте свои административные данные"}</Text>
+            {auth.isAuthenticated && !isBackendAdmin ? (
+              <Text style={[styles.loginSubtitle, { color: colors.coral }]}>
+                {"Ваша роль не позволяет войти в админ-панель. Требуется admin или moderator."}
+              </Text>
+            ) : (
+              <Text style={[styles.loginSubtitle, { color: colors.textMuted }]}>
+                {auth.isAuthenticated
+                  ? "Войдите под учётной записью администратора"
+                  : "Используйте свои административные данные"}
+              </Text>
+            )}
             <TextInput
               style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
               placeholder="Логин"

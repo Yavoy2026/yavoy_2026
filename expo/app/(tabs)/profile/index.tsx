@@ -56,6 +56,8 @@ import {
 import { useRouter } from "expo-router";
 import { BellRing, BellOff, Tag, Star as StarIcon, Navigation, Megaphone } from "lucide-react-native";
 import { useTheme, ThemeMode } from "@/providers/ThemeProvider";
+import { useAuth } from "@/providers/AuthProvider";
+import { getPhotoUrl } from "@/services/api";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useBookings } from "@/providers/BookingsProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
@@ -200,6 +202,7 @@ const APP_VERSION = "2.1.0";
 export default function ProfileScreen() {
   const router = useRouter();
   const { colors, themeMode, setTheme } = useTheme();
+  const auth = useAuth();
   const { favoriteIds } = useFavorites();
   const { bookings, upcomingBookings, completedBookings } = useBookings();
   const { points, addPromoPoints } = useLoyalty();
@@ -318,14 +321,26 @@ export default function ProfileScreen() {
       <View style={[styles.profileCard, { backgroundColor: colors.headerBg }]}>
         <View style={[styles.avatarContainer, { borderColor: colors.teal }]}>
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop" }}
+            source={{
+              uri: auth.user?.photo
+                ? getPhotoUrl(auth.user.photo)
+                : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+            }}
             style={styles.avatar}
             contentFit="cover"
           />
-          <View style={[styles.avatarBadge, { backgroundColor: colors.green, borderColor: colors.headerBg }]} />
+          {auth.isAuthenticated && (
+            <View style={[styles.avatarBadge, { backgroundColor: colors.green, borderColor: colors.headerBg }]} />
+          )}
         </View>
-        <Text style={styles.userName}>{"Иван Петров"}</Text>
-        <Text style={[styles.userEmail, { color: colors.textMuted }]}>{"ivan.petrov@email.com"}</Text>
+        <Text style={styles.userName}>
+          {auth.isAuthenticated
+            ? `${auth.user?.first_name ?? ""} ${auth.user?.last_name ?? ""}`.trim() || "Пользователь"
+            : "Гость"}
+        </Text>
+        <Text style={[styles.userEmail, { color: colors.textMuted }]}>
+          {auth.isAuthenticated ? auth.user?.email ?? "" : "Войдите, чтобы открыть все возможности"}
+        </Text>
 
         <View style={[styles.statsRow, { backgroundColor: colors.navyLight }]}>
           <View style={styles.statItem}>
@@ -934,26 +949,46 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.menuItem, { borderBottomColor: colors.border }]}
-          activeOpacity={0.7}
-          onPress={() => router.push("/admin")}
-          testID="menu-admin"
-        >
-          <ShieldCheck size={20} color={colors.gold} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Админ-панель"}</Text>
-          <ChevronRight size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+        {(auth.role === "admin" || auth.role === "moderator") && (
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: colors.border }]}
+            activeOpacity={0.7}
+            onPress={() => router.push("/admin")}
+            testID="menu-admin"
+          >
+            <ShieldCheck size={20} color={colors.gold} />
+            <Text style={[styles.menuText, { color: colors.text }]}>{"Админ-панель"}</Text>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
           <HelpCircle size={20} color={colors.textSecondary} />
           <Text style={[styles.menuText, { color: colors.text }]}>{"Помощь"}</Text>
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuItem, styles.menuItemLast]} activeOpacity={0.7}>
-          <LogOut size={20} color={colors.red} />
-          <Text style={[styles.menuText, { color: colors.red }]}>{"Выйти"}</Text>
-          <ChevronRight size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+        {auth.isAuthenticated ? (
+          <TouchableOpacity
+            style={[styles.menuItem, styles.menuItemLast]}
+            activeOpacity={0.7}
+            onPress={() => {
+              auth.logout().catch(() => {});
+            }}
+          >
+            <LogOut size={20} color={colors.red} />
+            <Text style={[styles.menuText, { color: colors.red }]}>{"Выйти"}</Text>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.menuItem, styles.menuItemLast]}
+            activeOpacity={0.7}
+            onPress={() => router.push("/auth/login")}
+          >
+            <LogOut size={20} color={colors.teal} />
+            <Text style={[styles.menuText, { color: colors.teal }]}>{"Войти / Зарегистрироваться"}</Text>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <Modal visible={!!voucherBooking} transparent animationType="slide" onRequestClose={() => setVoucherBooking(null)}>

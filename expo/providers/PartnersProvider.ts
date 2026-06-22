@@ -280,14 +280,13 @@ export const [PartnersProvider, usePartners] = createContextHook(() => {
 
   const updateLegalDoc = useCallback((key: LegalDocKey, patch: { title?: string; body?: string }, notify: boolean) => {
     const today = new Date().toISOString().slice(0, 10);
-    let updatedDoc: LegalDocContent | null = null;
+    const docTitle = patch.title ?? legalDocs[key]?.title;
     setLegalDocs((prev) => {
       const next = { ...prev[key], ...patch, updatedAt: today } as LegalDocContent;
-      updatedDoc = next;
       return { ...prev, [key]: next };
     });
     if (notify) {
-      const title = patch.title ?? updatedDoc?.title ?? key;
+      const title = docTitle ?? key;
       const recipients: PartnerProfile[] = [
         ...(profile && profile.email ? [profile] : []),
         ...pendingPartners.filter((p) => p.email),

@@ -18,6 +18,7 @@ import { ReelsProvider } from "@/providers/ReelsProvider";
 import { AdminProvider } from "@/providers/AdminProvider";
 import { SupportProvider } from "@/providers/SupportProvider";
 import { PartnersProvider } from "@/providers/PartnersProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -58,6 +59,7 @@ function RootLayoutNav() {
       />
       <Stack.Screen name="support" options={{ presentation: "card", animation: "slide_from_right" }} />
       <Stack.Screen name="partner" options={{ presentation: "card", animation: "slide_from_right" }} />
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -73,34 +75,36 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
-          <FavoritesProvider>
-            <FavoriteCitiesProvider>
-              <LocationProvider>
-                <ViewedToursProvider>
-                  <BookingsProvider>
-                    <LoyaltyProvider>
-                      <CertificatesProvider>
-                        <PromoCodesProvider>
-                          <ReelsProvider>
-                            <AdminProvider>
-                              <SupportProvider>
-                                <PartnersProvider>
-                                <ScrollToTopProvider>
-                                  <ThemedStatusBar />
-                                  <RootLayoutNav />
-                                </ScrollToTopProvider>
-                                </PartnersProvider>
-                              </SupportProvider>
-                            </AdminProvider>
-                          </ReelsProvider>
-                        </PromoCodesProvider>
-                      </CertificatesProvider>
-                    </LoyaltyProvider>
-                  </BookingsProvider>
-                </ViewedToursProvider>
-              </LocationProvider>
-            </FavoriteCitiesProvider>
-          </FavoritesProvider>
+          <AuthProvider>
+            <FavoritesProvider>
+              <FavoriteCitiesProvider>
+                <LocationProvider>
+                  <ViewedToursProvider>
+                    <BookingsProvider>
+                      <LoyaltyProvider>
+                        <CertificatesProvider>
+                          <PromoCodesProvider>
+                            <ReelsProvider>
+                              <AdminProvider>
+                                <SupportProvider>
+                                  <PartnersProvider>
+                                    <ScrollToTopProvider>
+                                      <ThemedStatusBar />
+                                      <RootLayoutNav />
+                                    </ScrollToTopProvider>
+                                  </PartnersProvider>
+                                </SupportProvider>
+                              </AdminProvider>
+                            </ReelsProvider>
+                          </PromoCodesProvider>
+                        </CertificatesProvider>
+                      </LoyaltyProvider>
+                    </BookingsProvider>
+                  </ViewedToursProvider>
+                </LocationProvider>
+              </FavoriteCitiesProvider>
+            </FavoritesProvider>
+          </AuthProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
