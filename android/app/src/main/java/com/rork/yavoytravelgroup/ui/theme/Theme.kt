@@ -11,7 +11,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 @Composable
 fun AppTheme(
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    themeMode: ThemeMode = ThemeMode.DARK,
     content: @Composable () -> Unit
 ) {
     val systemDark = isSystemInDarkTheme()

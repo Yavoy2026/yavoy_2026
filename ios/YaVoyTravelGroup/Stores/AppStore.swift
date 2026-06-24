@@ -10,7 +10,7 @@ import Observation
 @MainActor
 @Observable
 final class AppStore {
-    var themeMode: AppThemeMode = .system {
+    var themeMode: AppThemeMode = .dark {
         didSet { persist() }
     }
     var favoriteTourIds: Set<String> = [] {

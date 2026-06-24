@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class AppUiState(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.DARK,
     val favoriteTourIds: Set<String> = emptySet(),
     val favoriteCityIds: Set<String> = emptySet(),
     val loyaltyPoints: Int = 4250,

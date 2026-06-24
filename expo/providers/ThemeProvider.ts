@@ -19,7 +19,7 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(THEME_KEY);
       console.log("[ThemeProvider] Loaded theme mode:", stored);
-      return (stored as ThemeMode) || "system";
+      return (stored as ThemeMode) || "dark";
     },
   });
 

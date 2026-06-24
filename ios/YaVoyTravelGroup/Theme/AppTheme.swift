@@ -86,7 +86,7 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
 
 /// Resolves the active palette based on the chosen mode and the system color scheme.
 struct ThemeKey: EnvironmentKey {
-    static let defaultValue: ThemePalette = .light
+    static let defaultValue: ThemePalette = .dark
 }
 
 extension EnvironmentValues {

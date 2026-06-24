@@ -42,7 +42,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>(() => load<string[]>(FAV_KEY, ["1", "3"]));
   const [favoriteCities, setFavoriteCities] = useState<string[]>(() => load<string[]>(FAV_CITY_KEY, ["spb"]));
   const [points, setPoints] = useState<number>(() => load<number>(POINTS_KEY, 3450));
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => load<ThemeMode>(THEME_KEY, "light"));
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => load<ThemeMode>(THEME_KEY, "dark"));
   const [systemDark, setSystemDark] = useState<boolean>(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
   const [reels, setReels] = useState<TravelReel[]>(initialReels);
 

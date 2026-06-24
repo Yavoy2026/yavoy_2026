@@ -138,5 +138,5 @@ const darkColors: ThemeColors = {
 
 export { lightColors, darkColors };
 
-const Colors = lightColors;
+const Colors = darkColors;
 export default Colors;
