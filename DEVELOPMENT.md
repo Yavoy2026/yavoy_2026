@@ -8,9 +8,9 @@
 ```
 apps/backend/        Бэкенд: Fastify 5 + Zod + Drizzle + PostgreSQL (основная разработка)
 packages/contracts/  Общие zod-схемы API (бэкенд + клиенты)
-expo/                Мобильное приложение (Expo, iOS/Android; основной фронт)
+apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
 web/                 Vite-витрина — ЗАМОРОЖЕНА на моках (демо https://tur-ekskursiya.rork.app)
-ios/ android/        Нативные версии — АРХИВ, не развиваются
+                     (нативные ios/ и android/ — в ветке archive/native-apps)
 deploy/              Прод: docker-compose.prod.yml + Caddyfile
 ```
 
@@ -37,7 +37,7 @@ Swagger со всеми эндпоинтами: `http://localhost:<PORT>/docs`.
 Expo web против локального API:
 
 ```bash
-cd expo
+cd apps/expo
 npm install --legacy-peer-deps
 EXPO_PUBLIC_API_URL=http://localhost:3002/v1 npx expo start --web --port 8081
 ```
@@ -90,7 +90,7 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 - Оставшиеся моки: `mocks/bookings.ts` (транзакции — до M4), `mocks/reels.ts` (Reels — backlog).
 - **RN-web грабли**: вложенный Touchable/Pressable внутри другого Touchable не получает клики
   в браузере — кнопки поверх карточек размещать сиблингами тач-области (см. `CitySelector.tsx`).
-- Проверка типов: `npx tsc --noEmit` в `expo/`.
+- Проверка типов: `npx tsc --noEmit` в `apps/expo/`.
 
 ## CORS, заголовки и прочие уроки локального теста
 

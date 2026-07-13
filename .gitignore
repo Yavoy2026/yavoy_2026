@@ -11,4 +11,4 @@ coverage/
 .DS_Store
 
 # npm-артефакт: канонический лок Expo — bun.lock
-expo/package-lock.json
+apps/expo/package-lock.json

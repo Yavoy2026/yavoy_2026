@@ -6,7 +6,7 @@ description: Запустить локальный стек YaVoy (Postgres + б
 # Локальный стек YaVoy
 
 Проверенная процедура (июль 2026, macOS). Стек: Postgres 16 (docker, порт **5434**),
-бэкенд `apps/backend` (Fastify, tsx), Expo web (`expo/`, Metro на 8081).
+бэкенд `apps/backend` (Fastify, tsx), Expo web (`apps/expo/`, Metro на 8081).
 
 ## Порты — главная ловушка
 
@@ -34,8 +34,8 @@ DATABASE_URL=postgres://yavoy:yavoy@localhost:5434/yavoy PORT=3002 NODE_ENV=deve
 # проверка: curl -s localhost:3002/v1/health  → {"status":"ok","db":true}
 # Swagger: http://localhost:3002/docs
 
-# 4. Expo web (фон, из expo/)
-cd ../../expo
+# 4. Expo web (фон, из apps/expo/)
+cd ../expo
 EXPO_PUBLIC_API_URL=http://localhost:3002/v1 npx expo start --web --port 8081
 # готовность: в логе "Web Bundled", curl -s -o /dev/null -w "%{http_code}" localhost:8081 → 200
 ```
