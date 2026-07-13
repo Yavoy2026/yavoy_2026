@@ -64,8 +64,6 @@ export default function AdminScreen() {
   const admin = useAdmin();
   const { reels, moderationReels, approveReel, rejectReel } = useReels();
   const partners = usePartners();
-  const [username, setUsername] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
   const [tab, setTab] = useState<Tab>("stats");
   const [chatInputUsers, setChatInputUsers] = useState<string>("");
   const [chatInputPartners, setChatInputPartners] = useState<string>("");
@@ -80,14 +78,6 @@ export default function AdminScreen() {
     setDocBodyDraft(partners.legalDocs[k].body);
   }, [partners.legalDocs]);
 
-  const handleLogin = useCallback(() => {
-    if (!admin.login(username, password)) {
-      Alert.alert("Ошибка входа", "Неверный логин или пароль");
-    } else {
-      setUsername("");
-      setPassword("");
-    }
-  }, [admin, username, password]);
 
   const handleLogout = useCallback(() => {
     admin.logout();
@@ -95,12 +85,12 @@ export default function AdminScreen() {
     router.back();
   }, [admin, auth, router]);
 
-  const isBackendAdmin = auth.isAuthenticated && (auth.role === "admin" || auth.role === "moderator");
+  const isBackendAdmin = auth.isAuthenticated && (auth.role === "admin" || auth.role === "manager");
 
   const stats = admin.stats;
   const publishedReels = useMemo(() => reels.filter((r) => r.status === "published").length, [reels]);
 
-  if (!admin.isAuthenticated && !isBackendAdmin) {
+  if (!isBackendAdmin) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ title: "Админ-панель", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: "#FFFFFF" }} />
@@ -112,7 +102,7 @@ export default function AdminScreen() {
             <Text style={[styles.loginTitle, { color: colors.text }]}>{"Вход в панель администратора"}</Text>
             {auth.isAuthenticated && !isBackendAdmin ? (
               <Text style={[styles.loginSubtitle, { color: colors.coral }]}>
-                {"Ваша роль не позволяет войти в админ-панель. Требуется admin или moderator."}
+                {"Ваша роль не позволяет войти в админ-панель. Требуется роль admin или manager."}
               </Text>
             ) : (
               <Text style={[styles.loginSubtitle, { color: colors.textMuted }]}>
@@ -121,28 +111,15 @@ export default function AdminScreen() {
                   : "Используйте свои административные данные"}
               </Text>
             )}
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-              placeholder="Логин"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={username}
-              onChangeText={setUsername}
-              testID="admin-login-user"
-            />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-              placeholder="Пароль"
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              testID="admin-login-password"
-            />
-            <TouchableOpacity style={[styles.loginBtn, { backgroundColor: colors.teal }]} onPress={handleLogin} activeOpacity={0.8} testID="admin-login-submit">
-              <Text style={styles.loginBtnText}>{"Войти"}</Text>
+            <TouchableOpacity
+              style={[styles.loginBtn, { backgroundColor: colors.teal }]}
+              onPress={() => router.push("/auth")}
+              activeOpacity={0.8}
+              testID="admin-login-submit"
+            >
+              <Text style={styles.loginBtnText}>{auth.isAuthenticated ? "Сменить аккаунт" : "Войти в аккаунт"}</Text>
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.loginBack} onPress={() => router.back()} activeOpacity={0.7}>
               <ChevronLeft size={16} color={colors.textMuted} />
               <Text style={[styles.loginBackText, { color: colors.textMuted }]}>{"Назад в профиль"}</Text>

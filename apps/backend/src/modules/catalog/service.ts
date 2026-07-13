@@ -2,7 +2,7 @@ import type { City, TourCard, TourDetail, TourListQuery, TourListResponse } from
 import type { Db } from "../../db/client.ts";
 import { badRequest, notFound } from "../../errors.ts";
 import type { tours } from "../../db/schema.ts";
-import { getTourById, listCities, listTours, type Cursor } from "./repo.ts";
+import { getTourById, listAllPublished, listCities, listTours, type Cursor } from "./repo.ts";
 
 type TourRow = typeof tours.$inferSelect;
 
@@ -87,12 +87,9 @@ export async function getTours(db: Db, query: TourListQuery): Promise<TourListRe
   };
 }
 
-export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
-  const row = await getTourById(db, id);
-  if (!row) throw notFound("tour_not_found", "Тур не найден");
-  const t = row.tour;
+function toDetail(t: TourRow, cityName: string): TourDetail {
   return {
-    ...toCard(t, row.cityName),
+    ...toCard(t, cityName),
     description: t.description,
     gallery: t.gallery,
     highlights: t.highlights,
@@ -113,5 +110,24 @@ export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
     is_instant_confirmation: t.isInstantConfirmation,
     is_free_cancellation: t.isFreeCancellation,
     reviews: [], // отзывы — M5
+  };
+}
+
+export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
+  const row = await getTourById(db, id);
+  if (!row) throw notFound("tour_not_found", "Тур не найден");
+  return toDetail(row.tour, row.cityName);
+}
+
+/**
+ * Bootstrap для мобильного приложения: весь опубликованный каталог одним запросом.
+ * Оправдано, пока каталог мал (десятки туров) и приложение фильтрует на клиенте;
+ * при росте каталога приложение переходит на GET /tours с серверными фильтрами.
+ */
+export async function getCatalogBundle(db: Db): Promise<{ cities: City[]; tours: TourDetail[] }> {
+  const [cityList, tourRows] = await Promise.all([getCities(db), listAllPublished(db)]);
+  return {
+    cities: cityList,
+    tours: tourRows.map((r) => toDetail(r.tour, r.cityName)),
   };
 }

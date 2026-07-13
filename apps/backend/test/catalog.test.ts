@@ -88,6 +88,18 @@ describe("GET /v1/tours", () => {
   });
 });
 
+describe("GET /v1/catalog", () => {
+  it("отдаёт города и полные туры одним ответом", async () => {
+    const res = await call({ method: "GET", url: "/v1/catalog" });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.cities).toHaveLength(2);
+    expect(body.tours).toHaveLength(3); // черновик не попадает
+    expect(body.tours[0].description).toBeTruthy(); // полная модель, не карточка
+    expect(body.tours[0].reviews).toEqual([]);
+  });
+});
+
 describe("GET /v1/tours/:id", () => {
   it("отдаёт детали с пустыми отзывами (M5)", async () => {
     const list = await call({ method: "GET", url: "/v1/tours" });

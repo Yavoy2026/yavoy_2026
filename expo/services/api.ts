@@ -1,26 +1,35 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
-const API_BASE = "https://yavay.ru/backend/api/v1";
+/**
+ * Базовый URL API YaVoy (apps/backend).
+ * Для устройства в локальной сети задайте EXPO_PUBLIC_API_URL=http://<LAN-IP>:3000/v1
+ */
+const API_BASE =
+  process.env.EXPO_PUBLIC_API_URL ??
+  (Platform.OS === "android" ? "http://10.0.2.2:3000/v1" : "http://localhost:3000/v1");
 
-const TOKENS_KEY = "yavoy_auth_tokens";
+const TOKENS_KEY = "yavoy_auth_tokens_v2";
 
 export interface Tokens {
   access_token: string;
   refresh_token: string;
-  expires_refresh: string;
+  access_expires_at: string;
+  refresh_expires_at: string;
 }
+
+export type UserRole = "user" | "manager" | "admin";
 
 export interface UserProfile {
   id: string;
   email: string;
+  role: UserRole;
   is_active: boolean;
-  role: "admin" | "user" | "moderator";
   first_name: string;
   last_name?: string | null;
-  photo?: string | null;
-  photo_min?: string | null;
+  photo_url?: string | null;
   created_at: string;
-  last_login?: string | null;
+  last_login_at?: string | null;
 }
 
 export interface SignupPayload {
@@ -31,13 +40,39 @@ export interface SignupPayload {
 
 export interface UpdateProfilePayload {
   first_name?: string;
-  last_name?: string;
+  last_name?: string | null;
 }
 
 export interface ChangePasswordPayload {
   old_password: string;
   new_password: string;
 }
+
+export interface AuthResponse {
+  tokens: Tokens;
+  user: UserProfile;
+}
+
+export class ApiError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.name = "ApiError";
+  }
+}
+
+async function throwApiError(res: Response, fallback: string): Promise<never> {
+  const body = (await res.json().catch(() => null)) as {
+    error?: { code?: string; message?: string };
+  } | null;
+  throw new ApiError(res.status, body?.error?.code ?? "unknown", body?.error?.message ?? fallback);
+}
+
+// ─── Token storage ───────────────────────────────────────────
 
 let cachedTokens: Tokens | null = null;
 let refreshPromise: Promise<Tokens> | null = null;
@@ -66,36 +101,31 @@ async function clearTokens(): Promise<void> {
   await AsyncStorage.removeItem(TOKENS_KEY);
 }
 
-/**
- * Performs an authenticated API request. Automatically refreshes tokens on 401.
- */
-async function authFetch(
-  path: string,
-  options: RequestInit = {},
-): Promise<Response> {
+// ─── HTTP core ───────────────────────────────────────────────
+
+export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers as Record<string, string>) },
+  });
+}
+
+/** Авторизованный запрос с прозрачным refresh при 401 */
+export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const tokens = await loadTokens();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  if (tokens?.access_token) headers["Authorization"] = `Bearer ${tokens.access_token}`;
 
-  if (tokens?.access_token) {
-    headers["Authorization"] = `Bearer ${tokens.access_token}`;
-  }
-
-  let response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  let response = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   if (response.status === 401 && tokens?.refresh_token) {
     try {
       const newTokens = await refreshTokens(tokens.refresh_token);
       headers["Authorization"] = `Bearer ${newTokens.access_token}`;
-      response = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers,
-      });
+      response = await fetch(`${API_BASE}${path}`, { ...options, headers });
     } catch {
       await clearTokens();
     }
@@ -109,12 +139,11 @@ async function refreshTokens(refreshToken: string): Promise<Tokens> {
 
   refreshPromise = (async () => {
     try {
-      const res = await fetch(
-        `${API_BASE}/auth/refresh?refresh_token=${encodeURIComponent(refreshToken)}`,
-      );
-      if (!res.ok) {
-        throw new Error("Token refresh failed");
-      }
+      const res = await apiFetch("/auth/refresh", {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) throw new Error("Token refresh failed");
       const tokens = (await res.json()) as Tokens;
       await saveTokens(tokens);
       return tokens;
@@ -126,59 +155,33 @@ async function refreshTokens(refreshToken: string): Promise<Tokens> {
   return refreshPromise;
 }
 
-// ─── Public endpoints ────────────────────────────────────────
-
-export async function ping(): Promise<{ status: string; environment: string }> {
-  const res = await fetch(`${API_BASE}/ping`);
-  if (!res.ok) throw new Error("Backend unreachable");
-  return res.json() as Promise<{ status: string; environment: string }>;
-}
-
 // ─── Auth endpoints ──────────────────────────────────────────
 
-export async function signin(
-  email: string,
-  password: string,
-): Promise<Tokens> {
-  const res = await fetch(`${API_BASE}/auth/signin`, {
+export async function signin(email: string, password: string): Promise<UserProfile> {
+  const res = await apiFetch("/auth/signin", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, err.detail ?? "Ошибка входа");
-  }
-
-  const tokens = (await res.json()) as Tokens;
-  await saveTokens(tokens);
-  return tokens;
+  if (!res.ok) await throwApiError(res, "Ошибка входа");
+  const body = (await res.json()) as AuthResponse;
+  await saveTokens(body.tokens);
+  return body.user;
 }
 
-export async function signup(payload: SignupPayload): Promise<Tokens> {
-  const res = await fetch(`${API_BASE}/auth/signup`, {
+export async function signup(payload: SignupPayload): Promise<UserProfile> {
+  const res = await apiFetch("/auth/signup", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, err.detail ?? "Ошибка регистрации");
-  }
-
-  const tokens = (await res.json()) as Tokens;
-  await saveTokens(tokens);
-  return tokens;
+  if (!res.ok) await throwApiError(res, "Ошибка регистрации");
+  const body = (await res.json()) as AuthResponse;
+  await saveTokens(body.tokens);
+  return body.user;
 }
 
 export async function whoami(): Promise<UserProfile> {
   const res = await authFetch("/auth/whoami");
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, err.detail ?? "Не авторизован");
-  }
+  if (!res.ok) await throwApiError(res, "Не авторизован");
   return res.json() as Promise<UserProfile>;
 }
 
@@ -186,11 +189,12 @@ export async function logout(): Promise<void> {
   const tokens = await loadTokens();
   if (tokens?.refresh_token) {
     try {
-      await fetch(
-        `${API_BASE}/auth/logout?refresh_token=${encodeURIComponent(tokens.refresh_token)}`,
-      );
+      await apiFetch("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: tokens.refresh_token }),
+      });
     } catch {
-      // ignore network errors during logout
+      // сеть недоступна — локально всё равно выходим
     }
   }
   await clearTokens();
@@ -199,109 +203,35 @@ export async function logout(): Promise<void> {
 // ─── User endpoints ──────────────────────────────────────────
 
 export async function updateProfile(
-  userId: string,
+  _userId: string,
   payload: UpdateProfilePayload,
 ): Promise<UserProfile> {
-  const res = await authFetch(`/users/${userId}`, {
+  const res = await authFetch("/users/me", {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, err.detail ?? "Ошибка обновления профиля");
-  }
+  if (!res.ok) await throwApiError(res, "Ошибка обновления профиля");
   return res.json() as Promise<UserProfile>;
 }
 
 export async function changePassword(
-  userId: string,
+  _userId: string,
   payload: ChangePasswordPayload,
 ): Promise<UserProfile> {
-  const res = await authFetch(`/users/${userId}/change-password`, {
+  const res = await authFetch("/users/me/password", {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, err.detail ?? "Ошибка смены пароля");
-  }
+  if (!res.ok) await throwApiError(res, "Ошибка смены пароля");
   return res.json() as Promise<UserProfile>;
 }
 
-export async function updateRole(
-  userId: string,
-  role: "admin" | "user" | "moderator",
-): Promise<UserProfile> {
-  const res = await authFetch(`/users/${userId}/update-role`, {
-    method: "PATCH",
-    body: JSON.stringify({ role }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(
-      res.status,
-      err.detail ?? "Ошибка изменения роли",
-    );
-  }
-  return res.json() as Promise<UserProfile>;
-}
-
-export async function activateUser(userId: string): Promise<UserProfile> {
-  const res = await authFetch(`/users/${userId}/activate`, {
-    method: "POST",
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(
-      res.status,
-      err.detail ?? "Ошибка активации пользователя",
-    );
-  }
-  return res.json() as Promise<UserProfile>;
-}
-
-export async function deactivateUser(userId: string): Promise<void> {
-  const res = await authFetch(`/users/${userId}/deactivate`, {
-    method: "POST",
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(
-      res.status,
-      err.detail ?? "Ошибка деактивации пользователя",
-    );
-  }
-}
-
+/** Загрузка фото профиля появится вместе с S3-хранилищем (backlog) */
 export async function uploadPhoto(
-  userId: string,
-  file: { uri: string; name: string; type: string },
+  _userId: string,
+  _file: { uri: string; name: string; type: string },
 ): Promise<UserProfile> {
-  const tokens = await loadTokens();
-  const formData = new FormData();
-  formData.append("file", {
-    uri: file.uri,
-    name: file.name,
-    type: file.type,
-  } as unknown as Blob);
-
-  const res = await fetch(`${API_BASE}/users/${userId}/photo`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${tokens?.access_token ?? ""}`,
-    },
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, err.detail ?? "Ошибка загрузки фото");
-  }
-  return res.json() as Promise<UserProfile>;
-}
-
-export function getPhotoUrl(filename: string): string {
-  return `${API_BASE}/users/photo/${filename}`;
+  throw new ApiError(501, "not_implemented", "Загрузка фото профиля появится в следующей версии");
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -313,14 +243,4 @@ export async function getStoredTokens(): Promise<Tokens | null> {
 export async function isAuthenticated(): Promise<boolean> {
   const tokens = await loadTokens();
   return tokens !== null && tokens.access_token.length > 0;
-}
-
-export class ApiError extends Error {
-  status: number;
-
-  constructor(status: number, detail: string) {
-    super(detail);
-    this.status = status;
-    this.name = "ApiError";
-  }
 }

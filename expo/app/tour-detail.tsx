@@ -56,16 +56,12 @@ import {
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/providers/ThemeProvider";
 import StarRating from "@/components/StarRating";
-import { tours } from "@/mocks/tours";
-import { categoryTours } from "@/mocks/categoryTours";
-import { cityNameMap } from "@/mocks/cities";
+import { useCatalog } from "@/services/catalog";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useViewedTours } from "@/providers/ViewedToursProvider";
 import { useBookings } from "@/providers/BookingsProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { Tour, TourReview, BookedTour } from "@/types/tour";
-
-const allTours = [...tours, ...categoryTours];
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -376,6 +372,7 @@ function BookingAuthModal({
 
 function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void }) {
   const { colors } = useTheme();
+  const { cityNameMap } = useCatalog();
   return (
     <TouchableOpacity
       style={[detailStyles.similarCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}
@@ -424,6 +421,7 @@ function PolicySection({
 }
 
 export default function TourDetailScreen() {
+  const { tours: allTours, cityNameMap } = useCatalog();
   const params = useLocalSearchParams<{ tourId: string; tourIds: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -440,7 +438,7 @@ export default function TourDetailScreen() {
   const { addBooking } = useBookings();
   const { addPointsFromPurchase } = useLoyalty();
   const tourIdList = useMemo(() => (params.tourIds ? params.tourIds.split(",") : [params.tourId]), [params.tourIds, params.tourId]);
-  const tourList = useMemo(() => tourIdList.map((id) => allTours.find((t) => t.id === id)).filter((t): t is Tour => t !== undefined), [tourIdList]);
+  const tourList = useMemo(() => tourIdList.map((id) => allTours.find((t) => t.id === id)).filter((t): t is Tour => t !== undefined), [allTours, tourIdList]);
   const initialIndex = useMemo(() => Math.max(0, tourList.findIndex((t) => t.id === params.tourId)), [tourList, params.tourId]);
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const flatListRef = useRef<FlatList<Tour>>(null);
@@ -503,7 +501,7 @@ export default function TourDetailScreen() {
     } catch (e) {
       console.log("Share error:", e);
     }
-  }, []);
+  }, [cityNameMap]);
 
   const handleMeetingPointPress = useCallback((meetingPoint: string, coords?: { lat: number; lng: number }) => {
     if (Platform.OS !== "web") void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -840,7 +838,7 @@ export default function TourDetailScreen() {
         </View>
       </View>
     );
-  }, [isFavorite, handleFavorite, handleShare, handleMeetingPointPress, handleBookPress, handleSimilarTourPress, insets.bottom, colors]);
+  }, [allTours, cityNameMap, isFavorite, handleFavorite, handleShare, handleMeetingPointPress, handleBookPress, handleSimilarTourPress, insets.bottom, colors]);
 
   if (tourList.length === 0) {
     return (

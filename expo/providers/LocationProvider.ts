@@ -3,7 +3,8 @@ import { Platform, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import createContextHook from "@nkzw/create-context-hook";
-import { cities } from "@/mocks/cities";
+import type { City } from "@/types/tour";
+import { useCatalog } from "@/services/catalog";
 
 const LOCATION_ASKED_KEY = "yavoy_location_asked";
 const DETECTED_CITY_KEY = "yavoy_detected_city";
@@ -19,7 +20,7 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function findNearestCity(lat: number, lng: number): string | null {
+function findNearestCity(cities: City[], lat: number, lng: number): string | null {
   let minDist = Infinity;
   let nearest: string | null = null;
   for (const city of cities) {
@@ -73,6 +74,7 @@ async function requestNativeGeolocation(): Promise<{ lat: number; lng: number } 
 }
 
 export const [LocationProvider, useLocation] = createContextHook(() => {
+  const { cities } = useCatalog();
   const [detectedCityId, setDetectedCityId] = useState<string | null>(null);
   const [locationAsked, setLocationAsked] = useState<boolean>(false);
   const [isDetecting, setIsDetecting] = useState<boolean>(false);
@@ -108,7 +110,7 @@ export const [LocationProvider, useLocation] = createContextHook(() => {
       }
 
       if (coords) {
-        const cityId = findNearestCity(coords.lat, coords.lng);
+        const cityId = findNearestCity(cities, coords.lat, coords.lng);
         console.log("[LocationProvider] Nearest city:", cityId);
         if (cityId) {
           setDetectedCityId(cityId);
@@ -122,7 +124,7 @@ export const [LocationProvider, useLocation] = createContextHook(() => {
     } finally {
       setIsDetecting(false);
     }
-  }, []);
+  }, [cities]);
 
   const dismissLocationPrompt = useCallback(async () => {
     await AsyncStorage.setItem(LOCATION_ASKED_KEY, "true");

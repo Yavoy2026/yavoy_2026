@@ -1,5 +1,6 @@
 import {
   CityListResponseSchema,
+  CitySchema,
   ErrorEnvelopeSchema,
   TourDetailSchema,
   TourListQuerySchema,
@@ -8,7 +9,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { getCities, getTourDetail, getTours } from "./service.ts";
+import { getCatalogBundle, getCities, getTourDetail, getTours } from "./service.ts";
 
 export async function catalogRoutes(fastify: FastifyInstance) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -17,6 +18,22 @@ export async function catalogRoutes(fastify: FastifyInstance) {
     "/cities",
     { schema: { tags: ["catalog"], response: { 200: CityListResponseSchema } } },
     async () => ({ items: await getCities(app.db) }),
+  );
+
+  app.get(
+    "/catalog",
+    {
+      schema: {
+        tags: ["catalog"],
+        response: {
+          200: z.object({
+            cities: z.array(CitySchema),
+            tours: z.array(TourDetailSchema),
+          }),
+        },
+      },
+    },
+    async () => getCatalogBundle(app.db),
   );
 
   app.get(

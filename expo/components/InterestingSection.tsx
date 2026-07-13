@@ -11,7 +11,7 @@ import {
 import { Image } from "expo-image";
 import { Sparkles, Star, Clock } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
-import { categoryLabels } from "@/mocks/categoryTours";
+import { categoryLabels } from "@/constants/categories";
 import { CategoryType } from "@/types/tour";
 
 const CARD_WIDTH = Dimensions.get("window").width * 0.65;

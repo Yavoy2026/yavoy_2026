@@ -16,7 +16,7 @@ import StarRating from "@/components/StarRating";
 import { Tour } from "@/types/tour";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useViewedTours } from "@/providers/ViewedToursProvider";
-import { cityNameMap } from "@/mocks/cities";
+import { useCatalog } from "@/services/catalog";
 
 const transportLabels: Record<string, string> = {
   auto: "Авто",
@@ -34,6 +34,7 @@ interface TourCardProps {
 
 export default React.memo(function TourCard({ tour, onPress, compact = false }: TourCardProps) {
   const { colors } = useTheme();
+  const { cityNameMap } = useCatalog();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isViewed } = useViewedTours();
   const viewed = isViewed(tour.id);

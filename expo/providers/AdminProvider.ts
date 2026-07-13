@@ -30,8 +30,6 @@ const initialPartnerChats: AdminChatMessage[] = [
   { id: "pc3", authorId: "p2", authorName: "Северная Звезда", authorType: "partner", content: "Добавили описания и фото к мистическому туру, ждём публикации.", createdAt: "2026-05-13 11:28" },
 ];
 
-const ADMIN_LOGIN = "admin";
-const ADMIN_PASSWORD = "Lotofond";
 
 export const [AdminProvider, useAdmin] = createContextHook(() => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -40,13 +38,13 @@ export const [AdminProvider, useAdmin] = createContextHook(() => {
   const [userChats, setUserChats] = useState<AdminChatMessage[]>(initialUserChats);
   const [partnerChats, setPartnerChats] = useState<AdminChatMessage[]>(initialPartnerChats);
 
-  const login = useCallback((username: string, password: string): boolean => {
-    const ok = username.trim().toLowerCase() === ADMIN_LOGIN && password === ADMIN_PASSWORD;
+  /** Пароля больше нет: доступ определяется ролью из бэкенда (useAuth().role) */
+  const login = useCallback((_username: string, _password: string): boolean => {
+    const ok = false;
     if (ok) {
       setIsAuthenticated(true);
-      console.log("[AdminProvider] Login success");
     } else {
-      console.log("[AdminProvider] Login failed");
+      console.log("[AdminProvider] Password login is disabled; use backend role");
     }
     return ok;
   }, []);

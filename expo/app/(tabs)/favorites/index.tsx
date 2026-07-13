@@ -4,8 +4,7 @@ import { useRouter } from "expo-router";
 import { Heart, MapPin, ChevronRight } from "lucide-react-native";
 import { Image } from "expo-image";
 import { useTheme } from "@/providers/ThemeProvider";
-import { tours } from "@/mocks/tours";
-import { cities } from "@/mocks/cities";
+import { useCatalog } from "@/services/catalog";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useFavoriteCities } from "@/providers/FavoriteCitiesProvider";
 import TourCard from "@/components/TourCard";
@@ -19,15 +18,16 @@ export default function FavoritesScreen() {
   const { favoriteIds } = useFavorites();
   const { favoriteCityIds, toggleFavoriteCity } = useFavoriteCities();
   const [activeTab, setActiveTab] = useState<TabType>("tours");
+  const { tours, cities } = useCatalog();
 
   const favoriteTours = useMemo(
     () => tours.filter((t) => favoriteIds.includes(t.id)),
-    [favoriteIds]
+    [tours, favoriteIds]
   );
 
   const favoriteCities = useMemo(
     () => cities.filter((c) => favoriteCityIds.includes(c.id)),
-    [favoriteCityIds]
+    [cities, favoriteCityIds]
   );
 
   console.log("[FavoritesScreen] Tours:", favoriteIds.length, "Cities:", favoriteCityIds.length);

@@ -57,15 +57,14 @@ import { useRouter } from "expo-router";
 import { BellRing, BellOff, Tag, Star as StarIcon, Navigation, Megaphone } from "lucide-react-native";
 import { useTheme, ThemeMode } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
-import { getPhotoUrl } from "@/services/api";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useBookings } from "@/providers/BookingsProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { useCertificates } from "@/providers/CertificatesProvider";
 import { usePromoCodes } from "@/providers/PromoCodesProvider";
 import { useReels } from "@/providers/ReelsProvider";
-import { tours, purchasedTours, transactions } from "@/mocks/tours";
-import { cityNameMap } from "@/mocks/cities";
+import { purchasedTours, transactions } from "@/mocks/bookings";
+import { useCatalog } from "@/services/catalog";
 import { BookedTour, GiftCertificate } from "@/types/tour";
 import CertificateModal from "@/components/CertificateModal";
 
@@ -107,7 +106,7 @@ const userReviews: UserReview[] = [
   {
     id: "ur1",
     tourTitle: "Обзорная экскурсия по Москве",
-    tourImage: tours[0].image,
+    tourImage: "https://images.unsplash.com/photo-1513326738677-b964603b136d?w=200&h=150&fit=crop",
     rating: 5,
     text: "Потрясающая экскурсия! Гид был очень увлечённым, узнал много нового о столице.",
     date: "2026-03-20",
@@ -115,7 +114,7 @@ const userReviews: UserReview[] = [
   {
     id: "ur2",
     tourTitle: "Белые ночи Петербурга",
-    tourImage: tours[2].image,
+    tourImage: "https://images.unsplash.com/photo-1556610961-2fecc5927173?w=200&h=150&fit=crop",
     rating: 5,
     text: "Волшебная атмосфера белых ночей! Разводные мосты — невероятное зрелище.",
     date: "2026-02-18",
@@ -123,7 +122,7 @@ const userReviews: UserReview[] = [
   {
     id: "ur3",
     tourTitle: "Горный маршрут Красная Поляна",
-    tourImage: tours[3].image,
+    tourImage: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&h=150&fit=crop",
     rating: 4,
     text: "Отличный маршрут, но хотелось бы больше остановок для фото.",
     date: "2026-01-15",
@@ -200,6 +199,7 @@ Email: info@yavoy.ru
 const APP_VERSION = "2.1.0";
 
 export default function ProfileScreen() {
+  const { tours, cityNameMap } = useCatalog();
   const router = useRouter();
   const { colors, themeMode, setTheme } = useTheme();
   const auth = useAuth();
@@ -255,7 +255,7 @@ export default function ProfileScreen() {
       return updated;
     });
   }, []);
-  const favoriteTours = tours.filter((t) => favoriteIds.includes(t.id));
+  const favoriteTours = tours.filter((t) => favoriteIds.includes(t.id)); // tours из useCatalog
 
   const pickReelVideo = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -322,9 +322,8 @@ export default function ProfileScreen() {
         <View style={[styles.avatarContainer, { borderColor: colors.teal }]}>
           <Image
             source={{
-              uri: auth.user?.photo
-                ? getPhotoUrl(auth.user.photo)
-                : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+              uri: auth.user?.photo_url
+                ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
             }}
             style={styles.avatar}
             contentFit="cover"
@@ -949,7 +948,7 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
-        {(auth.role === "admin" || auth.role === "moderator") && (
+        {(auth.role === "admin" || auth.role === "manager") && (
           <TouchableOpacity
             style={[styles.menuItem, { borderBottomColor: colors.border }]}
             activeOpacity={0.7}

@@ -10,14 +10,13 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { MapPin, TrendingUp, Star, ChevronRight } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
-import { cities } from "@/mocks/cities";
-import { tours } from "@/mocks/tours";
-import { cityNameMap } from "@/mocks/cities";
+import { useCatalog } from "@/services/catalog";
 import CategoryGrid from "@/components/CategoryGrid";
 
 export default function ExploreScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { tours, cities, cityNameMap } = useCatalog();
   const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
   const [selectedInterest, setSelectedInterest] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null);
@@ -30,11 +29,11 @@ export default function ExploreScreen() {
     if (selectedInterest) result = result.filter((t) => t.interest === selectedInterest);
     if (selectedDuration) result = result.filter((t) => t.duration === selectedDuration);
     return result;
-  }, [selectedTransport, selectedInterest, selectedDuration]);
+  }, [tours, selectedTransport, selectedInterest, selectedDuration]);
 
   const topRatedTours = useMemo(() =>
     [...tours].sort((a, b) => b.organizer.rating - a.organizer.rating).slice(0, 5),
-  []);
+  [tours]);
 
   const handleCityPress = useCallback((cityId: string) => {
     console.log("[ExploreScreen] City pressed:", cityId);

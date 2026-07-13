@@ -6,9 +6,7 @@ import { Image } from "expo-image";
 import { MapPin, Navigation, X, ArrowDownNarrowWide, TrendingUp, Clock, DollarSign } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useLocation } from "@/providers/LocationProvider";
-import { tours } from "@/mocks/tours";
-import { categoryTours } from "@/mocks/categoryTours";
-import { cities } from "@/mocks/cities";
+import { useCatalog } from "@/services/catalog";
 import { DurationType, TransportType, InterestType, SortType, CategoryType, SeasonType } from "@/types/tour";
 import CitySelector from "@/components/CitySelector";
 import FilterDropdown from "@/components/FilterDropdown";
@@ -23,8 +21,6 @@ import CertificateModal from "@/components/CertificateModal";
 import ReelsSection from "@/components/ReelsSection";
 import { useScrollToTop } from "@/providers/ScrollToTopProvider";
 import { useReels } from "@/providers/ReelsProvider";
-
-const allTours = [...tours, ...categoryTours];
 
 const durationOptions: { key: DurationType; label: string; icon: string }[] = [
   { key: "one_day", label: "Однодневные", icon: "sun" },
@@ -69,11 +65,6 @@ const sortOptions: { key: SortType; label: string }[] = [
   { key: "price_desc", label: "Дороже" },
 ];
 
-const cityNameMap: Record<string, string> = {};
-cities.forEach((c) => { cityNameMap[c.id] = c.name; });
-
-const popularTours = allTours.filter((t) => t.popularity >= 85).sort((a, b) => b.popularity - a.popularity);
-
 export default function HomeScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
@@ -81,6 +72,15 @@ export default function HomeScreen() {
   const flatListRef = useRef<FlatList>(null);
   const { scrollToken } = useScrollToTop();
   const { publishedReels } = useReels();
+  const {
+    tours: allTours,
+    cities,
+    cityNameMap,
+    popularTours,
+    isLoading: catalogLoading,
+    isError: catalogError,
+    refetch: refetchCatalog,
+  } = useCatalog();
 
   useEffect(() => {
     if (scrollToken > 0 && flatListRef.current) {
@@ -159,7 +159,7 @@ export default function HomeScreen() {
     }
 
     return result;
-  }, [selectedCity, selectedDuration, selectedTransport, selectedInterest, selectedSeason, selectedCategory, searchQuery, selectedDate, selectedSort]);
+  }, [allTours, cityNameMap, selectedCity, selectedDuration, selectedTransport, selectedInterest, selectedSeason, selectedCategory, searchQuery, selectedDate, selectedSort]);
 
   const hasActiveFilters = selectedCity || selectedDuration || selectedTransport || selectedInterest || selectedSeason || selectedCategory || searchQuery.trim() || selectedDate;
 
@@ -180,12 +180,12 @@ export default function HomeScreen() {
   const handlePopularTourPress = useCallback((tourId: string) => {
     const tourIds = popularTours.map((t) => t.id);
     router.push({ pathname: "/tour-detail", params: { tourId, tourIds: tourIds.join(",") } });
-  }, [router]);
+  }, [popularTours, router]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
+    void refetchCatalog().finally(() => setRefreshing(false));
+  }, [refetchCatalog]);
 
   const handleDetectLocation = useCallback(() => {
     void detectLocation();
@@ -327,13 +327,32 @@ export default function HomeScreen() {
     </View>
   ), [selectedCity, selectedDuration, selectedTransport, selectedInterest, selectedSeason, selectedCategory, searchQuery, selectedDate, selectedSort, headerTitle, filteredTours.length, tourCountText, hasActiveFilters, publishedReels, handlePopularTourPress, handleCategoryPress, handleCertificatePress, colors, isDark, locationAsked, isDetecting, handleDetectLocation, handleDismissGeo]);
 
-  const renderEmpty = useCallback(() => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>{"🧭"}</Text>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>{"Экскурсии не найдены"}</Text>
-      <Text style={[styles.emptyText, { color: colors.textMuted }]}>{"Попробуйте изменить фильтры или выбрать другой город"}</Text>
-    </View>
-  ), [colors]);
+  const renderEmpty = useCallback(() => {
+    if (catalogLoading) {
+      return (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={colors.teal} />
+          <Text style={[styles.emptyText, { color: colors.textMuted, marginTop: 12 }]}>{"Загружаем экскурсии…"}</Text>
+        </View>
+      );
+    }
+    if (catalogError) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>{"📡"}</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{"Не удалось загрузить каталог"}</Text>
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>{"Проверьте подключение и потяните вниз, чтобы обновить"}</Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyIcon}>{"🧭"}</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>{"Экскурсии не найдены"}</Text>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>{"Попробуйте изменить фильтры или выбрать другой город"}</Text>
+      </View>
+    );
+  }, [colors, catalogLoading, catalogError]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

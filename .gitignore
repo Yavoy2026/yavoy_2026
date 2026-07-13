@@ -9,3 +9,6 @@ dist/
 .keys/
 coverage/
 .DS_Store
+
+# npm-артефакт: канонический лок Expo — bun.lock
+expo/package-lock.json

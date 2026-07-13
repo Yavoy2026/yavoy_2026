@@ -87,6 +87,16 @@ export async function listTours(db: Db, q: TourListQuery, cursor: Cursor | null)
     .limit(q.limit + 1); // +1 чтобы понять, есть ли следующая страница
 }
 
+/** Все опубликованные туры целиком — для bootstrap-эндпоинта мобильного приложения */
+export function listAllPublished(db: Db) {
+  return db
+    .select({ tour: tours, cityName: cities.name })
+    .from(tours)
+    .innerJoin(cities, eq(tours.cityId, cities.id))
+    .where(eq(tours.status, "published"))
+    .orderBy(desc(tours.popularity), desc(tours.id));
+}
+
 export async function getTourById(db: Db, id: string) {
   const rows = await db
     .select({ tour: tours, cityName: cities.name })
