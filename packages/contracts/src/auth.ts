@@ -1,0 +1,61 @@
+import { z } from "zod";
+
+export const UserRoleSchema = z.enum(["user", "manager", "admin"]);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const TokensSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string(),
+  access_expires_at: z.string(),
+  refresh_expires_at: z.string(),
+});
+export type Tokens = z.infer<typeof TokensSchema>;
+
+export const UserProfileSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  role: UserRoleSchema,
+  is_active: z.boolean(),
+  first_name: z.string(),
+  last_name: z.string().nullable(),
+  photo_url: z.string().nullable(),
+  created_at: z.string(),
+  last_login_at: z.string().nullable(),
+});
+export type UserProfile = z.infer<typeof UserProfileSchema>;
+
+export const SignupPayloadSchema = z.object({
+  email: z.string().email().max(320),
+  password: z.string().min(8).max(128),
+  first_name: z.string().min(1).max(100),
+});
+export type SignupPayload = z.infer<typeof SignupPayloadSchema>;
+
+export const SigninPayloadSchema = z.object({
+  email: z.string().email().max(320),
+  password: z.string().min(1).max(128),
+});
+export type SigninPayload = z.infer<typeof SigninPayloadSchema>;
+
+export const RefreshPayloadSchema = z.object({
+  refresh_token: z.string().min(1),
+});
+export type RefreshPayload = z.infer<typeof RefreshPayloadSchema>;
+
+export const AuthResponseSchema = z.object({
+  tokens: TokensSchema,
+  user: UserProfileSchema,
+});
+export type AuthResponse = z.infer<typeof AuthResponseSchema>;
+
+export const UpdateProfilePayloadSchema = z.object({
+  first_name: z.string().min(1).max(100).optional(),
+  last_name: z.string().max(100).nullable().optional(),
+});
+export type UpdateProfilePayload = z.infer<typeof UpdateProfilePayloadSchema>;
+
+export const ChangePasswordPayloadSchema = z.object({
+  old_password: z.string().min(1).max(128),
+  new_password: z.string().min(8).max(128),
+});
+export type ChangePasswordPayload = z.infer<typeof ChangePasswordPayloadSchema>;

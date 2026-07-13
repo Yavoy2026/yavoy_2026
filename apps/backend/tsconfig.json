@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true
+  },
+  // scripts/ исполняются через tsx и импортируют моки Expo с их (мягким) tsconfig —
+  // под строгий typecheck бэкенда они не попадают
+  "include": ["src", "test"]
+}

@@ -1,4 +1,11 @@
 node_modules
 .env
+.env.*
+!.env.example
 .expo
 .rork
+dist/
+*.pem
+.keys/
+coverage/
+.DS_Store
