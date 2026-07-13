@@ -1,5 +1,10 @@
 # Документация проекта YaVoy Travel Group
 
+> ⚠️ **Документ устарел** (описывает эпоху 4 платформ на моках).
+> Актуальное: архитектура — `BACKEND_SPEC.md`, план — `ROADMAP.md`, разработка — `DEVELOPMENT.md`.
+> С июля 2026 основной фронт — Expo (подключён к собственному API `apps/backend`),
+> `web/` заморожена как демо-витрина, `ios/` и `android/` не развиваются.
+
 **Версия:** 1.0  
 **Дата:** 24 июня 2026  
 **Платформы:** Expo (React Native), iOS (SwiftUI), Web (React), Android (Kotlin/Compose)  
