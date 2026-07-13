@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, gte, ilike, inArray, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import type { TourListQuery } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
-import { cities, tours } from "../../db/schema.ts";
+import { cities, tourDates, tours } from "../../db/schema.ts";
 
 export interface Cursor {
   v: string | number;
@@ -14,6 +14,13 @@ const SORTS = {
   price_asc: { col: tours.priceKopeks, dir: "asc" },
   price_desc: { col: tours.priceKopeks, dir: "desc" },
 } as const;
+
+
+/** Ближайшая будущая дата с местами (null — дат нет) */
+const NEXT_DATE_SQL = sql<string | null>`(
+  select min(td.starts_on)::text from tour_dates td
+  where td.tour_id = tours.id and td.starts_on >= current_date and td.seats_left > 0
+)`;
 
 export function listCities(db: Db) {
   return db
@@ -79,7 +86,7 @@ export async function listTours(db: Db, q: TourListQuery, cursor: Cursor | null)
       : [asc(sort.col), asc(tours.id)];
 
   return db
-    .select({ tour: tours, cityName: cities.name })
+    .select({ tour: tours, cityName: cities.name, nextDate: NEXT_DATE_SQL })
     .from(tours)
     .innerJoin(cities, eq(tours.cityId, cities.id))
     .where(and(...filters))
@@ -90,7 +97,7 @@ export async function listTours(db: Db, q: TourListQuery, cursor: Cursor | null)
 /** Все опубликованные туры целиком — для bootstrap-эндпоинта мобильного приложения */
 export function listAllPublished(db: Db) {
   return db
-    .select({ tour: tours, cityName: cities.name })
+    .select({ tour: tours, cityName: cities.name, nextDate: NEXT_DATE_SQL })
     .from(tours)
     .innerJoin(cities, eq(tours.cityId, cities.id))
     .where(eq(tours.status, "published"))
@@ -99,10 +106,22 @@ export function listAllPublished(db: Db) {
 
 export async function getTourById(db: Db, id: string) {
   const rows = await db
-    .select({ tour: tours, cityName: cities.name })
+    .select({ tour: tours, cityName: cities.name, nextDate: NEXT_DATE_SQL })
     .from(tours)
     .innerJoin(cities, eq(tours.cityId, cities.id))
     .where(and(eq(tours.id, id), eq(tours.status, "published")))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/** Будущие даты с местами; tourId не задан — для всего каталога */
+export function listFutureDates(db: Db, tourId?: string) {
+  const conditions = [gte(tourDates.startsOn, sql`current_date`), gt(tourDates.seatsLeft, 0)];
+  if (tourId) conditions.push(eq(tourDates.tourId, tourId));
+  return db
+    .select({ date: tourDates, basePrice: tours.priceKopeks })
+    .from(tourDates)
+    .innerJoin(tours, eq(tourDates.tourId, tours.id))
+    .where(and(...conditions))
+    .orderBy(asc(tourDates.startsOn));
 }

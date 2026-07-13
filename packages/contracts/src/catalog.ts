@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TourDateSchema } from "./bookings";
 import { CursorQuerySchema, paginated } from "./common";
 
 export const DurationTypeSchema = z.enum(["one_day", "multi_day"]);
@@ -62,6 +63,8 @@ export const TourCardSchema = z.object({
   is_bestseller: z.boolean(),
   is_likely_to_sell_out: z.boolean(),
   popularity: z.number().int(),
+  /** Ближайшая будущая дата с местами; null — дат пока нет */
+  next_available_date: z.string().nullable(),
 });
 export type TourCard = z.infer<typeof TourCardSchema>;
 
@@ -87,6 +90,8 @@ export const TourDetailSchema = TourCardSchema.extend({
   is_free_cancellation: z.boolean(),
   /** Отзывы появляются в M5; до этого всегда пустой список */
   reviews: z.array(z.unknown()),
+  /** Будущие даты с местами (для выбора при бронировании) */
+  dates: z.array(TourDateSchema),
 });
 export type TourDetail = z.infer<typeof TourDetailSchema>;
 

@@ -1,58 +1,61 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import createContextHook from "@nkzw/create-context-hook";
-import { BookedTour } from "@/types/tour";
-
-const BOOKINGS_KEY = "yavoy_bookings";
+import type { BookedTour } from "@/types/tour";
+import { useAuth } from "@/providers/AuthProvider";
+import {
+  cancelBooking as apiCancelBooking,
+  createBooking as apiCreateBooking,
+  fetchMyBookings,
+  type CreateBookingPayload,
+} from "@/services/bookings";
 
 export const [BookingsProvider, useBookings] = createContextHook(() => {
-  const [bookings, setBookings] = useState<BookedTour[]>([]);
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
   const bookingsQuery = useQuery({
-    queryKey: ["bookings"],
-    queryFn: async () => {
-      const stored = await AsyncStorage.getItem(BOOKINGS_KEY);
-      console.log("[BookingsProvider] Loaded bookings:", stored ? JSON.parse(stored).length : 0);
-      return stored ? (JSON.parse(stored) as BookedTour[]) : [];
-    },
+    queryKey: ["my-bookings"],
+    queryFn: fetchMyBookings,
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
   });
 
-  useEffect(() => {
-    if (bookingsQuery.data) {
-      setBookings(bookingsQuery.data);
-    }
-  }, [bookingsQuery.data]);
+  const bookings = useMemo(() => bookingsQuery.data ?? [], [bookingsQuery.data]);
 
-  const syncMutation = useMutation({
-    mutationFn: async (items: BookedTour[]) => {
-      await AsyncStorage.setItem(BOOKINGS_KEY, JSON.stringify(items));
-      return items;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    },
+  const invalidate = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+    void queryClient.invalidateQueries({ queryKey: ["catalog"] }); // seats_left изменились
+  }, [queryClient]);
+
+  const createMutation = useMutation({
+    mutationFn: apiCreateBooking,
+    onSuccess: invalidate,
   });
 
-  const addBooking = useCallback(
-    (booking: BookedTour) => {
-      const updated = [booking, ...bookings];
-      setBookings(updated);
-      syncMutation.mutate(updated);
-      console.log("[BookingsProvider] Added booking:", booking.id);
-    },
-    [bookings, syncMutation]
+  const cancelMutation = useMutation({
+    mutationFn: apiCancelBooking,
+    onSuccess: invalidate,
+  });
+
+  const createBooking = useCallback(
+    (payload: CreateBookingPayload): Promise<BookedTour> => createMutation.mutateAsync(payload),
+    [createMutation],
+  );
+
+  const cancelBooking = useCallback(
+    (id: string): Promise<BookedTour> => cancelMutation.mutateAsync(id),
+    [cancelMutation],
   );
 
   const upcomingBookings = useMemo(
     () => bookings.filter((b) => b.status === "upcoming"),
-    [bookings]
+    [bookings],
   );
 
   const completedBookings = useMemo(
     () => bookings.filter((b) => b.status === "completed"),
-    [bookings]
+    [bookings],
   );
 
   return useMemo(
@@ -60,9 +63,11 @@ export const [BookingsProvider, useBookings] = createContextHook(() => {
       bookings,
       upcomingBookings,
       completedBookings,
-      addBooking,
+      createBooking,
+      cancelBooking,
       isLoading: bookingsQuery.isLoading,
+      isCreating: createMutation.isPending,
     }),
-    [bookings, upcomingBookings, completedBookings, addBooking, bookingsQuery.isLoading]
+    [bookings, upcomingBookings, completedBookings, createBooking, cancelBooking, bookingsQuery.isLoading, createMutation.isPending],
   );
 });

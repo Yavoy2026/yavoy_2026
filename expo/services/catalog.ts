@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { City, Tour } from "@/types/tour";
+import type { City, Tour, TourDateOption } from "@/types/tour";
 import { apiFetch } from "@/services/api";
 
 /**
@@ -66,10 +66,17 @@ interface ApiTour {
   is_bestseller: boolean;
   is_likely_to_sell_out: boolean;
   popularity: number;
+  next_available_date: string | null;
+  dates: {
+    id: string;
+    starts_on: string;
+    seats_left: number;
+    price_kopeks: number;
+  }[];
 }
 
-/** Дат туров пока нет (появятся в M3) — фильтр по дате не должен прятать туры */
-const NO_DATE_YET = "2099-12-31";
+/** Тур без будущих дат: фильтр по дате не должен его прятать */
+const NO_DATE_FALLBACK = "2099-12-31";
 
 function adaptTour(t: ApiTour): Tour {
   return {
@@ -114,7 +121,7 @@ function adaptTour(t: ApiTour): Tour {
       t.meeting_lat != null && t.meeting_lng != null
         ? { lat: t.meeting_lat, lng: t.meeting_lng }
         : undefined,
-    nextAvailableDate: NO_DATE_YET,
+    nextAvailableDate: t.next_available_date ?? NO_DATE_FALLBACK,
     bookingsToday: 0,
     startTime: t.start_time ?? undefined,
     whatToBring: t.what_to_bring,
@@ -122,6 +129,14 @@ function adaptTour(t: ApiTour): Tour {
     prepayment: t.prepayment ?? undefined,
     cancellationPolicy: t.cancellation_policy ?? undefined,
     groupJoiningConditions: t.group_joining_conditions ?? undefined,
+    dates: t.dates.map(
+      (d): TourDateOption => ({
+        id: d.id,
+        date: d.starts_on,
+        seatsLeft: d.seats_left,
+        price: Math.round(d.price_kopeks / 100),
+      }),
+    ),
   };
 }
 

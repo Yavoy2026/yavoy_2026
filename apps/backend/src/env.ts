@@ -7,6 +7,9 @@ const EnvSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   JWT_PRIVATE_KEY_PEM: z.string().optional(),
   JWT_PUBLIC_KEY_PEM: z.string().optional(),
+  SMTP_URL: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
+  ADMIN_EMAIL: z.string().email().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

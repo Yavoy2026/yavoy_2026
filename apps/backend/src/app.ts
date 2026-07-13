@@ -13,8 +13,10 @@ import { ZodError } from "zod";
 import type { Db } from "./db/client.ts";
 import { env } from "./env.ts";
 import { AppError } from "./errors.ts";
+import { createMailer, type Mailer } from "./mail/mailer.ts";
 import { authPlugin } from "./plugins/auth.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
+import { bookingsRoutes } from "./modules/bookings/routes.ts";
 import { catalogRoutes } from "./modules/catalog/routes.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
 import { usersRoutes } from "./modules/users/routes.ts";
@@ -30,6 +32,7 @@ export async function buildApp(db: Db) {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   app.decorate("db", db);
+  app.decorate("mailer", createMailer(app.log));
 
   await app.register(cors, { origin: true });
   // global: false — лимиты только на роутах с config.rateLimit (auth).
@@ -81,6 +84,7 @@ export async function buildApp(db: Db) {
     async (v1) => {
       await v1.register(healthRoutes);
       await v1.register(catalogRoutes);
+      await v1.register(bookingsRoutes);
       await v1.register(authRoutes, { prefix: "/auth" });
       await v1.register(usersRoutes, { prefix: "/users" });
     },
@@ -93,5 +97,6 @@ export async function buildApp(db: Db) {
 declare module "fastify" {
   interface FastifyInstance {
     db: Db;
+    mailer: Mailer;
   }
 }

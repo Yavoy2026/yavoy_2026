@@ -148,8 +148,26 @@ const rows = data.tours
     popularity: t.popularity ?? 0,
   }));
 
-await db.insert(tours).values(rows);
+const insertedTours = await db.insert(tours).values(rows).returning({ id: tours.id });
 
-console.log(`Seeded: ${data.cities.length} городов, ${rows.length} туров`);
+// Даты выездов: каждому туру 4 даты в ближайший месяц (M3: брони-заявки)
+const DATE_OFFSETS_DAYS = [3, 10, 17, 24];
+const SEATS_PER_DATE = 12;
+const today = new Date();
+const dateRows = insertedTours.flatMap((t) =>
+  DATE_OFFSETS_DAYS.map((offset) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + offset);
+    return {
+      tourId: t.id,
+      startsOn: d.toISOString().slice(0, 10),
+      seatsTotal: SEATS_PER_DATE,
+      seatsLeft: SEATS_PER_DATE,
+    };
+  }),
+);
+await db.insert(tourDates).values(dateRows);
+
+console.log(`Seeded: ${data.cities.length} городов, ${rows.length} туров, ${dateRows.length} дат`);
 if (skipped.length) console.warn(`Пропущено:\n  ${skipped.join("\n  ")}`);
 await sql.end();

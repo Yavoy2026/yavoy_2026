@@ -63,7 +63,7 @@ import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { useCertificates } from "@/providers/CertificatesProvider";
 import { usePromoCodes } from "@/providers/PromoCodesProvider";
 import { useReels } from "@/providers/ReelsProvider";
-import { purchasedTours, transactions } from "@/mocks/bookings";
+import { transactions } from "@/mocks/bookings";
 import { useCatalog } from "@/services/catalog";
 import { BookedTour, GiftCertificate } from "@/types/tour";
 import CertificateModal from "@/components/CertificateModal";
@@ -343,7 +343,7 @@ export default function ProfileScreen() {
 
         <View style={[styles.statsRow, { backgroundColor: colors.navyLight }]}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.tealLight }]}>{String(bookings.length + purchasedTours.length)}</Text>
+            <Text style={[styles.statNumber, { color: colors.tealLight }]}>{String(bookings.length)}</Text>
             <Text style={[styles.statLabel, { color: colors.textMuted }]}>{"Поездки"}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.gray300 + "30" }]} />
@@ -372,7 +372,7 @@ export default function ProfileScreen() {
             </View>
             <View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Мои поездки"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${bookings.length + purchasedTours.length} поездок · ${upcomingBookings.length} предстоит`}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${bookings.length} поездок · ${upcomingBookings.length} предстоит`}</Text>
             </View>
           </View>
           {expandedSection === "myBookings" ? (
@@ -383,7 +383,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         {expandedSection === "myBookings" ? (
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            {bookings.length === 0 && purchasedTours.length === 0 ? (
+            {bookings.length === 0 ? (
               <Text style={[styles.emptySection, { color: colors.textMuted }]}>{"Нет поездок"}</Text>
             ) : (
               <>
@@ -409,33 +409,6 @@ export default function ProfileScreen() {
                         </View>
                       </View>
                     </View>
-                  );
-                })}
-                {purchasedTours.map((pt) => {
-                  const statusInfo = bookingStatusConfig[pt.status] || bookingStatusConfig.upcoming;
-                  return (
-                    <TouchableOpacity
-                      key={pt.id}
-                      style={[styles.purchasedCard, { backgroundColor: colors.surface }]}
-                      onPress={() => navigateToTour(pt.tour.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Image source={{ uri: pt.tour.image }} style={styles.purchasedImage} contentFit="cover" />
-                      <View style={styles.purchasedInfo}>
-                        <Text style={[styles.purchasedTitle, { color: colors.text }]} numberOfLines={1}>{pt.tour.title}</Text>
-                        <View style={styles.purchasedMeta}>
-                          <Calendar size={12} color={colors.textMuted} />
-                          <Text style={[styles.purchasedDate, { color: colors.textMuted }]}>{pt.tourDate}</Text>
-                          <Text style={[styles.purchasedTickets, { color: colors.textMuted }]}>{`\u00B7 ${pt.ticketCount} чел.`}</Text>
-                        </View>
-                        <View style={styles.purchasedBottom}>
-                          <View style={[styles.statusPill, { backgroundColor: statusInfo.bgColor }]}>
-                            <Text style={[styles.statusPillText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
-                          </View>
-                          <Text style={[styles.confirmCode, { color: colors.textMuted }]}>{pt.confirmationCode}</Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
                   );
                 })}
               </>

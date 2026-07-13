@@ -1,8 +1,8 @@
-import type { City, TourCard, TourDetail, TourListQuery, TourListResponse } from "@yavoy/contracts";
+import type { City, TourCard, TourDate, TourDetail, TourListQuery, TourListResponse } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
 import { badRequest, notFound } from "../../errors.ts";
 import type { tours } from "../../db/schema.ts";
-import { getTourById, listAllPublished, listCities, listTours, type Cursor } from "./repo.ts";
+import { getTourById, listAllPublished, listCities, listFutureDates, listTours, type Cursor } from "./repo.ts";
 
 type TourRow = typeof tours.$inferSelect;
 
@@ -33,7 +33,7 @@ function sortValue(row: TourRow, sort: TourListQuery["sort"]): string | number {
   }
 }
 
-function toCard(row: TourRow, cityName: string): TourCard {
+function toCard(row: TourRow, cityName: string, nextDate: string | null): TourCard {
   return {
     id: row.id,
     title: row.title,
@@ -53,6 +53,20 @@ function toCard(row: TourRow, cityName: string): TourCard {
     is_bestseller: row.isBestseller,
     is_likely_to_sell_out: row.isLikelyToSellOut,
     popularity: row.popularity,
+    next_available_date: nextDate,
+  };
+}
+
+type DateRow = { date: { id: string; tourId: string; startsOn: string; seatsTotal: number; seatsLeft: number; priceOverrideKopeks: number | null }; basePrice: number };
+
+function toTourDate(r: DateRow): TourDate {
+  return {
+    id: r.date.id,
+    tour_id: r.date.tourId,
+    starts_on: r.date.startsOn,
+    seats_total: r.date.seatsTotal,
+    seats_left: r.date.seatsLeft,
+    price_kopeks: r.date.priceOverrideKopeks ?? r.basePrice,
   };
 }
 
@@ -79,7 +93,7 @@ export async function getTours(db: Db, query: TourListQuery): Promise<TourListRe
   const last = page[page.length - 1];
 
   return {
-    items: page.map((r) => toCard(r.tour, r.cityName)),
+    items: page.map((r) => toCard(r.tour, r.cityName, r.nextDate)),
     next_cursor:
       hasMore && last
         ? encodeCursor({ v: sortValue(last.tour, query.sort), id: last.tour.id })
@@ -87,9 +101,9 @@ export async function getTours(db: Db, query: TourListQuery): Promise<TourListRe
   };
 }
 
-function toDetail(t: TourRow, cityName: string): TourDetail {
+function toDetail(t: TourRow, cityName: string, nextDate: string | null, dates: TourDate[]): TourDetail {
   return {
-    ...toCard(t, cityName),
+    ...toCard(t, cityName, nextDate),
     description: t.description,
     gallery: t.gallery,
     highlights: t.highlights,
@@ -110,13 +124,15 @@ function toDetail(t: TourRow, cityName: string): TourDetail {
     is_instant_confirmation: t.isInstantConfirmation,
     is_free_cancellation: t.isFreeCancellation,
     reviews: [], // отзывы — M5
+    dates,
   };
 }
 
 export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
   const row = await getTourById(db, id);
   if (!row) throw notFound("tour_not_found", "Тур не найден");
-  return toDetail(row.tour, row.cityName);
+  const dates = (await listFutureDates(db, id)).map(toTourDate);
+  return toDetail(row.tour, row.cityName, row.nextDate, dates);
 }
 
 /**
@@ -125,9 +141,20 @@ export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
  * при росте каталога приложение переходит на GET /tours с серверными фильтрами.
  */
 export async function getCatalogBundle(db: Db): Promise<{ cities: City[]; tours: TourDetail[] }> {
-  const [cityList, tourRows] = await Promise.all([getCities(db), listAllPublished(db)]);
+  const [cityList, tourRows, dateRows] = await Promise.all([
+    getCities(db),
+    listAllPublished(db),
+    listFutureDates(db),
+  ]);
+  const datesByTour = new Map<string, TourDate[]>();
+  for (const r of dateRows) {
+    const d = toTourDate(r);
+    const list = datesByTour.get(d.tour_id) ?? [];
+    list.push(d);
+    datesByTour.set(d.tour_id, list);
+  }
   return {
     cities: cityList,
-    tours: tourRows.map((r) => toDetail(r.tour, r.cityName)),
+    tours: tourRows.map((r) => toDetail(r.tour, r.cityName, r.nextDate, datesByTour.get(r.tour.id) ?? [])),
   };
 }

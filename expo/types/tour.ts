@@ -18,6 +18,13 @@ export interface TourOrganizer {
   toursCount: number;
 }
 
+export interface TourDateOption {
+  id: string;
+  date: string; // YYYY-MM-DD
+  seatsLeft: number;
+  price: number; // рубли
+}
+
 export interface Tour {
   id: string;
   title: string;
@@ -57,6 +64,8 @@ export interface Tour {
   prepayment?: string;
   cancellationPolicy?: string;
   groupJoiningConditions?: string;
+  /** Будущие даты с местами (для бронирования, M3) */
+  dates?: TourDateOption[];
 }
 
 export type DurationType = "one_day" | "multi_day";
@@ -121,6 +130,8 @@ export interface BookedTour {
   currency: string;
   confirmationCode: string;
   status: "upcoming" | "completed";
+  /** Точный статус с бэкенда: requested — заявка ждёт подтверждения */
+  apiStatus?: "requested" | "confirmed" | "completed" | "cancelled";
   bookedAt: string;
   firstName: string;
   lastName: string;

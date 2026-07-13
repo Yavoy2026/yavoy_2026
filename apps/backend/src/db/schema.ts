@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   doublePrecision,
   index,
@@ -25,6 +27,7 @@ export const categoryTypeEnum = pgEnum("category_type", [
 export const seasonTypeEnum = pgEnum("season_type", ["winter", "spring", "summer", "autumn", "all_year"]);
 export const tourStatusEnum = pgEnum("tour_status", ["draft", "pending", "published", "rejected", "archived"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "manager", "admin"]);
+export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"]);
 
 // ─── Каталог (M1) ────────────────────────────────────────────
 
@@ -113,7 +116,39 @@ export const tourDates = pgTable(
     seatsLeft: integer("seats_left").notNull(),
     priceOverrideKopeks: integer("price_override_kopeks"),
   },
-  (t) => [uniqueIndex("tour_dates_tour_date_idx").on(t.tourId, t.startsOn)],
+  (t) => [
+    uniqueIndex("tour_dates_tour_date_idx").on(t.tourId, t.startsOn),
+    check("tour_dates_seats_nonneg", sql`${t.seatsLeft} >= 0`),
+  ],
+);
+
+// ─── Бронирования (M3: заявки без онлайн-оплаты) ─────────────
+
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    tourId: uuid("tour_id").notNull().references(() => tours.id),
+    tourDateId: uuid("tour_date_id").notNull().references(() => tourDates.id),
+    status: bookingStatusEnum("status").notNull().default("requested"),
+    ticketsCount: integer("tickets_count").notNull(),
+    amountKopeks: integer("amount_kopeks").notNull(),
+    currency: text("currency").notNull().default("RUB"),
+    confirmationCode: text("confirmation_code").notNull(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    contact: text("contact").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("bookings_user_idx").on(t.userId),
+    index("bookings_status_idx").on(t.status),
+    uniqueIndex("bookings_code_idx").on(t.confirmationCode),
+    check("bookings_tickets_positive", sql`${t.ticketsCount} > 0`),
+  ],
 );
 
 // ─── Auth (M2) ───────────────────────────────────────────────

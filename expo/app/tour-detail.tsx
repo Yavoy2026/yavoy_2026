@@ -60,6 +60,7 @@ import { useCatalog } from "@/services/catalog";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useViewedTours } from "@/providers/ViewedToursProvider";
 import { useBookings } from "@/providers/BookingsProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { Tour, TourReview, BookedTour } from "@/types/tour";
 
@@ -218,14 +219,34 @@ function BookingAuthModal({
   onBookingComplete: (booking: BookedTour) => void;
 }) {
   const { colors } = useTheme();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const { createBooking, isCreating } = useBookings();
   const [authMode, setAuthMode] = useState<"phone" | "email">("phone");
   const [phoneValue, setPhoneValue] = useState<string>("");
   const [emailValue, setEmailValue] = useState<string>("");
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
+  const [tickets, setTickets] = useState<number>(1);
 
-  const handleBook = useCallback(() => {
+  const dates = tour?.dates ?? [];
+  const selectedDate = dates.find((d) => d.id === selectedDateId) ?? dates[0] ?? null;
+  const maxTickets = Math.min(10, selectedDate?.seatsLeft ?? 1);
+
+  const handleBook = useCallback(async () => {
     if (!tour) return;
+    if (!isAuthenticated) {
+      Alert.alert("Нужен аккаунт", "Войдите, чтобы бронировать экскурсии", [
+        { text: "Отмена", style: "cancel" },
+        { text: "Войти", onPress: () => { onClose(); router.push("/auth"); } },
+      ]);
+      return;
+    }
+    if (!selectedDate) {
+      Alert.alert("Ошибка", "На этот тур пока нет доступных дат");
+      return;
+    }
     const contact = authMode === "phone" ? phoneValue : emailValue;
     if (!contact.trim()) {
       Alert.alert("Ошибка", authMode === "phone" ? "Введите номер телефона" : "Введите email");
@@ -235,35 +256,31 @@ function BookingAuthModal({
       Alert.alert("Ошибка", "Введите имя и фамилию");
       return;
     }
-    const booking: BookedTour = {
-      id: `bk-${Date.now()}`,
-      tourId: tour.id,
-      tourTitle: tour.title,
-      tourImage: tour.image,
-      tourCity: tour.city,
-      tourDate: tour.nextAvailableDate,
-      tourStartTime: tour.startTime || "10:00",
-      ticketCount: 1,
-      totalPrice: tour.price,
-      currency: tour.currency,
-      confirmationCode: `YV-${Date.now().toString(36).toUpperCase()}`,
-      status: "upcoming",
-      bookedAt: new Date().toISOString().split("T")[0],
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      contact: contact.trim(),
-      organizerName: tour.organizer.name,
-      meetingPoint: tour.meetingPoint,
-    };
-    console.log("[BookingAuth] Booking:", booking);
-    onBookingComplete(booking);
-    Alert.alert("Бронирование", `Заявка на "${tour.title}" отправлена! Тур добавлен в ваши поездки.`);
-    onClose();
-    setPhoneValue("");
-    setEmailValue("");
-    setFirstName("");
-    setLastName("");
-  }, [authMode, phoneValue, emailValue, firstName, lastName, tour, onClose, onBookingComplete]);
+    try {
+      const booking = await createBooking({
+        tour_date_id: selectedDate.id,
+        tickets_count: Math.min(tickets, maxTickets),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        contact: contact.trim(),
+      });
+      onBookingComplete(booking);
+      Alert.alert(
+        "Заявка отправлена!",
+        `Код брони: ${booking.confirmationCode}. Мы подтвердим бронирование и свяжемся с вами.`,
+      );
+      onClose();
+      setPhoneValue("");
+      setEmailValue("");
+      setFirstName("");
+      setLastName("");
+      setSelectedDateId(null);
+      setTickets(1);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Попробуйте ещё раз";
+      Alert.alert("Не удалось забронировать", message);
+    }
+  }, [authMode, phoneValue, emailValue, firstName, lastName, tour, isAuthenticated, selectedDate, tickets, maxTickets, createBooking, onClose, onBookingComplete, router]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -277,6 +294,51 @@ function BookingAuthModal({
 
               <Text style={[detailStyles.bookingModalTitle, { color: colors.text }]}>{"Бронирование"}</Text>
               <Text style={[detailStyles.bookingModalSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>{tour?.title || ""}</Text>
+
+              {dates.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={detailStyles.dateChipsRow}>
+                  {dates.map((d) => {
+                    const active = selectedDate?.id === d.id;
+                    return (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={[detailStyles.dateChip, { backgroundColor: active ? colors.teal : colors.surfaceSecondary, borderColor: active ? colors.teal : colors.border }]}
+                        onPress={() => { setSelectedDateId(d.id); setTickets(1); }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[detailStyles.dateChipText, { color: active ? "#FFFFFF" : colors.text }]}>{d.date}</Text>
+                        <Text style={[detailStyles.dateChipSeats, { color: active ? "#FFFFFF" : colors.textMuted }]}>{`мест: ${d.seatsLeft}`}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : (
+                <Text style={[detailStyles.bookingModalSubtitle, { color: colors.coral }]}>{"Нет доступных дат"}</Text>
+              )}
+
+              <View style={detailStyles.ticketsRow}>
+                <Text style={[detailStyles.ticketsLabel, { color: colors.text }]}>{"Билеты"}</Text>
+                <View style={detailStyles.ticketsStepper}>
+                  <TouchableOpacity
+                    style={[detailStyles.stepperBtn, { borderColor: colors.border }]}
+                    onPress={() => setTickets((n) => Math.max(1, n - 1))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[detailStyles.stepperBtnText, { color: colors.text }]}>{"−"}</Text>
+                  </TouchableOpacity>
+                  <Text style={[detailStyles.ticketsValue, { color: colors.text }]}>{String(tickets)}</Text>
+                  <TouchableOpacity
+                    style={[detailStyles.stepperBtn, { borderColor: colors.border }]}
+                    onPress={() => setTickets((n) => Math.min(maxTickets, n + 1))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[detailStyles.stepperBtnText, { color: colors.text }]}>{"+"}</Text>
+                  </TouchableOpacity>
+                </View>
+                {selectedDate ? (
+                  <Text style={[detailStyles.ticketsTotal, { color: colors.teal }]}>{`${(selectedDate.price * tickets).toLocaleString()} ₽`}</Text>
+                ) : null}
+              </View>
 
               <View style={detailStyles.authModeRow}>
                 <TouchableOpacity
@@ -351,12 +413,13 @@ function BookingAuthModal({
               </View>
 
               <TouchableOpacity
-                style={[detailStyles.bookingSubmitBtn, { backgroundColor: colors.teal }]}
-                onPress={handleBook}
+                style={[detailStyles.bookingSubmitBtn, { backgroundColor: colors.teal, opacity: isCreating ? 0.6 : 1 }]}
+                onPress={() => { void handleBook(); }}
+                disabled={isCreating}
                 activeOpacity={0.8}
                 testID="booking-submit"
               >
-                <Text style={detailStyles.bookingSubmitText}>{"Забронировать"}</Text>
+                <Text style={detailStyles.bookingSubmitText}>{isCreating ? "Отправляем…" : "Забронировать"}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={onClose} style={detailStyles.bookingCancelBtn} activeOpacity={0.7}>
@@ -435,7 +498,6 @@ export default function TourDetailScreen() {
 
   console.log("[TourDetailScreen] Rendering with params:", params.tourId);
 
-  const { addBooking } = useBookings();
   const { addPointsFromPurchase } = useLoyalty();
   const tourIdList = useMemo(() => (params.tourIds ? params.tourIds.split(",") : [params.tourId]), [params.tourIds, params.tourId]);
   const tourList = useMemo(() => tourIdList.map((id) => allTours.find((t) => t.id === id)).filter((t): t is Tour => t !== undefined), [allTours, tourIdList]);
@@ -516,10 +578,9 @@ export default function TourDetailScreen() {
   }, []);
 
   const handleBookingComplete = useCallback((booking: BookedTour) => {
-    addBooking(booking);
     addPointsFromPurchase(booking.totalPrice);
     console.log("[TourDetail] Booking completed:", booking.id);
-  }, [addBooking, addPointsFromPurchase]);
+  }, [addPointsFromPurchase]);
 
   const handleSimilarTourPress = useCallback((tourId: string) => {
     router.push({ pathname: "/tour-detail", params: { tourId, tourIds: tourId } });
@@ -891,6 +952,17 @@ export default function TourDetailScreen() {
 }
 
 const detailStyles = StyleSheet.create({
+  dateChipsRow: { gap: 8, paddingVertical: 10 },
+  dateChip: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, alignItems: "center" as const },
+  dateChipText: { fontSize: 13, fontWeight: "700" as const },
+  dateChipSeats: { fontSize: 11, marginTop: 2 },
+  ticketsRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, marginBottom: 12 },
+  ticketsLabel: { fontSize: 14, fontWeight: "600" as const },
+  ticketsStepper: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10 },
+  stepperBtn: { width: 32, height: 32, borderRadius: 8, borderWidth: 1, alignItems: "center" as const, justifyContent: "center" as const },
+  stepperBtnText: { fontSize: 18, fontWeight: "700" as const },
+  ticketsValue: { fontSize: 16, fontWeight: "700" as const, minWidth: 20, textAlign: "center" as const },
+  ticketsTotal: { fontSize: 16, fontWeight: "800" as const, marginLeft: "auto" as const },
   container: { flex: 1 },
   page: { flex: 1 },
   pageContent: { paddingBottom: 100 },
