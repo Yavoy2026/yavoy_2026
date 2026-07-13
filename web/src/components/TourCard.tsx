@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Heart, MapPin, Clock, Zap, Flame } from "lucide-react";
 import { StarRating } from "./StarRating";
 import { useApp } from "@/context/AppContext";
-import { cityNameMap } from "@/data/cities";
+import { useCatalog } from "@/services/catalog";
 import { cn } from "@/lib/utils";
 import type { Tour } from "@/types";
 
@@ -14,6 +14,7 @@ interface TourCardProps {
 export function TourCard({ tour, compact = false }: TourCardProps) {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useApp();
+  const { cityNameMap } = useCatalog();
   const fav = isFavorite(tour.id);
 
   return (

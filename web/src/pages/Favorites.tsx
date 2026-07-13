@@ -4,8 +4,7 @@ import { Heart, MapPin } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { TourCard } from "@/components/TourCard";
 import { useApp } from "@/context/AppContext";
-import { tours } from "@/data/tours";
-import { cities } from "@/data/cities";
+import { useCatalog } from "@/services/catalog";
 import { cn } from "@/lib/utils";
 
 type Tab = "tours" | "cities";
@@ -13,10 +12,11 @@ type Tab = "tours" | "cities";
 export default function Favorites() {
   const navigate = useNavigate();
   const { favorites, favoriteCities, toggleFavoriteCity } = useApp();
+  const { tours, cities } = useCatalog();
   const [tab, setTab] = useState<Tab>("tours");
 
-  const favTours = useMemo(() => tours.filter((t) => favorites.includes(t.id)), [favorites]);
-  const favCities = useMemo(() => cities.filter((c) => favoriteCities.includes(c.id)), [favoriteCities]);
+  const favTours = useMemo(() => tours.filter((t) => favorites.includes(t.id)), [tours, favorites]);
+  const favCities = useMemo(() => cities.filter((c) => favoriteCities.includes(c.id)), [cities, favoriteCities]);
 
   return (
     <Layout>

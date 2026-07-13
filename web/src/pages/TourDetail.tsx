@@ -7,20 +7,51 @@ import {
 import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
 import { useApp } from "@/context/AppContext";
-import { tours } from "@/data/tours";
-import { cityNameMap } from "@/data/cities";
+import { useAuth } from "@/context/AuthContext";
+import { useCatalog } from "@/services/catalog";
+import { createBooking } from "@/services/bookings";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export default function TourDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useApp();
+  const { isAuthenticated } = useAuth();
+  const { tours, cityNameMap, isLoading } = useCatalog();
+  const queryClient = useQueryClient();
   const [imgIndex, setImgIndex] = useState(0);
   const [booking, setBooking] = useState(false);
   const [tickets, setTickets] = useState(1);
+  const [dateId, setDateId] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [contact, setContact] = useState("");
 
-  const tour = useMemo(() => tours.find((t) => t.id === id), [id]);
-  const index = useMemo(() => tours.findIndex((t) => t.id === id), [id]);
+  const tour = useMemo(() => tours.find((t) => t.id === id), [tours, id]);
+  const index = useMemo(() => tours.findIndex((t) => t.id === id), [tours, id]);
+
+  const bookMutation = useMutation({
+    mutationFn: createBooking,
+    onSuccess: (b) => {
+      void queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+      void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      setBooking(false);
+      toast.success(`Заявка отправлена! Код брони: ${b.confirmationCode}. Мы свяжемся с вами для подтверждения.`, { duration: 8000 });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Не удалось забронировать"),
+  });
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center py-20">
+          <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-teal border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Загружаем экскурсию…</p>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!tour) {
     return (
@@ -192,33 +223,73 @@ export default function TourDetail() {
             </div>
 
             {!booking ? (
-              <button onClick={() => setBooking(true)} className="w-full rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform hover:scale-[1.02]">
+              <button
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    toast("Войдите, чтобы бронировать экскурсии");
+                    navigate("/auth");
+                    return;
+                  }
+                  setBooking(true);
+                  setDateId(tour.dates?.[0]?.id ?? null);
+                }}
+                className="w-full rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform hover:scale-[1.02]"
+              >
                 Забронировать
               </button>
             ) : (
               <div className="space-y-3">
+                {(tour.dates ?? []).length === 0 ? (
+                  <p className="text-sm text-coral">Нет доступных дат</p>
+                ) : (
+                  <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+                    {(tour.dates ?? []).map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => { setDateId(d.id); setTickets(1); }}
+                        className={`shrink-0 rounded-xl border px-3 py-2 text-center text-xs font-semibold transition-colors ${dateId === d.id ? "border-teal bg-teal text-white" : "border-border bg-secondary"}`}
+                      >
+                        <div>{d.date}</div>
+                        <div className={dateId === d.id ? "text-white/80" : "text-muted-foreground"}>мест: {d.seatsLeft}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center justify-between rounded-2xl bg-secondary p-3">
                   <span className="text-sm font-semibold">Билеты</span>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setTickets((t) => Math.max(1, t - 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-card font-bold">−</button>
                     <span className="w-6 text-center font-bold">{tickets}</span>
-                    <button onClick={() => setTickets((t) => t + 1)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card font-bold">+</button>
+                    <button onClick={() => setTickets((t) => Math.min(10, t + 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-card font-bold">+</button>
                   </div>
                 </div>
+                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Имя" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Фамилия" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Телефон или email" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Итого</span>
                   <span className="text-xl font-extrabold text-teal">{(tour.price * tickets).toLocaleString("ru-RU")}{tour.currency}</span>
                 </div>
                 <button
-                  onClick={() => { setBooking(false); toast.success("Бронирование подтверждено! Ваучер в личном кабинете."); }}
-                  className="w-full rounded-2xl bg-gold py-3.5 font-bold text-navy transition-transform hover:scale-[1.02]"
+                  disabled={bookMutation.isPending || !dateId || !firstName.trim() || !lastName.trim() || contact.trim().length < 3}
+                  onClick={() => {
+                    if (!dateId) return;
+                    bookMutation.mutate({
+                      tour_date_id: dateId,
+                      tickets_count: tickets,
+                      first_name: firstName.trim(),
+                      last_name: lastName.trim(),
+                      contact: contact.trim(),
+                    });
+                  }}
+                  className="w-full rounded-2xl bg-gold py-3.5 font-bold text-navy transition-transform hover:scale-[1.02] disabled:opacity-50"
                 >
-                  Оплатить {(tour.price * tickets).toLocaleString("ru-RU")}{tour.currency}
+                  {bookMutation.isPending ? "Отправляем…" : "Отправить заявку"}
                 </button>
+                <button onClick={() => setBooking(false)} className="w-full py-1 text-center text-xs text-muted-foreground">Отмена</button>
               </div>
             )}
 
-            <p className="mt-3 text-center text-xs text-muted-foreground">{tour.bookingsToday} человек забронировали сегодня</p>
           </div>
         </div>
       </div>

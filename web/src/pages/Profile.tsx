@@ -8,18 +8,16 @@ import {
 import { Layout } from "@/components/Layout";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { tours, transactions } from "@/data/tours";
-import { cityNameMap } from "@/data/cities";
+import { useCatalog } from "@/services/catalog";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchMyBookings } from "@/services/bookings";
+import { createReview, fetchMyReviews } from "@/services/social";
+import type { BookedTour } from "@/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { getPhotoUrl } from "@/services/api";
 
 type Section = "favorites" | "transactions" | "reviews" | "reels" | "promos" | null;
 
-const userReviews = [
-  { id: "ur1", tourTitle: "Обзорная экскурсия по Москве", tourImage: tours[0].image, rating: 5, text: "Потрясающая экскурсия! Гид был очень увлечённым.", date: "2026-03-20" },
-  { id: "ur2", tourTitle: "Белые ночи Петербурга", tourImage: tours[2].image, rating: 5, text: "Волшебная атмосфера белых ночей!", date: "2026-02-18" },
-];
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -30,8 +28,32 @@ export default function Profile() {
   const [reelTour, setReelTour] = useState("");
   const [reelCity, setReelCity] = useState("");
 
+  const { tours, cityNameMap } = useCatalog();
+  const queryClient = useQueryClient();
+  const bookingsQuery = useQuery({ queryKey: ["my-bookings"], queryFn: fetchMyBookings, enabled: isAuthenticated });
+  const bookings = bookingsQuery.data ?? [];
+  const reviewsQuery = useQuery({ queryKey: ["my-reviews"], queryFn: fetchMyReviews, enabled: isAuthenticated });
+  const userReviews = reviewsQuery.data ?? [];
+  const reviewedBookingIds = new Set(userReviews.map((r) => r.bookingId));
+
+  const [reviewBooking, setReviewBooking] = useState<BookedTour | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const reviewMutation = useMutation({
+    mutationFn: (vars: { bookingId: string; rating: number; text: string }) =>
+      createReview(vars.bookingId, vars.rating, vars.text),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
+      setReviewBooking(null);
+      setReviewText("");
+      setReviewRating(5);
+      toast.success("Отзыв отправлен на модерацию");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Не удалось отправить отзыв"),
+  });
+
   const favTours = tours.filter((t) => favorites.includes(t.id));
-  const totalSpent = transactions.filter((t) => t.status === "completed").reduce((s, t) => s + t.amount, 0);
+  const totalSpent = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
 
   const toggle = (s: Section) => setOpen((p) => (p === s ? null : s));
 
@@ -50,8 +72,8 @@ export default function Profile() {
         ) : isAuthenticated && user ? (
           <>
             <div className="flex items-center gap-4">
-              {user.photo ? (
-                <img src={getPhotoUrl(user.photo)} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-teal" />
+              {user.photo_url ? (
+                <img src={user.photo_url} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-teal" />
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal/20 text-2xl font-extrabold text-teal-light ring-2 ring-teal">
                   {user.first_name?.[0] ?? "?"}
@@ -60,8 +82,8 @@ export default function Profile() {
               <div>
                 <h1 className="text-xl font-extrabold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</h1>
                 <p className="text-sm text-white/60">{user.email}</p>
-                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "moderator" ? "bg-mint/20 text-mint" : "bg-white/10 text-white/70")}>
-                  {user.role === "admin" ? "Админ" : user.role === "moderator" ? "Модератор" : "Пользователь"}
+                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "manager" ? "bg-mint/20 text-mint" : "bg-white/10 text-white/70")}>
+                  {user.role === "admin" ? "Админ" : user.role === "manager" ? "Менеджер" : "Пользователь"}
                 </span>
               </div>
             </div>
@@ -76,7 +98,7 @@ export default function Profile() {
           </div>
         )}
         <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-navy-light p-4">
-          <Stat value={String(transactions.length)} label="Поездки" color="text-teal-light" />
+          <Stat value={String(bookings.length)} label="Поездки" color="text-teal-light" />
           <Stat value={String(points)} label="Баллы" color="text-gold" />
           <Stat value={String(favorites.length)} label="Избранное" color="text-teal-light" />
         </div>
@@ -98,24 +120,33 @@ export default function Profile() {
 
       {/* Sections */}
       <div className="mb-6 overflow-hidden rounded-3xl bg-card ring-1 ring-border/60">
-        <Row icon={Plane} iconBg="bg-teal/10" iconColor="text-teal" title="Мои поездки" count={`${transactions.length} поездок`} open={open === "transactions"} onClick={() => toggle("transactions")}>
-          {transactions.map((tr) => {
-            const cfg = statusCfg(tr.status);
-            return (
-              <div key={tr.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
-                <img src={tr.tourImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{tr.tourTitle}</div>
-                  <div className="text-xs text-muted-foreground">{tr.date}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold">{tr.status === "refunded" ? "+" : "−"}{tr.amount.toLocaleString("ru-RU")}{tr.currency}</div>
-                  <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {cfg.label}</div>
-                </div>
-              </div>
-            );
-          })}
-          <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">Всего потрачено: {totalSpent.toLocaleString("ru-RU")}₽</div>
+        <Row icon={Plane} iconBg="bg-teal/10" iconColor="text-teal" title="Мои поездки" count={`${bookings.length} поездок`} open={open === "transactions"} onClick={() => toggle("transactions")}>
+          {bookings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{isAuthenticated ? "Пока нет поездок — забронируйте первую экскурсию!" : "Войдите, чтобы видеть свои поездки"}</p>
+          ) : (
+            <>
+              {bookings.map((bk) => {
+                const cfg = bookingStatusCfg(bk.apiStatus ?? "requested");
+                return (
+                  <div key={bk.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
+                    <img src={bk.tourImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold">{bk.tourTitle}</div>
+                      <div className="text-xs text-muted-foreground">{bk.tourDate} · {bk.tourStartTime} · {bk.ticketCount} чел. · код {bk.confirmationCode}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold">{bk.totalPrice.toLocaleString("ru-RU")}{bk.currency}</div>
+                      <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {cfg.label}</div>
+                      {bk.apiStatus === "completed" && !reviewedBookingIds.has(bk.id) && (
+                        <button onClick={() => setReviewBooking(bk)} className="mt-1 text-xs font-semibold text-gold hover:underline">Оставить отзыв</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">Сумма поездок: {totalSpent.toLocaleString("ru-RU")}₽</div>
+            </>
+          )}
         </Row>
 
         <Row icon={Heart} iconBg="bg-coral/10" iconColor="text-coral" title="Избранные туры" count={`${favTours.length} экскурсий`} open={open === "favorites"} onClick={() => toggle("favorites")}>
@@ -132,7 +163,9 @@ export default function Profile() {
         </Row>
 
         <Row icon={MessageSquare} iconBg="bg-gold/15" iconColor="text-gold" title="Мои отзывы" count={`${userReviews.length} отзывов`} open={open === "reviews"} onClick={() => toggle("reviews")}>
-          {userReviews.map((r) => (
+          {userReviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Отзывы появятся после завершённых поездок</p>
+          ) : userReviews.map((r) => (
             <div key={r.id} className="rounded-2xl bg-background p-3">
               <div className="mb-1.5 flex items-center gap-2">
                 <img src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
@@ -140,6 +173,9 @@ export default function Profile() {
                   <div className="text-sm font-semibold">{r.tourTitle}</div>
                   <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={12} className={i < r.rating ? "text-gold" : "text-muted-foreground/30"} fill={i < r.rating ? "#E8B931" : "transparent"} />)}</div>
                 </div>
+                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", r.status === "published" ? "bg-mint/15 text-mint" : r.status === "pending" ? "bg-gold/15 text-gold" : "bg-coral/15 text-coral")}>
+                  {r.status === "published" ? "Опубликован" : r.status === "pending" ? "На модерации" : "Отклонён"}
+                </span>
               </div>
               <p className="text-sm text-muted-foreground">{r.text}</p>
             </div>
@@ -184,8 +220,44 @@ export default function Profile() {
           ))}
         </div>
       </div>
+      {reviewBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setReviewBooking(null)}>
+          <div className="w-full max-w-md rounded-3xl bg-card p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-extrabold">Ваш отзыв</h3>
+            <p className="mb-3 text-sm text-muted-foreground">{reviewBooking.tourTitle}</p>
+            <div className="mb-3 flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setReviewRating(star)}>
+                  <Star size={28} className="text-gold" fill={star <= reviewRating ? "#E8B931" : "transparent"} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              rows={4}
+              placeholder="Расскажите, как прошла поездка (минимум 3 символа)"
+              className="mb-3 w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none focus:border-teal"
+            />
+            <button
+              disabled={reviewMutation.isPending || reviewText.trim().length < 3}
+              onClick={() => reviewMutation.mutate({ bookingId: reviewBooking.id, rating: reviewRating, text: reviewText.trim() })}
+              className="w-full rounded-xl bg-teal py-3 font-bold text-white disabled:opacity-50"
+            >
+              {reviewMutation.isPending ? "Отправляем…" : "Отправить отзыв"}
+            </button>
+            <button onClick={() => setReviewBooking(null)} className="mt-2 w-full py-2 text-sm text-muted-foreground">Отмена</button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
+}
+
+function bookingStatusCfg(status: string) {
+  if (status === "confirmed") return { label: "Подтверждено", color: "text-mint", icon: CheckCircle };
+  if (status === "completed") return { label: "Завершено", color: "text-teal", icon: CheckCircle };
+  return { label: "Заявка отправлена", color: "text-orange-500", icon: Clock };
 }
 
 function Stat({ value, label, color }: { value: string; label: string; color: string }) {

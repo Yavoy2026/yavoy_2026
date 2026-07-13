@@ -34,6 +34,13 @@ export interface TourOrganizer {
   toursCount: number;
 }
 
+export interface TourDateOption {
+  id: string;
+  date: string; // YYYY-MM-DD
+  seatsLeft: number;
+  price: number; // рубли
+}
+
 export interface Tour {
   id: string;
   title: string;
@@ -68,6 +75,8 @@ export interface Tour {
   bookingsToday: number;
   startTime?: string;
   whatToBring?: string[];
+  /** Будущие даты с местами (для бронирования) */
+  dates?: TourDateOption[];
 }
 
 export interface City {
@@ -150,4 +159,27 @@ export interface AdminUserRow {
   city: string;
   purchasedToursCount: number;
   role: UserRole;
+}
+
+export interface BookedTour {
+  id: string;
+  tourId: string;
+  tourTitle: string;
+  tourImage: string;
+  tourCity: string;
+  tourDate: string;
+  tourStartTime: string;
+  ticketCount: number;
+  totalPrice: number;
+  currency: string;
+  confirmationCode: string;
+  status: "upcoming" | "completed";
+  /** Точный статус с бэкенда: requested — заявка ждёт подтверждения */
+  apiStatus?: "requested" | "confirmed" | "completed" | "cancelled";
+  bookedAt: string;
+  firstName: string;
+  lastName: string;
+  contact: string;
+  organizerName: string;
+  meetingPoint?: string;
 }

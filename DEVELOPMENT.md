@@ -9,7 +9,7 @@
 apps/backend/        Бэкенд: Fastify 5 + Zod + Drizzle + PostgreSQL (основная разработка)
 packages/contracts/  Общие zod-схемы API (бэкенд + клиенты)
 apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
-web/                 Vite-витрина — ЗАМОРОЖЕНА на моках (демо https://tur-ekskursiya.rork.app)
+web/                 Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + админка
                      (нативные ios/ и android/ — в ветке archive/native-apps)
 deploy/              Прод: docker-compose.prod.yml + Caddyfile
 ```
@@ -91,6 +91,16 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 - **RN-web грабли**: вложенный Touchable/Pressable внутри другого Touchable не получает клики
   в браузере — кнопки поверх карточек размещать сиблингами тач-области (см. `CitySelector.tsx`).
 - Проверка типов: `npx tsc --noEmit` в `apps/expo/`.
+
+## Web-клиент
+
+- Запуск: `cd web && npm install --legacy-peer-deps && VITE_API_URL=http://localhost:3002/v1 npx vite`
+- Сервисный слой зеркалит мобильный: `services/api.ts`, `catalog.ts`, `bookings.ts`, `social.ts`,
+  `admin.ts`; избранное — общий серверный кэш с миграцией гостевого (AppContext).
+- **Админка** (`/admin`, роль manager/admin): подтверждение/завершение/отмена броней,
+  модерация отзывов, управление пользователями — всё реальное. Вкладки с пометкой «демо»
+  ждут своих бэкенд-доменов (партнёрка — M6+).
+- Оставшиеся моки web: только Reels (backlog).
 
 ## CORS, заголовки и прочие уроки локального теста
 

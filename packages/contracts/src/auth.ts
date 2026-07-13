@@ -59,3 +59,14 @@ export const ChangePasswordPayloadSchema = z.object({
   new_password: z.string().min(8).max(128),
 });
 export type ChangePasswordPayload = z.infer<typeof ChangePasswordPayloadSchema>;
+
+// ─── Админ: управление пользователями ────────────────────────
+
+export const AdminUpdateUserPayloadSchema = z.object({
+  role: UserRoleSchema.optional(),
+  is_active: z.boolean().optional(),
+});
+export type AdminUpdateUserPayload = z.infer<typeof AdminUpdateUserPayloadSchema>;
+
+export const UserListResponseSchema = z.object({ items: z.array(UserProfileSchema) });
+export type UserListResponse = z.infer<typeof UserListResponseSchema>;

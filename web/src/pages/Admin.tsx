@@ -5,18 +5,22 @@ import {
   UserCheck, UserX, Shield, Loader2,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { tours } from "@/data/tours";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listUsers, type UserProfile } from "@/services/api";
+import {
+  approveReview, cancelBookingAdmin, completeBooking, confirmBooking,
+  fetchAdminBookings, fetchPendingReviews, rejectReview,
+} from "@/services/admin";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { UserProfile } from "@/services/api";
 
-type Tab = "tours" | "reels" | "partners" | "reviews" | "users" | "docs";
+type Tab = "bookings" | "reviews" | "users" | "tours" | "reels" | "partners" | "docs";
 
 const pendingTours = [
-  { id: "mt1", title: "Ночной джаз-квартал", partner: "ООО Джаз-Тур", city: "Санкт-Петербург", price: 2800, image: tours[2].image },
-  { id: "mt2", title: "Винный weekend", partner: "ИП Виноградов", city: "Сочи", price: 6200, image: tours[8].image },
+  { id: "mt1", title: "Ночной джаз-квартал", partner: "ООО Джаз-Тур", city: "Санкт-Петербург", price: 2800, image: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&h=300&fit=crop" },
+  { id: "mt2", title: "Винный weekend", partner: "ИП Виноградов", city: "Сочи", price: 6200, image: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=300&fit=crop" },
 ];
 
 const pendingPartners = [
@@ -28,32 +32,57 @@ const pendingReplies = [
   { id: "pr1", partner: "ООО «Гастро Москва»", review: "Невероятно вкусно!", reply: "Спасибо, ждём вас снова на наших турах!" },
 ];
 
-const users = [
-  { id: "u1", name: "Александр Иванов", email: "alex@yavoy.ru", role: "user", city: "Москва", tours: 5 },
-  { id: "u2", name: "Мария Кузнецова", email: "maria@yavoy.ru", role: "user", city: "Санкт-Петербург", tours: 2 },
-  { id: "u3", name: "Дмитрий Орлов", email: "dmitry@yavoy.ru", role: "manager", city: "Казань", tours: 0 },
-];
-
 export default function Admin() {
   const navigate = useNavigate();
   const { user, updateUserRole, activateUserById, deactivateUserById } = useAuth();
   const { moderationReels } = useApp();
-  const [tab, setTab] = useState<Tab>("tours");
+  const [tab, setTab] = useState<Tab>("bookings");
+  const queryClient = useQueryClient();
+  const isStaff = user?.role === "admin" || user?.role === "manager";
+
+  const usersQuery = useQuery({ queryKey: ["admin-users"], queryFn: () => listUsers(), enabled: isStaff && tab === "users" });
+  const bookingsQuery = useQuery({ queryKey: ["admin-bookings"], queryFn: () => fetchAdminBookings("requested"), enabled: isStaff && tab === "bookings" });
+  const confirmedQuery = useQuery({ queryKey: ["admin-bookings-confirmed"], queryFn: () => fetchAdminBookings("confirmed"), enabled: isStaff && tab === "bookings" });
+  const reviewsQuery = useQuery({ queryKey: ["admin-reviews"], queryFn: fetchPendingReviews, enabled: isStaff && tab === "reviews" });
+
+  const invalidateBookings = () => {
+    void queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin-bookings-confirmed"] });
+  };
+  const bookingAction = useMutation({
+    mutationFn: (vars: { id: string; action: "confirm" | "complete" | "cancel" }) =>
+      vars.action === "confirm" ? confirmBooking(vars.id) : vars.action === "complete" ? completeBooking(vars.id) : cancelBookingAdmin(vars.id),
+    onSuccess: (_, vars) => {
+      invalidateBookings();
+      toast.success(vars.action === "confirm" ? "Бронь подтверждена, клиенту отправлено письмо" : vars.action === "complete" ? "Поездка завершена" : "Бронь отменена");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+  });
+  const reviewAction = useMutation({
+    mutationFn: (vars: { id: string; approve: boolean }) => (vars.approve ? approveReview(vars.id) : rejectReview(vars.id)),
+    onSuccess: (_, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
+      void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      toast.success(vars.approve ? "Отзыв опубликован, рейтинг тура пересчитан" : "Отзыв отклонён");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+  });
   const [tourQueue, setTourQueue] = useState(pendingTours);
   const [partnerQueue, setPartnerQueue] = useState(pendingPartners);
   const [replyQueue, setReplyQueue] = useState(pendingReplies);
   const [docText, setDocText] = useState("Условия использования сервиса YAVOY…");
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
-  const isAdmin = user?.role === "admin" || user?.role === "moderator";
+  const isAdmin = isStaff;
 
   const tabs: { k: Tab; l: string; icon: React.ComponentType<{ size: number; className?: string }>; n?: number }[] = [
-    { k: "tours", l: "Туры", icon: Check, n: tourQueue.length },
-    { k: "reels", l: "Reels", icon: Video, n: moderationReels.length },
-    { k: "partners", l: "Партнёры", icon: Building2, n: partnerQueue.length },
-    { k: "reviews", l: "Ответы", icon: MessageSquare, n: replyQueue.length },
+    { k: "bookings", l: "Брони", icon: Check, n: bookingsQuery.data?.length },
+    { k: "reviews", l: "Отзывы", icon: MessageSquare, n: reviewsQuery.data?.length },
     { k: "users", l: "Пользователи", icon: Users },
-    { k: "docs", l: "Документы", icon: FileText },
+    { k: "tours", l: "Туры (демо)", icon: Check, n: tourQueue.length },
+    { k: "reels", l: "Reels (демо)", icon: Video, n: moderationReels.length },
+    { k: "partners", l: "Партнёры (демо)", icon: Building2, n: partnerQueue.length },
+    { k: "docs", l: "Документы (демо)", icon: FileText },
   ];
 
   return (
@@ -142,16 +171,58 @@ export default function Admin() {
         </Queue>
       )}
 
+      {tab === "bookings" && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="mb-2 font-bold">Новые заявки</h3>
+            <Queue empty="Нет заявок, ожидающих подтверждения" items={bookingsQuery.data ?? []}>
+              {(b) => (
+                <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+                  <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{b.tourTitle}</div>
+                    <div className="text-xs text-muted-foreground">{b.tourDate} · {b.tickets} чел. · {b.amount.toLocaleString("ru-RU")}₽ · {b.code}</div>
+                    <div className="text-xs text-muted-foreground">{b.guest} · {b.contact}</div>
+                  </div>
+                  <Actions
+                    onApprove={() => bookingAction.mutate({ id: b.id, action: "confirm" })}
+                    onReject={() => bookingAction.mutate({ id: b.id, action: "cancel" })}
+                  />
+                </div>
+              )}
+            </Queue>
+          </div>
+          <div>
+            <h3 className="mb-2 font-bold">Подтверждённые (завершить после поездки)</h3>
+            <Queue empty="Нет подтверждённых броней" items={confirmedQuery.data ?? []}>
+              {(b) => (
+                <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+                  <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{b.tourTitle}</div>
+                    <div className="text-xs text-muted-foreground">{b.tourDate} · {b.guest} · {b.code}</div>
+                  </div>
+                  <button onClick={() => bookingAction.mutate({ id: b.id, action: "complete" })} className="rounded-xl bg-teal px-3 py-2 text-xs font-bold text-white">Завершить</button>
+                </div>
+              )}
+            </Queue>
+          </div>
+        </div>
+      )}
+
       {tab === "reviews" && (
-        <Queue empty="Нет ответов на модерации" items={replyQueue}>
+        <Queue empty="Нет отзывов на модерации" items={reviewsQuery.data ?? []}>
           {(r) => (
             <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-              <div className="mb-1 text-sm font-semibold">{r.partner}</div>
-              <div className="mb-2 rounded-lg bg-secondary p-2 text-xs text-muted-foreground">Отзыв: {r.review}</div>
-              <div className="mb-3 rounded-lg bg-teal/10 p-2 text-sm">Ответ партнёра: {r.reply}</div>
+              <div className="mb-1 flex items-center gap-2">
+                <img src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
+                <div className="flex-1 text-sm font-semibold">{r.tourTitle}</div>
+                <span className="text-xs text-gold">{"★".repeat(r.rating)}</span>
+              </div>
+              <div className="mb-3 rounded-lg bg-secondary p-2 text-sm">{r.text}</div>
               <Actions
-                onApprove={() => { setReplyQueue((q) => q.filter((x) => x.id !== r.id)); toast.success("Ответ опубликован"); }}
-                onReject={() => { setReplyQueue((q) => q.filter((x) => x.id !== r.id)); toast("Ответ отклонён"); }}
+                onApprove={() => reviewAction.mutate({ id: r.id, approve: true })}
+                onReject={() => reviewAction.mutate({ id: r.id, approve: false })}
               />
             </div>
           )}
@@ -163,15 +234,15 @@ export default function Admin() {
           <div className="mb-3 rounded-2xl bg-background p-3 ring-1 ring-border/60">
             <p className="text-sm text-muted-foreground">
               <Shield size={14} className="mr-1 inline text-gold" />
-              Управление ролями пользователей. Изменения применяются мгновенно через API бэкенда.
+              Реальные пользователи платформы. Роли меняет только админ; менять себя нельзя.
             </p>
           </div>
-          {users.map((u) => (
+          {(usersQuery.data ?? []).map((u) => (
             <div key={u.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{u.name.split(" ").map((n) => n[0]).join("")}</div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{(u.first_name?.[0] ?? "?").toUpperCase()}</div>
               <div className="min-w-0 flex-1">
-                <div className="font-semibold">{u.name}</div>
-                <div className="text-xs text-muted-foreground">{u.email} · {u.city} · {u.tours} поездок</div>
+                <div className="font-semibold">{u.first_name}{u.last_name ? ` ${u.last_name}` : ""}{!u.is_active && <span className="ml-2 rounded-full bg-coral/15 px-2 py-0.5 text-[10px] font-semibold text-coral">Деактивирован</span>}</div>
+                <div className="text-xs text-muted-foreground">{u.email}</div>
               </div>
               <div className="flex items-center gap-1.5">
                 <select
@@ -181,18 +252,19 @@ export default function Admin() {
                     try {
                       setActionLoading((p) => ({ ...p, [u.id]: true }));
                       await updateUserRole(u.id, newRole);
-                      toast.success(`Роль изменена на «${newRole === "admin" ? "Админ" : newRole === "moderator" ? "Модератор" : "Пользователь"}»`);
-                    } catch {
-                      toast.error("Ошибка при изменении роли");
+                      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+                      toast.success(`Роль изменена на «${newRole === "admin" ? "Админ" : newRole === "manager" ? "Менеджер" : "Пользователь"}»`);
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Ошибка при изменении роли");
                     } finally {
                       setActionLoading((p) => ({ ...p, [u.id]: false }));
                     }
                   }}
-                  disabled={actionLoading[u.id]}
-                  className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-teal"
+                  disabled={actionLoading[u.id] || u.id === user?.id}
+                  className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-teal disabled:opacity-50"
                 >
                   <option value="user">Пользователь</option>
-                  <option value="moderator">Модератор</option>
+                  <option value="manager">Менеджер</option>
                   <option value="admin">Админ</option>
                 </select>
                 {actionLoading[u.id] && <Loader2 size={14} className="animate-spin text-teal" />}
@@ -203,14 +275,16 @@ export default function Admin() {
                     try {
                       setActionLoading((p) => ({ ...p, [`act-${u.id}`]: true }));
                       await activateUserById(u.id);
-                      toast.success(`Пользователь ${u.name} активирован`);
-                    } catch {
-                      toast.error("Ошибка активации");
+                      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+                      toast.success("Пользователь активирован");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Ошибка активации");
                     } finally {
                       setActionLoading((p) => ({ ...p, [`act-${u.id}`]: false }));
                     }
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-mint/10 text-mint transition-colors hover:bg-mint/20"
+                  disabled={u.id === user?.id}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-mint/10 text-mint transition-colors hover:bg-mint/20 disabled:opacity-40"
                   title="Активировать"
                 >
                   {actionLoading[`act-${u.id}`] ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
@@ -220,14 +294,16 @@ export default function Admin() {
                     try {
                       setActionLoading((p) => ({ ...p, [`deact-${u.id}`]: true }));
                       await deactivateUserById(u.id);
-                      toast.success(`Пользователь ${u.name} деактивирован`);
-                    } catch {
-                      toast.error("Ошибка деактивации");
+                      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+                      toast.success("Пользователь деактивирован");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Ошибка деактивации");
                     } finally {
                       setActionLoading((p) => ({ ...p, [`deact-${u.id}`]: false }));
                     }
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 text-coral transition-colors hover:bg-coral/20"
+                  disabled={u.id === user?.id}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 text-coral transition-colors hover:bg-coral/20 disabled:opacity-40"
                   title="Деактивировать"
                 >
                   {actionLoading[`deact-${u.id}`] ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />}

@@ -5,7 +5,6 @@ import {
   ShieldCheck, Loader2, MessageSquare, TrendingUp, LogOut,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { tours } from "@/data/tours";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -15,9 +14,9 @@ type Stage = "register" | "contacts" | "pending" | "cabinet";
 type Tab = "tours" | "guests" | "transactions" | "reviews";
 
 const initialSubmissions: PartnerTourSubmission[] = [
-  { id: "ps1", title: "Гастротур по рынкам Москвы", city: "Москва", price: 3500, image: tours[5].image, status: "published", submittedAt: "2026-05-10" },
-  { id: "ps2", title: "Ночной джаз-квартал", city: "Санкт-Петербург", price: 2800, image: tours[2].image, status: "pending", submittedAt: "2026-06-01" },
-  { id: "ps3", title: "Винный weekend", city: "Сочи", price: 6200, image: tours[8].image, status: "rejected", submittedAt: "2026-05-28" },
+  { id: "ps1", title: "Гастротур по рынкам Москвы", city: "Москва", price: 3500, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop", status: "published", submittedAt: "2026-05-10" },
+  { id: "ps2", title: "Ночной джаз-квартал", city: "Санкт-Петербург", price: 2800, image: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&h=300&fit=crop", status: "pending", submittedAt: "2026-06-01" },
+  { id: "ps3", title: "Винный weekend", city: "Сочи", price: 6200, image: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=300&fit=crop", status: "rejected", submittedAt: "2026-05-28" },
 ];
 
 const guests: PartnerGuest[] = [
@@ -74,7 +73,7 @@ export default function Partner() {
     if (!newTour.title.trim() || !newTour.city.trim() || !newTour.price.trim()) { toast.error("Заполните поля экскурсии"); return; }
     const sub: PartnerTourSubmission = {
       id: `ps-${Date.now()}`, title: newTour.title, city: newTour.city, price: Number(newTour.price) || 0,
-      image: tours[0].image, status: "pending", submittedAt: new Date().toISOString().slice(0, 10),
+      image: "https://images.unsplash.com/photo-1513326738677-b964603b136d?w=400&h=300&fit=crop", status: "pending", submittedAt: new Date().toISOString().slice(0, 10),
     };
     setSubmissions((p) => [sub, ...p]);
     setNewTour({ title: "", city: "", price: "" });
@@ -107,7 +106,7 @@ export default function Partner() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{user.first_name?.[0] ?? "?"}</div>
               <div className="flex-1">
                 <div className="font-semibold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</div>
-                <div className="text-xs text-muted-foreground">{user.email} · {user.role === "admin" ? "Админ" : user.role === "moderator" ? "Модератор" : "Пользователь"}</div>
+                <div className="text-xs text-muted-foreground">{user.email} · {user.role === "admin" ? "Админ" : user.role === "manager" ? "Модератор" : "Пользователь"}</div>
               </div>
               <button onClick={async () => { await logout(); navigate("/"); }} className="rounded-lg bg-coral/10 p-2 text-coral transition-colors hover:bg-coral/20"><LogOut size={16} /></button>
             </div>

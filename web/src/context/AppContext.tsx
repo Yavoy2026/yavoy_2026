@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
+import { addFavorite, fetchFavorites, removeFavorite, type FavoriteKind } from "@/services/social";
 import { initialReels } from "@/data/reels";
 import type { TravelReel } from "@/types";
 
@@ -38,9 +41,71 @@ function load<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * Избранное: гость — localStorage, авторизованный — сервер
+ * (общий кэш ["favorites"], при входе локальное мигрирует на сервер).
+ */
+function useSyncedFavorites(kind: FavoriteKind, storageKey: string) {
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const [localIds, setLocalIds] = useState<string[]>(() => load<string[]>(storageKey, []));
+  const mergedRef = useRef(false);
+
+  const serverQuery = useQuery({
+    queryKey: ["favorites"],
+    queryFn: fetchFavorites,
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+  const serverIds = serverQuery.data?.[kind];
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      mergedRef.current = false;
+      return;
+    }
+    if (mergedRef.current || !serverIds) return;
+    mergedRef.current = true;
+    const missing = localIds.filter((id) => !serverIds.includes(id));
+    if (missing.length === 0) return;
+    void Promise.allSettled(missing.map((id) => addFavorite(kind, id))).then(() => {
+      localStorage.removeItem(storageKey);
+      setLocalIds([]);
+      void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    });
+  }, [isAuthenticated, serverIds, localIds, kind, storageKey, queryClient]);
+
+  const ids = useMemo(
+    () => (isAuthenticated ? serverIds ?? [] : localIds),
+    [isAuthenticated, serverIds, localIds],
+  );
+
+  const toggle = useCallback(
+    (id: string) => {
+      const adding = !ids.includes(id);
+      if (!isAuthenticated) {
+        const updated = adding ? [...localIds, id] : localIds.filter((x) => x !== id);
+        setLocalIds(updated);
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+        return;
+      }
+      queryClient.setQueryData<{ tours: string[]; cities: string[] }>(["favorites"], (prev) => {
+        const base = prev ?? { tours: [], cities: [] };
+        return { ...base, [kind]: adding ? [...base[kind], id] : base[kind].filter((x) => x !== id) };
+      });
+      void (adding ? addFavorite(kind, id) : removeFavorite(kind, id)).catch(() => {
+        void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      });
+    },
+    [ids, isAuthenticated, localIds, kind, storageKey, queryClient],
+  );
+
+  return { ids, toggle };
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>(() => load<string[]>(FAV_KEY, ["1", "3"]));
-  const [favoriteCities, setFavoriteCities] = useState<string[]>(() => load<string[]>(FAV_CITY_KEY, ["spb"]));
+  const { ids: favorites, toggle: toggleFavoriteSynced } = useSyncedFavorites("tours", FAV_KEY);
+  const { ids: favoriteCities, toggle: toggleFavoriteCity } = useSyncedFavorites("cities", FAV_CITY_KEY);
   const [points, setPoints] = useState<number>(() => load<number>(POINTS_KEY, 3450));
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => load<ThemeMode>(THEME_KEY, "dark"));
   const [systemDark, setSystemDark] = useState<boolean>(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -59,20 +124,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
 
-  useEffect(() => { localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); }, [favorites]);
-  useEffect(() => { localStorage.setItem(FAV_CITY_KEY, JSON.stringify(favoriteCities)); }, [favoriteCities]);
   useEffect(() => { localStorage.setItem(POINTS_KEY, JSON.stringify(points)); }, [points]);
   useEffect(() => { localStorage.setItem(THEME_KEY, JSON.stringify(themeMode)); }, [themeMode]);
 
-  const toggleFavorite = useCallback((id: string) => {
-    setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }, []);
+  const toggleFavorite = toggleFavoriteSynced;
 
   const isFavorite = useCallback((id: string) => favorites.includes(id), [favorites]);
 
-  const toggleFavoriteCity = useCallback((id: string) => {
-    setFavoriteCities((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }, []);
 
   const addPoints = useCallback((n: number) => setPoints((p) => p + n), []);
 

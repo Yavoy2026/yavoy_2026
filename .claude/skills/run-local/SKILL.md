@@ -38,6 +38,11 @@ DATABASE_URL=postgres://yavoy:yavoy@localhost:5434/yavoy PORT=3002 NODE_ENV=deve
 cd ../expo
 EXPO_PUBLIC_API_URL=http://localhost:3002/v1 npx expo start --web --port 8081
 # готовность: в логе "Web Bundled", curl -s -o /dev/null -w "%{http_code}" localhost:8081 → 200
+
+# 5. Веб-клиент (опционально, из web/)
+cd ../../web
+VITE_API_URL=http://localhost:3002/v1 npx vite --port 5175
+# админка: http://localhost:5175/admin (нужна роль admin/manager)
 ```
 
 ## Смоук после запуска

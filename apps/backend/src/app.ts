@@ -15,6 +15,7 @@ import { env } from "./env.ts";
 import { AppError } from "./errors.ts";
 import { createMailer, type Mailer } from "./mail/mailer.ts";
 import { authPlugin } from "./plugins/auth.ts";
+import { adminRoutes } from "./modules/admin/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { bookingsRoutes } from "./modules/bookings/routes.ts";
 import { catalogRoutes } from "./modules/catalog/routes.ts";
@@ -93,6 +94,7 @@ export async function buildApp(db: Db) {
       await v1.register(bookingsRoutes);
       await v1.register(favoritesRoutes);
       await v1.register(reviewsRoutes);
+      await v1.register(adminRoutes);
       await v1.register(authRoutes, { prefix: "/auth" });
       await v1.register(usersRoutes, { prefix: "/users" });
     },

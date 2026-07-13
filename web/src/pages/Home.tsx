@@ -4,8 +4,7 @@ import { Search, X, Play, ChevronRight, ShieldCheck, Headphones, Wallet, BadgeCh
 import { Layout } from "@/components/Layout";
 import { TourCard } from "@/components/TourCard";
 import { useApp } from "@/context/AppContext";
-import { tours } from "@/data/tours";
-import { cities, cityNameMap } from "@/data/cities";
+import { useCatalog } from "@/services/catalog";
 import { cn } from "@/lib/utils";
 import type { DurationType, TransportType, SortType, SeasonType } from "@/types";
 
@@ -68,6 +67,7 @@ function Chip({ active, label, onClick }: { active: boolean; label: string; onCl
 export default function Home() {
   const navigate = useNavigate();
   const { publishedReels, favoriteCities, toggleFavoriteCity } = useApp();
+  const { tours, cities, cityNameMap, isLoading: catalogLoading } = useCatalog();
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [duration, setDuration] = useState<DurationType | null>(null);
   const [transport, setTransport] = useState<TransportType | null>(null);
@@ -100,9 +100,9 @@ export default function Home() {
       case "price_desc": result.sort((a, b) => b.price - a.price); break;
     }
     return result;
-  }, [selectedCity, duration, transport, interest, season, search, sort]);
+  }, [tours, cityNameMap, selectedCity, duration, transport, interest, season, search, sort]);
 
-  const popular = useMemo(() => [...tours].filter((t) => t.popularity >= 85).sort((a, b) => b.popularity - a.popularity), []);
+  const popular = useMemo(() => [...tours].filter((t) => t.popularity >= 85).sort((a, b) => b.popularity - a.popularity), [tours]);
   const hasFilters = selectedCity || duration || transport || interest || season || search.trim();
 
   const resetAll = () => {
@@ -280,7 +280,12 @@ export default function Home() {
       </div>
 
       {/* Feed */}
-      {filtered.length === 0 ? (
+      {catalogLoading ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl bg-card py-20 text-center">
+          <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-teal border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Загружаем экскурсии…</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-card py-20 text-center">
           <div className="mb-3 text-5xl">🧭</div>
           <h3 className="text-lg font-bold">Экскурсии не найдены</h3>

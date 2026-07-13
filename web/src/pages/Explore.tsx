@@ -4,18 +4,18 @@ import { MapPin, TrendingUp, Heart, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
 import { useApp } from "@/context/AppContext";
-import { cities, cityNameMap } from "@/data/cities";
-import { tours } from "@/data/tours";
+import { useCatalog } from "@/services/catalog";
 import { cn } from "@/lib/utils";
 
 export default function Explore() {
   const navigate = useNavigate();
+  const { tours, cities, cityNameMap } = useCatalog();
   const { favoriteCities, toggleFavoriteCity } = useApp();
   const [transport, setTransport] = useState<string | null>(null);
 
   const topRated = useMemo(
     () => [...tours].sort((a, b) => b.organizer.rating - a.organizer.rating).slice(0, 6),
-    [],
+    [tours],
   );
 
   const transportCats = [
@@ -28,7 +28,7 @@ export default function Explore() {
 
   const filtered = useMemo(
     () => (transport ? tours.filter((t) => t.transport === transport) : []),
-    [transport],
+    [tours, transport],
   );
 
   return (
