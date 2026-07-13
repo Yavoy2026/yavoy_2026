@@ -239,7 +239,7 @@ function BookingAuthModal({
     if (!isAuthenticated) {
       Alert.alert("Нужен аккаунт", "Войдите, чтобы бронировать экскурсии", [
         { text: "Отмена", style: "cancel" },
-        { text: "Войти", onPress: () => { onClose(); router.push("/auth"); } },
+        { text: "Войти", onPress: () => { onClose(); router.push("/auth/login"); } },
       ]);
       return;
     }
@@ -511,15 +511,23 @@ export default function TourDetailScreen() {
     }
   }, [params.tourId, markViewed]);
 
-  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null; item: Tour }> }) => {
-    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-      setCurrentIndex(viewableItems[0].index);
-      if (viewableItems[0].item) {
-        markViewed(viewableItems[0].item.id);
-      }
-    }
-  }, [markViewed]);
-  const viewabilityConfig = useMemo(() => ({ viewAreaCoveragePercentThreshold: 50 }), []);
+  // FlatList требует стабильную ссылку на onViewableItemsChanged на всё время жизни списка —
+  // держим последние замыкания в ref, а колбэк создаём один раз
+  const markViewedRef = useRef(markViewed);
+  markViewedRef.current = markViewed;
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: { viewAreaCoveragePercentThreshold: 50 },
+      onViewableItemsChanged: ({ viewableItems }: { viewableItems: Array<{ index: number | null; item: Tour }> }) => {
+        if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+          setCurrentIndex(viewableItems[0].index);
+          if (viewableItems[0].item) {
+            markViewedRef.current(viewableItems[0].item.id);
+          }
+        }
+      },
+    },
+  ]);
 
   const handleBack = useCallback(() => { router.back(); }, [router]);
 
@@ -921,8 +929,7 @@ export default function TourDetailScreen() {
         showsHorizontalScrollIndicator={false}
         initialScrollIndex={initialIndex}
         getItemLayout={(_d, i) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * i, index: i })}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         testID="tour-detail-swiper"
       />
       <View style={[detailStyles.topBar, { paddingTop: insets.top + 8 }]}>

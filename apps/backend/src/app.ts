@@ -36,7 +36,11 @@ export async function buildApp(db: Db) {
   app.decorate("db", db);
   app.decorate("mailer", createMailer(app.log));
 
-  await app.register(cors, { origin: true });
+  await app.register(cors, {
+    origin: true,
+    // дефолт @fastify/cors — только GET/HEAD/POST; без этого браузерные PUT/PATCH/DELETE режутся preflight'ом
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  });
   // global: false — лимиты только на роутах с config.rateLimit (auth).
   // В тестах плагин не регистрируется: route-config без плагина инертен
   if (env.NODE_ENV !== "test") {

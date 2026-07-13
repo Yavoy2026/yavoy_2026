@@ -58,28 +58,33 @@ export default React.memo(function CitySelector({
           const isActive = selectedCity === city.id;
           const isFav = isCityFavorite(city.id);
           return (
-            <TouchableOpacity
-              key={city.id}
-              style={[styles.cityCard, isActive && styles.cityCardActive]}
-              onPress={() => handlePress(city.id)}
-              activeOpacity={0.8}
-              testID={`city-${city.id}`}
-            >
-              <Image
-                source={{ uri: city.image }}
-                style={styles.cityImage}
-                contentFit="cover"
-                transition={200}
-              />
-              <View style={[styles.cityOverlay, isActive && styles.cityOverlayActive]} />
-              {isActive ? <View style={[styles.activeBorder, { borderColor: colors.teal }]} /> : null}
+            // сердечко — сиблинг, не потомок карточки: вложенные тачи не работают в RN-web
+            <View key={city.id} style={[styles.cityCard, isActive && styles.cityCardActive]}>
+              <TouchableOpacity
+                style={StyleSheet.absoluteFill}
+                onPress={() => handlePress(city.id)}
+                activeOpacity={0.8}
+                testID={`city-${city.id}`}
+              >
+                <Image
+                  source={{ uri: city.image }}
+                  style={styles.cityImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <View style={[styles.cityOverlay, isActive && styles.cityOverlayActive]} />
+                {isActive ? <View style={[styles.activeBorder, { borderColor: colors.teal }]} /> : null}
+
+                <View style={styles.cityInfo}>
+                  <Text style={styles.cityEmoji}>{city.emoji}</Text>
+                  <Text style={styles.cityName}>{city.name}</Text>
+                  <Text style={styles.cityCount}>{`${city.tourCount} туров`}</Text>
+                </View>
+              </TouchableOpacity>
 
               <Pressable
                 style={styles.favButton}
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  handleFavoritePress(city.id);
-                }}
+                onPress={() => handleFavoritePress(city.id)}
                 hitSlop={6}
                 testID={`city-fav-${city.id}`}
               >
@@ -90,13 +95,7 @@ export default React.memo(function CitySelector({
                   strokeWidth={2}
                 />
               </Pressable>
-
-              <View style={styles.cityInfo}>
-                <Text style={styles.cityEmoji}>{city.emoji}</Text>
-                <Text style={styles.cityName}>{city.name}</Text>
-                <Text style={styles.cityCount}>{`${city.tourCount} туров`}</Text>
-              </View>
-            </TouchableOpacity>
+            </View>
           );
         })}
       </ScrollView>

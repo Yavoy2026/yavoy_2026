@@ -60,36 +60,39 @@ export default function FavoritesScreen() {
     router.push({ pathname: "/", params: { cityId } });
   }, [router]);
 
+  // сердечко — сиблинг тач-области: вложенные тачи не работают в RN-web
   const renderCityCard = useCallback(({ item }: { item: City }) => (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={() => handleCityPress(item.id)}
-      style={[styles.cityCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}
-    >
-      <Image source={{ uri: item.image }} style={styles.cityImage} contentFit="cover" transition={200} />
-      <View style={styles.cityContent}>
-        <View style={styles.cityInfo}>
-          <Text style={styles.cityEmoji}>{item.emoji}</Text>
-          <View style={styles.cityTextBlock}>
-            <Text style={[styles.cityName, { color: colors.text }]}>{item.name}</Text>
-            <Text style={[styles.cityDescription, { color: colors.textSecondary }]} numberOfLines={1}>{item.description}</Text>
+    <View style={[styles.cityCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => handleCityPress(item.id)}
+        style={styles.cityCardTouch}
+      >
+        <Image source={{ uri: item.image }} style={styles.cityImage} contentFit="cover" transition={200} />
+        <View style={styles.cityContent}>
+          <View style={styles.cityInfo}>
+            <Text style={styles.cityEmoji}>{item.emoji}</Text>
+            <View style={styles.cityTextBlock}>
+              <Text style={[styles.cityName, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.cityDescription, { color: colors.textSecondary }]} numberOfLines={1}>{item.description}</Text>
+            </View>
+          </View>
+          <View style={styles.cityActions}>
+            <View style={[styles.tourCountBadge, { backgroundColor: colors.tealSoft }]}>
+              <MapPin size={11} color={colors.teal} />
+              <Text style={[styles.tourCountText, { color: colors.teal }]}>{`${item.tourCount} туров`}</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.cityActions}>
-          <View style={[styles.tourCountBadge, { backgroundColor: colors.tealSoft }]}>
-            <MapPin size={11} color={colors.teal} />
-            <Text style={[styles.tourCountText, { color: colors.teal }]}>{`${item.tourCount} туров`}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={(e) => { e.stopPropagation(); toggleFavoriteCity(item.id); }}
-            style={[styles.cityHeartBtn, { backgroundColor: colors.surfaceSecondary }]}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Heart size={16} color={colors.coral} fill={colors.coral} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => toggleFavoriteCity(item.id)}
+        style={[styles.cityHeartBtn, styles.cityHeartFloating, { backgroundColor: colors.surfaceSecondary }]}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Heart size={16} color={colors.coral} fill={colors.coral} />
+      </TouchableOpacity>
+    </View>
   ), [colors, toggleFavoriteCity, handleCityPress]);
 
   return (
@@ -234,6 +237,15 @@ const styles = StyleSheet.create({
   tourCountText: {
     fontSize: 11,
     fontWeight: "600" as const,
+  },
+  cityCardTouch: {
+    flex: 1,
+  },
+  cityHeartFloating: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    marginTop: -16,
   },
   cityHeartBtn: {
     width: 32,

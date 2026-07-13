@@ -113,7 +113,7 @@ export default function AdminScreen() {
             )}
             <TouchableOpacity
               style={[styles.loginBtn, { backgroundColor: colors.teal }]}
-              onPress={() => router.push("/auth")}
+              onPress={() => router.push("/auth/login")}
               activeOpacity={0.8}
               testID="admin-login-submit"
             >

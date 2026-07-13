@@ -103,20 +103,22 @@ async function clearTokens(): Promise<void> {
 
 // ─── HTTP core ───────────────────────────────────────────────
 
+function baseHeaders(options: RequestInit): Record<string, string> {
+  return {
+    // Content-Type только при наличии тела: fastify отклоняет пустой JSON-body
+    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(options.headers as Record<string, string>),
+  };
+}
+
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers as Record<string, string>) },
-  });
+  return fetch(`${API_BASE}${path}`, { ...options, headers: baseHeaders(options) });
 }
 
 /** Авторизованный запрос с прозрачным refresh при 401 */
 export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const tokens = await loadTokens();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
-  };
+  const headers: Record<string, string> = baseHeaders(options);
   if (tokens?.access_token) headers["Authorization"] = `Bearer ${tokens.access_token}`;
 
   let response = await fetch(`${API_BASE}${path}`, { ...options, headers });

@@ -113,27 +113,6 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
             </View>
           </View>
 
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={handleFavorite}
-              style={styles.actionBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              testID={`favorite-btn-${tour.id}`}
-            >
-              <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                <Heart size={20} color={liked ? colors.coral : "#FFFFFF"} fill={liked ? colors.coral : "transparent"} />
-              </Animated.View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleShare}
-              style={styles.actionBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              testID={`share-btn-${tour.id}`}
-            >
-              <Share2 size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
           {tour.bookingsToday > 5 ? (
             <View style={styles.bookingsBadge}>
               <Text style={styles.bookingsText}>{`🔥 ${tour.bookingsToday} бронирований сегодня`}</Text>
@@ -198,6 +177,28 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
           </View>
         </View>
       </TouchableOpacity>
+
+      {/* сиблинг карточки: вложенные тачи не получают нажатия в RN-web */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          onPress={handleFavorite}
+          style={styles.actionBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID={`favorite-btn-${tour.id}`}
+        >
+          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+            <Heart size={20} color={liked ? colors.coral : "#FFFFFF"} fill={liked ? colors.coral : "transparent"} />
+          </Animated.View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleShare}
+          style={styles.actionBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID={`share-btn-${tour.id}`}
+        >
+          <Share2 size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 });
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     position: "absolute",
-    bottom: 12,
+    top: 147, // низ фото (195) − кнопка (36) − отступ (12)
     right: 12,
     flexDirection: "row",
     gap: 8,
