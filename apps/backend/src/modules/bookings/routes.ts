@@ -10,6 +10,7 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
   cancelBooking,
+  completeBooking,
   confirmBooking,
   createBooking,
   listAdminBookings,
@@ -85,6 +86,25 @@ export async function bookingsRoutes(fastify: FastifyInstance) {
       },
     },
     async (req) => confirmBooking(app.db, app.mailer, req.params.id),
+  );
+
+  // Ручное завершение поездки (авто-cron появится в M4) — открывает возможность отзыва
+  app.post(
+    "/bookings/:id/complete",
+    {
+      preHandler: [app.requireRole("manager", "admin")],
+      schema: {
+        tags: ["bookings"],
+        params: IdParams,
+        response: {
+          200: BookingSchema,
+          403: ErrorEnvelopeSchema,
+          404: ErrorEnvelopeSchema,
+          409: ErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (req) => completeBooking(app.db, req.params.id),
   );
 
   app.get(

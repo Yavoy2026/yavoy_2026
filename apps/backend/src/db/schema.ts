@@ -9,6 +9,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -28,6 +29,8 @@ export const seasonTypeEnum = pgEnum("season_type", ["winter", "spring", "summer
 export const tourStatusEnum = pgEnum("tour_status", ["draft", "pending", "published", "rejected", "archived"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "manager", "admin"]);
 export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"]);
+export const favoriteEntityEnum = pgEnum("favorite_entity", ["tour", "city"]);
+export const reviewStatusEnum = pgEnum("review_status", ["pending", "published", "rejected"]);
 
 // ─── Каталог (M1) ────────────────────────────────────────────
 
@@ -94,6 +97,9 @@ export const tours = pgTable(
     isBestseller: boolean("is_bestseller").notNull().default(false),
     isLikelyToSellOut: boolean("is_likely_to_sell_out").notNull().default(false),
     popularity: integer("popularity").notNull().default(0),
+    // денормализация по опубликованным отзывам; пересчёт при модерации (M5)
+    rating: doublePrecision("rating"),
+    reviewsCount: integer("reviews_count").notNull().default(0),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -184,4 +190,39 @@ export const refreshSessions = pgTable(
     ip: text("ip"),
   },
   (t) => [uniqueIndex("refresh_sessions_hash_idx").on(t.tokenHash), index("refresh_sessions_user_idx").on(t.userId)],
+);
+
+// ─── Избранное и отзывы (M5) ─────────────────────────────────
+
+export const favorites = pgTable(
+  "favorites",
+  {
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    entityType: favoriteEntityEnum("entity_type").notNull(),
+    // text: tour — uuid, city — slug; целостность проверяется в сервисе
+    entityId: text("entity_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.entityType, t.entityId] })],
+);
+
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    tourId: uuid("tour_id").notNull().references(() => tours.id),
+    bookingId: uuid("booking_id").notNull().references(() => bookings.id),
+    rating: integer("rating").notNull(),
+    text: text("text").notNull(),
+    status: reviewStatusEnum("status").notNull().default("pending"),
+    rejectedReason: text("rejected_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("reviews_booking_idx").on(t.bookingId), // один отзыв на бронь
+    index("reviews_tour_status_idx").on(t.tourId, t.status),
+    check("reviews_rating_range", sql`${t.rating} between 1 and 5`),
+  ],
 );

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -64,6 +64,8 @@ import { useCertificates } from "@/providers/CertificatesProvider";
 import { usePromoCodes } from "@/providers/PromoCodesProvider";
 import { useReels } from "@/providers/ReelsProvider";
 import { transactions } from "@/mocks/bookings";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createReview, fetchMyReviews } from "@/services/social";
 import { useCatalog } from "@/services/catalog";
 import { BookedTour, GiftCertificate } from "@/types/tour";
 import CertificateModal from "@/components/CertificateModal";
@@ -91,42 +93,6 @@ const themeOptions: { key: ThemeMode; label: string; icon: React.ComponentType<{
   { key: "system", label: "Системная", icon: Smartphone },
   { key: "light", label: "Светлая", icon: Sun },
   { key: "dark", label: "Тёмная", icon: Moon },
-];
-
-interface UserReview {
-  id: string;
-  tourTitle: string;
-  tourImage: string;
-  rating: number;
-  text: string;
-  date: string;
-}
-
-const userReviews: UserReview[] = [
-  {
-    id: "ur1",
-    tourTitle: "Обзорная экскурсия по Москве",
-    tourImage: "https://images.unsplash.com/photo-1513326738677-b964603b136d?w=200&h=150&fit=crop",
-    rating: 5,
-    text: "Потрясающая экскурсия! Гид был очень увлечённым, узнал много нового о столице.",
-    date: "2026-03-20",
-  },
-  {
-    id: "ur2",
-    tourTitle: "Белые ночи Петербурга",
-    tourImage: "https://images.unsplash.com/photo-1556610961-2fecc5927173?w=200&h=150&fit=crop",
-    rating: 5,
-    text: "Волшебная атмосфера белых ночей! Разводные мосты — невероятное зрелище.",
-    date: "2026-02-18",
-  },
-  {
-    id: "ur3",
-    tourTitle: "Горный маршрут Красная Поляна",
-    tourImage: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=200&h=150&fit=crop",
-    rating: 4,
-    text: "Отличный маршрут, но хотелось бы больше остановок для фото.",
-    date: "2026-01-15",
-  },
 ];
 
 const TERMS_CONTENT = `Условия использования сервиса YAVOY
@@ -217,6 +183,33 @@ export default function ProfileScreen() {
   const [aboutModalVisible, setAboutModalVisible] = useState<boolean>(false);
   const [certModalVisible, setCertModalVisible] = useState<boolean>(false);
   const [voucherBooking, setVoucherBooking] = useState<BookedTour | null>(null);
+  const [reviewBooking, setReviewBooking] = useState<BookedTour | null>(null);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewText, setReviewText] = useState<string>("");
+  const queryClient = useQueryClient();
+
+  const myReviewsQuery = useQuery({
+    queryKey: ["my-reviews"],
+    queryFn: fetchMyReviews,
+    enabled: auth.isAuthenticated,
+  });
+  const userReviews = myReviewsQuery.data ?? [];
+  const reviewedBookingIds = useMemo(() => new Set(userReviews.map((r) => r.bookingId)), [userReviews]);
+
+  const reviewMutation = useMutation({
+    mutationFn: (vars: { bookingId: string; rating: number; text: string }) =>
+      createReview(vars.bookingId, vars.rating, vars.text),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
+      setReviewBooking(null);
+      setReviewText("");
+      setReviewRating(5);
+      Alert.alert("Спасибо!", "Отзыв отправлен на модерацию и появится после проверки.");
+    },
+    onError: (e: unknown) => {
+      Alert.alert("Не получилось", e instanceof Error ? e.message : "Попробуйте ещё раз");
+    },
+  });
   const [voucherCert, setVoucherCert] = useState<GiftCertificate | null>(null);
   const [reelTitle, setReelTitle] = useState<string>("");
   const [reelTourTitle, setReelTourTitle] = useState<string>("");
@@ -406,6 +399,11 @@ export default function ProfileScreen() {
                           <TouchableOpacity onPress={() => setVoucherBooking(bk)} activeOpacity={0.7}>
                             <Text style={[styles.voucherLink, { color: colors.teal }]}>{"Ваучер"}</Text>
                           </TouchableOpacity>
+                          {bk.status === "completed" && !reviewedBookingIds.has(bk.id) ? (
+                            <TouchableOpacity onPress={() => setReviewBooking(bk)} activeOpacity={0.7}>
+                              <Text style={[styles.voucherLink, { color: colors.gold }]}>{"Оставить отзыв"}</Text>
+                            </TouchableOpacity>
+                          ) : null}
                         </View>
                       </View>
                     </View>
@@ -499,12 +497,17 @@ export default function ProfileScreen() {
                     <View style={styles.reviewStars}>
                       {renderStars(review.rating)}
                     </View>
-                    <Text style={[styles.reviewDateText, { color: colors.textMuted }]}>{review.date}</Text>
+                    <Text style={[styles.reviewDateText, { color: colors.textMuted }]}>
+                      {review.status === "pending" ? "На модерации" : review.status === "rejected" ? "Отклонён" : review.date}
+                    </Text>
                   </View>
                 </View>
                 <Text style={[styles.reviewText, { color: colors.textSecondary }]}>{review.text}</Text>
               </View>
             ))}
+            {userReviews.length === 0 ? (
+              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{"Отзывов пока нет — они появятся после завершённых поездок"}</Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -1046,6 +1049,51 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      <Modal visible={!!reviewBooking} transparent animationType="slide" onRequestClose={() => setReviewBooking(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{"Ваш отзыв"}</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]} numberOfLines={2}>{reviewBooking?.tourTitle ?? ""}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginVertical: 12 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setReviewRating(star)} activeOpacity={0.7}>
+                  <StarIcon
+                    size={32}
+                    color={colors.gold}
+                    fill={star <= reviewRating ? colors.gold : "transparent"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={[styles.reviewInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+              placeholder="Расскажите, как прошла поездка (минимум 3 символа)"
+              placeholderTextColor={colors.textMuted}
+              value={reviewText}
+              onChangeText={setReviewText}
+              multiline
+              numberOfLines={4}
+              testID="review-text"
+            />
+            <TouchableOpacity
+              style={[styles.modalPrimaryBtn, { backgroundColor: colors.teal, opacity: reviewMutation.isPending ? 0.6 : 1 }]}
+              disabled={reviewMutation.isPending || reviewText.trim().length < 3}
+              onPress={() => {
+                if (!reviewBooking) return;
+                reviewMutation.mutate({ bookingId: reviewBooking.id, rating: reviewRating, text: reviewText.trim() });
+              }}
+              activeOpacity={0.8}
+              testID="review-submit"
+            >
+              <Text style={styles.modalPrimaryBtnText}>{reviewMutation.isPending ? "Отправляем…" : "Отправить отзыв"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setReviewBooking(null)} style={{ alignItems: "center", paddingVertical: 10 }} activeOpacity={0.7}>
+              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{"Отмена"}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={!!voucherCert} transparent animationType="slide" onRequestClose={() => setVoucherCert(null)}>
         <View style={[styles.legalModalOverlay, { backgroundColor: colors.backdrop }]}>
           <View style={[styles.legalModalContent, { backgroundColor: colors.surface }]}>
@@ -1171,6 +1219,13 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" as const },
+  modalCard: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34 },
+  modalTitle: { fontSize: 18, fontWeight: "800" as const, textAlign: "center" as const },
+  modalSubtitle: { fontSize: 13, textAlign: "center" as const, marginTop: 4 },
+  modalPrimaryBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" as const, marginTop: 4 },
+  modalPrimaryBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" as const },
+  reviewInput: { borderRadius: 12, borderWidth: 1, padding: 12, minHeight: 90, textAlignVertical: "top" as const, fontSize: 14, marginBottom: 12 },
   container: { flex: 1 },
   content: { paddingBottom: 30 },
   profileCard: {

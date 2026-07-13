@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TourDateSchema } from "./bookings";
+import { ReviewSchema } from "./social";
 import { CursorQuerySchema, paginated } from "./common";
 
 export const DurationTypeSchema = z.enum(["one_day", "multi_day"]);
@@ -65,6 +66,9 @@ export const TourCardSchema = z.object({
   popularity: z.number().int(),
   /** Ближайшая будущая дата с местами; null — дат пока нет */
   next_available_date: z.string().nullable(),
+  /** Рейтинг тура по опубликованным отзывам; null — отзывов ещё нет */
+  rating: z.number().nullable(),
+  reviews_count: z.number().int(),
 });
 export type TourCard = z.infer<typeof TourCardSchema>;
 
@@ -88,8 +92,8 @@ export const TourDetailSchema = TourCardSchema.extend({
   group_joining_conditions: z.string().nullable(),
   is_instant_confirmation: z.boolean(),
   is_free_cancellation: z.boolean(),
-  /** Отзывы появляются в M5; до этого всегда пустой список */
-  reviews: z.array(z.unknown()),
+  /** Опубликованные отзывы (до 20 последних) */
+  reviews: z.array(ReviewSchema),
   /** Будущие даты с местами (для выбора при бронировании) */
   dates: z.array(TourDateSchema),
 });

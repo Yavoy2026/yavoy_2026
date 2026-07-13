@@ -15,6 +15,13 @@
       "when": 1783962055001,
       "tag": "0001_busy_wallow",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783964092740,
+      "tag": "0002_superb_thor",
+      "breakpoints": true
     }
   ]
 }

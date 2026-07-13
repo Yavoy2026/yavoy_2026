@@ -133,6 +133,13 @@ export async function cancelBooking(
   return toBooking((await getBookingViewById(db, bookingId))!);
 }
 
+export async function completeBooking(db: Db, bookingId: string): Promise<Booking> {
+  const view = await getBookingViewById(db, bookingId);
+  if (!view) throw notFound("booking_not_found", "Бронь не найдена");
+  await changeStatus(db, view, "completed");
+  return toBooking((await getBookingViewById(db, bookingId))!);
+}
+
 export async function confirmBooking(db: Db, mailer: Mailer, bookingId: string): Promise<Booking> {
   const view = await getBookingViewById(db, bookingId);
   if (!view) throw notFound("booking_not_found", "Бронь не найдена");

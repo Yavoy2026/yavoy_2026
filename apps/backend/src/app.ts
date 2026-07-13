@@ -18,6 +18,8 @@ import { authPlugin } from "./plugins/auth.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { bookingsRoutes } from "./modules/bookings/routes.ts";
 import { catalogRoutes } from "./modules/catalog/routes.ts";
+import { favoritesRoutes } from "./modules/favorites/routes.ts";
+import { reviewsRoutes } from "./modules/reviews/routes.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
 import { usersRoutes } from "./modules/users/routes.ts";
 
@@ -85,6 +87,8 @@ export async function buildApp(db: Db) {
       await v1.register(healthRoutes);
       await v1.register(catalogRoutes);
       await v1.register(bookingsRoutes);
+      await v1.register(favoritesRoutes);
+      await v1.register(reviewsRoutes);
       await v1.register(authRoutes, { prefix: "/auth" });
       await v1.register(usersRoutes, { prefix: "/users" });
     },

@@ -1,7 +1,8 @@
-import type { City, TourCard, TourDate, TourDetail, TourListQuery, TourListResponse } from "@yavoy/contracts";
+import type { City, Review, TourCard, TourDate, TourDetail, TourListQuery, TourListResponse } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
 import { badRequest, notFound } from "../../errors.ts";
 import type { tours } from "../../db/schema.ts";
+import { listPublishedReviewsByTour, listTourReviews } from "../reviews/service.ts";
 import { getTourById, listAllPublished, listCities, listFutureDates, listTours, type Cursor } from "./repo.ts";
 
 type TourRow = typeof tours.$inferSelect;
@@ -54,6 +55,8 @@ function toCard(row: TourRow, cityName: string, nextDate: string | null): TourCa
     is_likely_to_sell_out: row.isLikelyToSellOut,
     popularity: row.popularity,
     next_available_date: nextDate,
+    rating: row.rating,
+    reviews_count: row.reviewsCount,
   };
 }
 
@@ -101,7 +104,7 @@ export async function getTours(db: Db, query: TourListQuery): Promise<TourListRe
   };
 }
 
-function toDetail(t: TourRow, cityName: string, nextDate: string | null, dates: TourDate[]): TourDetail {
+function toDetail(t: TourRow, cityName: string, nextDate: string | null, dates: TourDate[], tourReviews: Review[]): TourDetail {
   return {
     ...toCard(t, cityName, nextDate),
     description: t.description,
@@ -123,7 +126,7 @@ function toDetail(t: TourRow, cityName: string, nextDate: string | null, dates: 
     group_joining_conditions: t.groupJoiningConditions,
     is_instant_confirmation: t.isInstantConfirmation,
     is_free_cancellation: t.isFreeCancellation,
-    reviews: [], // отзывы — M5
+    reviews: tourReviews,
     dates,
   };
 }
@@ -131,8 +134,8 @@ function toDetail(t: TourRow, cityName: string, nextDate: string | null, dates: 
 export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
   const row = await getTourById(db, id);
   if (!row) throw notFound("tour_not_found", "Тур не найден");
-  const dates = (await listFutureDates(db, id)).map(toTourDate);
-  return toDetail(row.tour, row.cityName, row.nextDate, dates);
+  const [dateRows, tourReviews] = await Promise.all([listFutureDates(db, id), listTourReviews(db, id)]);
+  return toDetail(row.tour, row.cityName, row.nextDate, dateRows.map(toTourDate), tourReviews);
 }
 
 /**
@@ -141,10 +144,11 @@ export async function getTourDetail(db: Db, id: string): Promise<TourDetail> {
  * при росте каталога приложение переходит на GET /tours с серверными фильтрами.
  */
 export async function getCatalogBundle(db: Db): Promise<{ cities: City[]; tours: TourDetail[] }> {
-  const [cityList, tourRows, dateRows] = await Promise.all([
+  const [cityList, tourRows, dateRows, reviewsByTour] = await Promise.all([
     getCities(db),
     listAllPublished(db),
     listFutureDates(db),
+    listPublishedReviewsByTour(db),
   ]);
   const datesByTour = new Map<string, TourDate[]>();
   for (const r of dateRows) {
@@ -155,6 +159,6 @@ export async function getCatalogBundle(db: Db): Promise<{ cities: City[]; tours:
   }
   return {
     cities: cityList,
-    tours: tourRows.map((r) => toDetail(r.tour, r.cityName, r.nextDate, datesByTour.get(r.tour.id) ?? [])),
+    tours: tourRows.map((r) => toDetail(r.tour, r.cityName, r.nextDate, datesByTour.get(r.tour.id) ?? [], reviewsByTour.get(r.tour.id) ?? [])),
   };
 }

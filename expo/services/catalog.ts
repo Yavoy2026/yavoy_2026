@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { City, Tour, TourDateOption } from "@/types/tour";
+import type { City, Tour, TourDateOption, TourReview } from "@/types/tour";
 import { apiFetch } from "@/services/api";
 
 /**
@@ -67,6 +67,15 @@ interface ApiTour {
   is_likely_to_sell_out: boolean;
   popularity: number;
   next_available_date: string | null;
+  rating: number | null;
+  reviews_count: number;
+  reviews: {
+    id: string;
+    rating: number;
+    text: string;
+    author_name: string;
+    created_at: string;
+  }[];
   dates: {
     id: string;
     starts_on: string;
@@ -115,7 +124,16 @@ function adaptTour(t: ApiTour): Tour {
     isFreeCancellation: t.is_free_cancellation,
     isBestseller: t.is_bestseller,
     isLikelyToSellOut: t.is_likely_to_sell_out,
-    reviews: [], // отзывы появятся в M5
+    reviews: t.reviews.map(
+      (r): TourReview => ({
+        id: r.id,
+        author: r.author_name,
+        avatar: `https://ui-avatars.com/api/?background=0FA3B1&color=fff&name=${encodeURIComponent(r.author_name)}`,
+        rating: r.rating,
+        text: r.text,
+        date: r.created_at.slice(0, 10),
+      }),
+    ),
     meetingPoint: t.meeting_point ?? undefined,
     meetingPointCoords:
       t.meeting_lat != null && t.meeting_lng != null
