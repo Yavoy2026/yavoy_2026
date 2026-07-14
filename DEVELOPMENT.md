@@ -9,7 +9,7 @@
 apps/backend/        Бэкенд: Fastify 5 + Zod + Drizzle + PostgreSQL (основная разработка)
 packages/contracts/  Общие zod-схемы API (бэкенд + клиенты)
 apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
-web/                 Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + админка
+apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + админка
                      (нативные ios/ и android/ — в ветке archive/native-apps)
 deploy/              Прод: docker-compose.prod.yml + Caddyfile
 ```
@@ -94,7 +94,7 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 
 ## Web-клиент
 
-- Запуск: `cd web && npm install --legacy-peer-deps && VITE_API_URL=http://localhost:3002/v1 npx vite`
+- Запуск: `cd apps/web && npm install --legacy-peer-deps && VITE_API_URL=http://localhost:3002/v1 npx vite`
 - Сервисный слой зеркалит мобильный: `services/api.ts`, `catalog.ts`, `bookings.ts`, `social.ts`,
   `admin.ts`; избранное — общий серверный кэш с миграцией гостевого (AppContext).
 - **Админка** (`/admin`, роль manager/admin): подтверждение/завершение/отмена броней,

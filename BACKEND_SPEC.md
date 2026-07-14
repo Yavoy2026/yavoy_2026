@@ -57,22 +57,24 @@ repo.ts     → весь SQL/Drizzle. Без бизнес-решений.
 ```
 yavoy_2026/
 ├── apps/
-│   ├── expo/           # существующее приложение (переносится из ./expo)
-│   └── backend/        # новый бэкенд
+│   ├── expo/           # мобильное приложение (основной фронт)
+│   ├── web/            # веб-клиент (Vite + shadcn) + админка
+│   └── backend/        # бэкенд
 │       ├── src/
 │       │   ├── modules/        # по доменам: auth, users, catalog, bookings, ...
 │       │   │   └── <domain>/{routes,service,repo}.ts
 │       │   ├── plugins/        # auth-guard, rbac, error-handler, rate-limit
-│       │   ├── jobs/           # BullMQ-воркеры
+│       │   ├── jobs/           # BullMQ-воркеры (с M4)
 │       │   └── db/{schema,migrations}/
 │       └── Dockerfile
 ├── packages/
-│   └── contracts/      # zod-схемы + типы, импортируются и бэкендом, и Expo
-├── docker-compose.yml  # postgres, redis, backend, caddy
-└── pnpm-workspace.yaml
+│   └── contracts/      # zod-схемы + типы, импортируются бэкендом (клиенты — через адаптеры)
+├── docker-compose.yml  # dev: postgres
+├── deploy/             # прод: compose + Caddy
+└── pnpm-workspace.yaml # workspace: apps/backend + packages/*
 ```
 
-Менеджер пакетов — **pnpm** (workspaces). Web-версия (`web/`) и нативки (`ios/`, `android/`) переносятся в `archive/` или отдельную ветку.
+Менеджер пакетов бэкенда — **pnpm** (workspaces); клиенты живут на npm. Нативные `ios/`/`android/` — в ветке `archive/native-apps`.
 
 ---
 

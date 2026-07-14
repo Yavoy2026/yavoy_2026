@@ -8,7 +8,7 @@
     },
     {
       "name": "YaVoy Travel Group Web",
-      "path": "web",
+      "path": "apps/web",
       "framework": "web"
     }
   ]
