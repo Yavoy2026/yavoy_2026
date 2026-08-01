@@ -1,3 +1,10 @@
+{$WEB_DOMAIN} {
+	encode gzip
+	root * /srv
+	try_files {path} /index.html
+	file_server
+}
+
 {$API_DOMAIN} {
 	reverse_proxy backend:3000
 }

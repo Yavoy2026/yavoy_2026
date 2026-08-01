@@ -107,11 +107,26 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 - `@fastify/cors` по умолчанию разрешает только GET/HEAD/POST — методы заданы явно в `app.ts`.
 - Не слать `Content-Type: application/json` без тела — fastify отвечает 400 (учтено в `authFetch`).
 
-## Прод (когда появится VPS)
+## Прод
+
+Развёрнуто на VPS `89.169.21.102` (Ubuntu 24.04), домены через sslip.io:
+- веб: https://89.169.21.102.sslip.io
+- API: https://api.89.169.21.102.sslip.io (Swagger: `/docs`)
+
+Файлы на сервере: `/opt/yavoy` (compose, Caddyfile, .env с секретами).
+Сервисы: postgres + backend + caddy (веб-статика запечена в образ caddy, TLS автоматически).
+
+Образы собираются **локально** (VPS 2 ГБ — на нём не собираем) и переливаются по ssh:
 
 ```bash
-cd deploy && cp .env.example .env   # POSTGRES_PASSWORD, JWT-ключи, API_DOMAIN
-docker compose -f docker-compose.prod.yml up -d --build
+docker buildx build --platform linux/amd64 -f apps/backend/Dockerfile -t yavoy-backend:latest --load .
+docker buildx build --platform linux/amd64 -f apps/web/Dockerfile \
+  --build-arg VITE_API_URL=https://api.89.169.21.102.sslip.io/v1 -t yavoy-web:latest --load .
+docker save yavoy-backend:latest yavoy-web:latest | gzip | ssh root@89.169.21.102 'gunzip | docker load'
+ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.yml up -d --no-build'
 ```
 
-Образ бэкенда сам прогоняет миграции при старте; TLS — Caddy по `API_DOMAIN`.
+Образ бэкенда сам прогоняет миграции при старте. Сид каталога (одноразово, стирает
+каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
+Свой домен вместо sslip.io: поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
+`/opt/yavoy/.env`, пересобрать веб-образ (URL API зашивается при сборке).

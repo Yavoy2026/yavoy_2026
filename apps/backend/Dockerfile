@@ -7,7 +7,8 @@ COPY apps/backend/package.json apps/backend/
 RUN pnpm install --frozen-lockfile
 COPY packages/contracts packages/contracts
 COPY apps/backend apps/backend
-RUN pnpm --filter @yavoy/backend build && pnpm --filter @yavoy/backend deploy --prod /app
+# --legacy: контракты вбандлены tsup'ом, инжектить workspace-пакеты не нужно
+RUN pnpm --filter @yavoy/backend build && pnpm --filter @yavoy/backend deploy --prod --legacy /app
 
 FROM node:22-alpine
 WORKDIR /app
@@ -15,5 +16,7 @@ ENV NODE_ENV=production
 COPY --from=build /app /app
 COPY --from=build /repo/apps/backend/dist /app/dist
 COPY --from=build /repo/apps/backend/src/db/migrations /app/dist/migrations
+# dist/seed.js читает JSON по пути ../src/db/seed-data.json относительно себя
+COPY --from=build /repo/apps/backend/src/db/seed-data.json /app/src/db/seed-data.json
 EXPOSE 3000
 CMD ["sh", "-c", "node dist/migrate.js && node dist/server.js"]
