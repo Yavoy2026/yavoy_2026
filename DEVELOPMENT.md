@@ -107,14 +107,17 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 - `@fastify/cors` по умолчанию разрешает только GET/HEAD/POST — методы заданы явно в `app.ts`.
 - Не слать `Content-Type: application/json` без тела — fastify отвечает 400 (учтено в `authFetch`).
 
-## Прод
+## Stage-стенд
 
-Развёрнуто на VPS `89.169.21.102` (Ubuntu 24.04), домены через sslip.io:
+Stage (не прод!) развёрнут на VPS `89.169.21.102` (Ubuntu 24.04), домены через sslip.io:
 - веб: https://89.169.21.102.sslip.io
 - API: https://api.89.169.21.102.sslip.io (Swagger: `/docs`)
 
 Файлы на сервере: `/opt/yavoy` (compose, Caddyfile, .env с секретами).
 Сервисы: postgres + backend + caddy (веб-статика запечена в образ caddy, TLS автоматически).
+Compose один и тот же для stage и будущего прода (`deploy/docker-compose.prod.yml`) —
+окружения различаются только `.env` (домены, секреты) и сервером. Прод появится позже:
+свой домен, отдельный VPS, свежие секреты.
 
 Образы собираются **локально** (VPS 2 ГБ — на нём не собираем) и переливаются по ssh:
 
@@ -128,5 +131,5 @@ ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.y
 
 Образ бэкенда сам прогоняет миграции при старте. Сид каталога (одноразово, стирает
 каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
-Свой домен вместо sslip.io: поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
-`/opt/yavoy/.env`, пересобрать веб-образ (URL API зашивается при сборке).
+Для прода (свой домен): поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
+`.env` на сервере, пересобрать веб-образ (URL API зашивается при сборке).
