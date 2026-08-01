@@ -12,3 +12,7 @@ coverage/
 
 # npm-артефакт: канонический лок Expo — bun.lock
 apps/expo/package-lock.json
+
+# Сгенерировано expo prebuild (CNG) — не версионируем
+apps/expo/android/
+apps/expo/ios/
