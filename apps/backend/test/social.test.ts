@@ -2,10 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance, InjectOptions } from "fastify";
 import * as schema from "../src/db/schema.ts";
-import { createTestApp, seedCatalogFixture } from "./helpers.ts";
+import { createTestApp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
 
+let t: TestApp;
 let app: FastifyInstance;
-let teardown: () => Promise<void>;
 let userToken: string;
 let adminToken: string;
 let tourId: string;
@@ -19,7 +19,8 @@ async function call(opts: InjectOptions) {
 const authed = (token: string) => ({ authorization: `Bearer ${token}` });
 
 beforeAll(async () => {
-  ({ app, teardown } = await createTestApp());
+  t = await createTestApp();
+  app = t.app;
   await seedCatalogFixture(app);
 
   const tour = (await app.db.select().from(schema.tours).where(eq(schema.tours.status, "published")).limit(1))[0]!;
@@ -31,22 +32,8 @@ beforeAll(async () => {
       .returning()
   )[0]!;
 
-  const u = await call({
-    method: "POST",
-    url: "/v1/auth/signup",
-    payload: { email: "fan@test.ru", password: "password-123", first_name: "Фанат" },
-  });
-  userToken = u.json().tokens.access_token;
-
-  const a = await call({
-    method: "POST",
-    url: "/v1/auth/signup",
-    payload: { email: "mod@test.ru", password: "password-123", first_name: "Модер" },
-  });
-  await app.db.update(schema.users).set({ role: "manager" }).where(eq(schema.users.id, a.json().user.id));
-  adminToken = (
-    await call({ method: "POST", url: "/v1/auth/signin", payload: { email: "mod@test.ru", password: "password-123" } })
-  ).json().tokens.access_token;
+  userToken = (await signupWithRole(t, "fan@test.ru", "user", "Фанат")).token;
+  adminToken = (await signupWithRole(t, "mod@test.ru", "manager", "Модер")).token;
 
   const booking = await call({
     method: "POST",
@@ -57,7 +44,7 @@ beforeAll(async () => {
   bookingId = booking.json().id;
 });
 
-afterAll(() => teardown());
+afterAll(() => t.teardown());
 
 describe("избранное", () => {
   it("добавление идемпотентно, список возвращает оба типа", async () => {

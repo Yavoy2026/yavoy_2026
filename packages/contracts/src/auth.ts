@@ -24,18 +24,18 @@ export const UserProfileSchema = z.object({
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 
-export const SignupPayloadSchema = z.object({
+// Passwordless-вход: request шлёт 6-значный код на email, verify обменивает его на токены.
+// Регистрация и вход — один флоу; is_new_user говорит клиенту спросить имя.
+export const OtpRequestPayloadSchema = z.object({
   email: z.string().email().max(320),
-  password: z.string().min(8).max(128),
-  first_name: z.string().min(1).max(100),
 });
-export type SignupPayload = z.infer<typeof SignupPayloadSchema>;
+export type OtpRequestPayload = z.infer<typeof OtpRequestPayloadSchema>;
 
-export const SigninPayloadSchema = z.object({
+export const OtpVerifyPayloadSchema = z.object({
   email: z.string().email().max(320),
-  password: z.string().min(1).max(128),
+  code: z.string().regex(/^\d{6}$/),
 });
-export type SigninPayload = z.infer<typeof SigninPayloadSchema>;
+export type OtpVerifyPayload = z.infer<typeof OtpVerifyPayloadSchema>;
 
 export const RefreshPayloadSchema = z.object({
   refresh_token: z.string().min(1),
@@ -48,17 +48,16 @@ export const AuthResponseSchema = z.object({
 });
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 
+export const OtpVerifyResponseSchema = AuthResponseSchema.extend({
+  is_new_user: z.boolean(),
+});
+export type OtpVerifyResponse = z.infer<typeof OtpVerifyResponseSchema>;
+
 export const UpdateProfilePayloadSchema = z.object({
   first_name: z.string().min(1).max(100).optional(),
   last_name: z.string().max(100).nullable().optional(),
 });
 export type UpdateProfilePayload = z.infer<typeof UpdateProfilePayloadSchema>;
-
-export const ChangePasswordPayloadSchema = z.object({
-  old_password: z.string().min(1).max(128),
-  new_password: z.string().min(8).max(128),
-});
-export type ChangePasswordPayload = z.infer<typeof ChangePasswordPayloadSchema>;
 
 // ─── Админ: управление пользователями ────────────────────────
 

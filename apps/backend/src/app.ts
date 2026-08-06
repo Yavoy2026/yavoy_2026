@@ -24,7 +24,7 @@ import { reviewsRoutes } from "./modules/reviews/routes.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
 import { usersRoutes } from "./modules/users/routes.ts";
 
-export async function buildApp(db: Db) {
+export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
   const app = Fastify({
     logger:
       env.NODE_ENV === "development"
@@ -35,7 +35,7 @@ export async function buildApp(db: Db) {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   app.decorate("db", db);
-  app.decorate("mailer", createMailer(app.log));
+  app.decorate("mailer", opts.mailer ?? createMailer(app.log));
 
   await app.register(cors, {
     origin: true,

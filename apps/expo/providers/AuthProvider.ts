@@ -35,26 +35,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     void checkAuth();
   }, [checkAuth]);
 
-  const login = useCallback(
-    async (email: string, password: string): Promise<api.UserProfile> => {
-      await api.signin(email, password);
-      const profile = await api.whoami();
-      setUser(profile);
-      return profile;
-    },
-    [],
-  );
+  /** Шаг 1: отправить код на email (может кинуть ApiError otp_cooldown c details.retry_after_sec) */
+  const requestOtp = useCallback(async (email: string): Promise<void> => {
+    await api.requestOtp(email);
+  }, []);
 
-  const register = useCallback(
-    async (
-      email: string,
-      password: string,
-      firstName: string,
-    ): Promise<api.UserProfile> => {
-      await api.signup({ email, password, first_name: firstName });
-      const profile = await api.whoami();
-      setUser(profile);
-      return profile;
+  /** Шаг 2: обменять код на сессию; is_new_user — экран «Как вас зовут?» */
+  const verifyOtp = useCallback(
+    async (email: string, code: string): Promise<api.OtpVerifyResult> => {
+      const result = await api.verifyOtp(email, code);
+      setUser(result.user);
+      return result;
     },
     [],
   );
@@ -84,16 +75,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     [user],
   );
 
-  const changeMyPassword = useCallback(
-    async (payload: api.ChangePasswordPayload) => {
-      if (!user) throw new Error("Not authenticated");
-      const updated = await api.changePassword(user.id, payload);
-      setUser(updated);
-      return updated;
-    },
-    [user],
-  );
-
   const uploadMyPhoto = useCallback(
     async (file: { uri: string; name: string; type: string }) => {
       if (!user) throw new Error("Not authenticated");
@@ -105,12 +86,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   );
 
   const value = useMemo<AuthState & {
-    login: typeof login;
-    register: typeof register;
+    requestOtp: typeof requestOtp;
+    verifyOtp: typeof verifyOtp;
     logout: typeof logout;
     refreshUser: typeof refreshUser;
     updateMyProfile: typeof updateMyProfile;
-    changeMyPassword: typeof changeMyPassword;
     uploadMyPhoto: typeof uploadMyPhoto;
   }>(
     () => ({
@@ -118,15 +98,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       isLoading,
       isAuthenticated: user !== null && user.is_active,
       role: user?.role ?? null,
-      login,
-      register,
+      requestOtp,
+      verifyOtp,
       logout,
       refreshUser,
       updateMyProfile,
-      changeMyPassword,
       uploadMyPhoto,
     }),
-    [user, isLoading, login, register, logout, refreshUser, updateMyProfile, changeMyPassword, uploadMyPhoto],
+    [user, isLoading, requestOtp, verifyOtp, logout, refreshUser, updateMyProfile, uploadMyPhoto],
   );
 
   return value;

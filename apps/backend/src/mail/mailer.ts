@@ -19,7 +19,8 @@ export function createMailer(log: FastifyBaseLogger): Mailer {
   if (!env.SMTP_URL) {
     return {
       async send(msg) {
-        log.info({ mail: { to: msg.to, subject: msg.subject } }, "MAIL (SMTP не настроен — только лог)");
+        // text попадает в лог намеренно: на стенде без SMTP это единственный способ увидеть OTP-код
+        log.info({ mail: msg }, "MAIL (SMTP не настроен — только лог)");
       },
     };
   }
@@ -39,6 +40,20 @@ export function createMailer(log: FastifyBaseLogger): Mailer {
 }
 
 const isEmail = (contact: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.trim());
+
+export function otpMail({ to, code }: { to: string; code: string }): MailMessage {
+  return {
+    to,
+    subject: "Код входа в YaVoy",
+    text: [
+      `Ваш код для входа:`,
+      ``,
+      code,
+      ``,
+      `Код действует 10 минут. Если вы не запрашивали вход — просто проигнорируйте письмо.`,
+    ].join("\n"),
+  };
+}
 
 export function bookingRequestedAdminMail(booking: {
   confirmation_code: string;

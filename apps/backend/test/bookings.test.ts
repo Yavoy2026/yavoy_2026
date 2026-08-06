@@ -2,10 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance, InjectOptions } from "fastify";
 import * as schema from "../src/db/schema.ts";
-import { createTestApp, seedCatalogFixture } from "./helpers.ts";
+import { createTestApp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
 
+let t: TestApp;
 let app: FastifyInstance;
-let teardown: () => Promise<void>;
 let userToken: string;
 let adminToken: string;
 let tourDateId: string;
@@ -18,7 +18,8 @@ async function call(opts: InjectOptions) {
 const authed = (token: string) => ({ authorization: `Bearer ${token}` });
 
 beforeAll(async () => {
-  ({ app, teardown } = await createTestApp());
+  t = await createTestApp();
+  app = t.app;
   await seedCatalogFixture(app);
 
   // дата с 3 местами у первого опубликованного тура
@@ -29,30 +30,11 @@ beforeAll(async () => {
     .returning();
   tourDateId = inserted[0]!.id;
 
-  const u = await call({
-    method: "POST",
-    url: "/v1/auth/signup",
-    payload: { email: "guest@test.ru", password: "password-123", first_name: "Гость" },
-  });
-  userToken = u.json().tokens.access_token;
-
-  const a = await call({
-    method: "POST",
-    url: "/v1/auth/signup",
-    payload: { email: "boss@test.ru", password: "password-123", first_name: "Босс" },
-  });
-  const adminId = a.json().user.id;
-  await app.db.update(schema.users).set({ role: "admin" }).where(eq(schema.users.id, adminId));
-  // токен с ролью admin — после смены роли нужен новый JWT
-  const a2 = await call({
-    method: "POST",
-    url: "/v1/auth/signin",
-    payload: { email: "boss@test.ru", password: "password-123" },
-  });
-  adminToken = a2.json().tokens.access_token;
+  userToken = (await signupWithRole(t, "guest@test.ru", "user", "Гость")).token;
+  adminToken = (await signupWithRole(t, "boss@test.ru", "admin", "Босс")).token;
 });
 
-afterAll(() => teardown());
+afterAll(() => t.teardown());
 
 const bookingPayload = (tickets = 1) => ({
   tour_date_id: tourDateId,
@@ -155,15 +137,11 @@ describe("бронирования", () => {
     });
     const otherId = created.json().id;
 
-    const stranger = await call({
-      method: "POST",
-      url: "/v1/auth/signup",
-      payload: { email: "stranger@test.ru", password: "password-123", first_name: "Чужой" },
-    });
+    const stranger = await signupWithRole(t, "stranger@test.ru", "user", "Чужой");
     const res = await call({
       method: "POST",
       url: `/v1/bookings/${otherId}/cancel`,
-      headers: authed(stranger.json().tokens.access_token),
+      headers: authed(stranger.token),
     });
     expect(res.statusCode).toBe(403);
   });

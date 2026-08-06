@@ -16,3 +16,5 @@ export const unauthorized = (code: string, message: string) => new AppError(401,
 export const forbidden = (code: string, message: string) => new AppError(403, code, message);
 export const conflict = (code: string, message: string) => new AppError(409, code, message);
 export const badRequest = (code: string, message: string) => new AppError(400, code, message);
+export const tooManyRequests = (code: string, message: string, details?: Record<string, unknown>) =>
+  new AppError(429, code, message, details);

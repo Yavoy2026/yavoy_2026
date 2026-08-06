@@ -1,18 +1,17 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import * as api from "@/services/api";
-import type { UserProfile, UpdateProfilePayload, ChangePasswordPayload } from "@/services/api";
+import type { UserProfile, UpdateProfilePayload, OtpVerifyResult } from "@/services/api";
 
 interface AuthState {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   role: UserProfile["role"] | null;
-  login: (email: string, password: string) => Promise<UserProfile>;
-  register: (email: string, password: string, firstName: string) => Promise<UserProfile>;
+  requestOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, code: string) => Promise<OtpVerifyResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<UserProfile | null>;
   updateMyProfile: (payload: UpdateProfilePayload) => Promise<UserProfile>;
-  changeMyPassword: (payload: ChangePasswordPayload) => Promise<UserProfile>;
   uploadMyPhoto: (file: File) => Promise<UserProfile>;
   updateUserRole: (userId: string, role: UserProfile["role"]) => Promise<UserProfile>;
   activateUserById: (userId: string) => Promise<UserProfile>;
@@ -46,29 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void checkAuth();
   }, [checkAuth]);
 
-  const login = useCallback(
-    async (email: string, password: string): Promise<UserProfile> => {
-      await api.signin(email, password);
-      const profile = await api.whoami();
-      setUser(profile);
-      return profile;
-    },
-    [],
-  );
+  /** Шаг 1: отправить код на email (может кинуть ApiError otp_cooldown c details.retry_after_sec) */
+  const requestOtp = useCallback(async (email: string): Promise<void> => {
+    await api.requestOtp(email);
+  }, []);
 
-  const register = useCallback(
-    async (
-      email: string,
-      password: string,
-      firstName: string,
-    ): Promise<UserProfile> => {
-      await api.signup({ email, password, first_name: firstName });
-      const profile = await api.whoami();
-      setUser(profile);
-      return profile;
-    },
-    [],
-  );
+  /** Шаг 2: обменять код на сессию; is_new_user — спросить имя */
+  const verifyOtp = useCallback(async (email: string, code: string): Promise<OtpVerifyResult> => {
+    const result = await api.verifyOtp(email, code);
+    setUser(result.user);
+    return result;
+  }, []);
 
   const logout = useCallback(async () => {
     await api.logout();
@@ -89,16 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (payload: UpdateProfilePayload) => {
       if (!user) throw new Error("Not authenticated");
       const updated = await api.updateProfile(user.id, payload);
-      setUser(updated);
-      return updated;
-    },
-    [user],
-  );
-
-  const changeMyPassword = useCallback(
-    async (payload: ChangePasswordPayload) => {
-      if (!user) throw new Error("Not authenticated");
-      const updated = await api.changePassword(user.id, payload);
       setUser(updated);
       return updated;
     },
@@ -147,18 +124,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       isAuthenticated: user !== null && user.is_active,
       role: user?.role ?? null,
-      login,
-      register,
+      requestOtp,
+      verifyOtp,
       logout,
       refreshUser,
       updateMyProfile,
-      changeMyPassword,
       uploadMyPhoto,
       updateUserRole,
       activateUserById,
       deactivateUserById,
     }),
-    [user, isLoading, login, register, logout, refreshUser, updateMyProfile, changeMyPassword, uploadMyPhoto, updateUserRole, activateUserById, deactivateUserById],
+    [user, isLoading, requestOtp, verifyOtp, logout, refreshUser, updateMyProfile, uploadMyPhoto, updateUserRole, activateUserById, deactivateUserById],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

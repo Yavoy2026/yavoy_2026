@@ -1,9 +1,11 @@
-import { hash as argonHash, verify as argonVerify } from "@node-rs/argon2";
-import { and, eq, isNull } from "drizzle-orm";
-import type { AuthResponse, SigninPayload, SignupPayload, Tokens, UserProfile } from "@yavoy/contracts";
+import { createHash, randomInt } from "node:crypto";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import type { OtpVerifyPayload, OtpVerifyResponse, Tokens, UserProfile } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
-import { refreshSessions, users } from "../../db/schema.ts";
-import { conflict, unauthorized } from "../../errors.ts";
+import { emailOtps, refreshSessions, users } from "../../db/schema.ts";
+import { tooManyRequests, unauthorized } from "../../errors.ts";
+import type { Mailer } from "../../mail/mailer.ts";
+import { otpMail } from "../../mail/mailer.ts";
 import {
   ACCESS_TTL_SEC,
   generateRefreshToken,
@@ -13,6 +15,12 @@ import {
 } from "../../auth/tokens.ts";
 
 type UserRow = typeof users.$inferSelect;
+// Совместим и с Db, и с транзакцией внутри db.transaction
+type DbLike = Pick<Db, "select" | "insert" | "update" | "delete">;
+
+export const OTP_TTL_SEC = 600;
+export const OTP_RESEND_COOLDOWN_SEC = 60;
+export const OTP_MAX_ATTEMPTS = 5;
 
 export function toProfile(u: UserRow): UserProfile {
   return {
@@ -28,7 +36,7 @@ export function toProfile(u: UserRow): UserProfile {
   };
 }
 
-async function issueTokens(db: Db, user: UserRow, meta: { userAgent?: string; ip?: string }): Promise<Tokens> {
+async function issueTokens(db: DbLike, user: UserRow, meta: { userAgent?: string; ip?: string }): Promise<Tokens> {
   const now = Date.now();
   const { token, hash } = generateRefreshToken();
   const refreshExpires = new Date(now + REFRESH_TTL_SEC * 1000);
@@ -49,44 +57,90 @@ async function issueTokens(db: Db, user: UserRow, meta: { userAgent?: string; ip
   };
 }
 
-export async function signup(
-  db: Db,
-  payload: SignupPayload,
-  meta: { userAgent?: string; ip?: string },
-): Promise<AuthResponse> {
-  const email = payload.email.toLowerCase().trim();
-  const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-  if (existing.length > 0) throw conflict("email_taken", "Пользователь с таким email уже существует");
+const normalizeEmail = (raw: string) => raw.toLowerCase().trim();
 
-  const passwordHash = await argonHash(payload.password);
-  const inserted = await db
-    .insert(users)
-    .values({ email, passwordHash, firstName: payload.first_name.trim() })
-    .returning();
-  const user = inserted[0]!;
+// Хэшируем вместе с email: код из чужого письма бесполезен даже при утечке таблицы
+const hashOtpCode = (email: string, code: string) =>
+  createHash("sha256").update(`${email}:${code}`).digest("hex");
 
-  return { tokens: await issueTokens(db, user, meta), user: toProfile(user) };
+export async function requestOtp(db: Db, mailer: Mailer, rawEmail: string): Promise<void> {
+  const email = normalizeEmail(rawEmail);
+  const now = new Date();
+
+  const existing = await db.select().from(emailOtps).where(eq(emailOtps.email, email)).limit(1);
+  const lastSentAt = existing[0]?.lastSentAt;
+  if (lastSentAt) {
+    const elapsedSec = Math.floor((now.getTime() - lastSentAt.getTime()) / 1000);
+    if (elapsedSec < OTP_RESEND_COOLDOWN_SEC) {
+      throw tooManyRequests("otp_cooldown", "Код уже отправлен, подождите минуту", {
+        retry_after_sec: OTP_RESEND_COOLDOWN_SEC - elapsedSec,
+      });
+    }
+  }
+
+  const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+  // Один активный код на email: upsert перезаписывает прежний вместе с попытками
+  await db
+    .insert(emailOtps)
+    .values({
+      email,
+      codeHash: hashOtpCode(email, code),
+      expiresAt: new Date(now.getTime() + OTP_TTL_SEC * 1000),
+      attemptsLeft: OTP_MAX_ATTEMPTS,
+      lastSentAt: now,
+    })
+    .onConflictDoUpdate({
+      target: emailOtps.email,
+      set: {
+        codeHash: hashOtpCode(email, code),
+        expiresAt: new Date(now.getTime() + OTP_TTL_SEC * 1000),
+        attemptsLeft: OTP_MAX_ATTEMPTS,
+        lastSentAt: now,
+      },
+    });
+
+  await mailer.send(otpMail({ to: email, code }));
 }
 
-export async function signin(
+export async function verifyOtp(
   db: Db,
-  payload: SigninPayload,
+  payload: OtpVerifyPayload,
   meta: { userAgent?: string; ip?: string },
-): Promise<AuthResponse> {
-  const email = payload.email.toLowerCase().trim();
-  const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  const user = rows[0];
-  // argon2-проверка выполняется и для несуществующего пользователя — выравнивание времени ответа
-  const valid = await argonVerify(
-    user?.passwordHash ?? "$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-    payload.password,
-  ).catch(() => false);
+): Promise<OtpVerifyResponse> {
+  const email = normalizeEmail(payload.email);
+  const codeHash = hashOtpCode(email, payload.code);
 
-  if (!user || !valid) throw unauthorized("invalid_credentials", "Неверный email или пароль");
-  if (!user.isActive) throw unauthorized("user_deactivated", "Аккаунт деактивирован");
+  // Шаг 1: атомарно списать попытку. Условный UPDATE (как reserveSeats) держит лимит под гонками.
+  const rows = await db
+    .update(emailOtps)
+    .set({ attemptsLeft: sql`${emailOtps.attemptsLeft} - 1` })
+    .where(and(eq(emailOtps.email, email), gt(emailOtps.attemptsLeft, 0), gt(emailOtps.expiresAt, new Date())))
+    .returning();
+  const otp = rows[0];
+  // Не различаем «нет кода» / «истёк» / «попытки кончились» — не даём oracle перебору
+  if (!otp) throw unauthorized("otp_invalid_or_expired", "Код недействителен, запросите новый");
+  if (otp.codeHash !== codeHash) throw unauthorized("otp_wrong_code", "Неверный код");
 
-  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
-  return { tokens: await issueTokens(db, user, meta), user: toProfile(user) };
+  return db.transaction(async (tx) => {
+    // DELETE по (email, hash): в гонке двух verify код достаётся ровно одному
+    const deleted = await tx
+      .delete(emailOtps)
+      .where(and(eq(emailOtps.email, email), eq(emailOtps.codeHash, codeHash)))
+      .returning({ email: emailOtps.email });
+    if (deleted.length === 0) throw unauthorized("otp_invalid_or_expired", "Код недействителен, запросите новый");
+
+    let user = (await tx.select().from(users).where(eq(users.email, email)).limit(1))[0];
+    const isNew = !user;
+    if (!user) {
+      // Имя добирается клиентом после первого входа (PATCH /users/me)
+      const inserted = await tx.insert(users).values({ email, firstName: "" }).onConflictDoNothing().returning();
+      user = inserted[0] ?? (await tx.select().from(users).where(eq(users.email, email)).limit(1))[0]!;
+    }
+    if (!user.isActive) throw unauthorized("user_deactivated", "Аккаунт деактивирован");
+
+    await tx.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
+    return { tokens: await issueTokens(tx, user, meta), user: toProfile(user), is_new_user: isNew };
+  });
 }
 
 export async function refresh(

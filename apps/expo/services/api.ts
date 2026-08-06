@@ -32,20 +32,9 @@ export interface UserProfile {
   last_login_at?: string | null;
 }
 
-export interface SignupPayload {
-  email: string;
-  password: string;
-  first_name: string;
-}
-
 export interface UpdateProfilePayload {
   first_name?: string;
   last_name?: string | null;
-}
-
-export interface ChangePasswordPayload {
-  old_password: string;
-  new_password: string;
 }
 
 export interface AuthResponse {
@@ -53,23 +42,35 @@ export interface AuthResponse {
   user: UserProfile;
 }
 
+export interface OtpVerifyResult {
+  user: UserProfile;
+  is_new_user: boolean;
+}
+
 export class ApiError extends Error {
   status: number;
   code: string;
+  details?: Record<string, unknown>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, details?: Record<string, unknown>) {
     super(message);
     this.status = status;
     this.code = code;
+    this.details = details;
     this.name = "ApiError";
   }
 }
 
 async function throwApiError(res: Response, fallback: string): Promise<never> {
   const body = (await res.json().catch(() => null)) as {
-    error?: { code?: string; message?: string };
+    error?: { code?: string; message?: string; details?: Record<string, unknown> };
   } | null;
-  throw new ApiError(res.status, body?.error?.code ?? "unknown", body?.error?.message ?? fallback);
+  throw new ApiError(
+    res.status,
+    body?.error?.code ?? "unknown",
+    body?.error?.message ?? fallback,
+    body?.error?.details,
+  );
 }
 
 // ─── Token storage ───────────────────────────────────────────
@@ -159,26 +160,25 @@ async function refreshTokens(refreshToken: string): Promise<Tokens> {
 
 // ─── Auth endpoints ──────────────────────────────────────────
 
-export async function signin(email: string, password: string): Promise<UserProfile> {
-  const res = await apiFetch("/auth/signin", {
+/** Шаг 1 passwordless-входа: отправить 6-значный код на email */
+export async function requestOtp(email: string): Promise<void> {
+  const res = await apiFetch("/auth/otp/request", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email }),
   });
-  if (!res.ok) await throwApiError(res, "Ошибка входа");
-  const body = (await res.json()) as AuthResponse;
-  await saveTokens(body.tokens);
-  return body.user;
+  if (!res.ok) await throwApiError(res, "Не удалось отправить код");
 }
 
-export async function signup(payload: SignupPayload): Promise<UserProfile> {
-  const res = await apiFetch("/auth/signup", {
+/** Шаг 2: обменять код на токены; is_new_user — спросить имя */
+export async function verifyOtp(email: string, code: string): Promise<OtpVerifyResult> {
+  const res = await apiFetch("/auth/otp/verify", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ email, code }),
   });
-  if (!res.ok) await throwApiError(res, "Ошибка регистрации");
-  const body = (await res.json()) as AuthResponse;
+  if (!res.ok) await throwApiError(res, "Неверный код");
+  const body = (await res.json()) as AuthResponse & { is_new_user: boolean };
   await saveTokens(body.tokens);
-  return body.user;
+  return { user: body.user, is_new_user: body.is_new_user };
 }
 
 export async function whoami(): Promise<UserProfile> {
@@ -213,18 +213,6 @@ export async function updateProfile(
     body: JSON.stringify(payload),
   });
   if (!res.ok) await throwApiError(res, "Ошибка обновления профиля");
-  return res.json() as Promise<UserProfile>;
-}
-
-export async function changePassword(
-  _userId: string,
-  payload: ChangePasswordPayload,
-): Promise<UserProfile> {
-  const res = await authFetch("/users/me/password", {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) await throwApiError(res, "Ошибка смены пароля");
   return res.json() as Promise<UserProfile>;
 }
 

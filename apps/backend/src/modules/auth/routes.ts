@@ -1,9 +1,9 @@
 import {
-  AuthResponseSchema,
   ErrorEnvelopeSchema,
+  OtpRequestPayloadSchema,
+  OtpVerifyPayloadSchema,
+  OtpVerifyResponseSchema,
   RefreshPayloadSchema,
-  SigninPayloadSchema,
-  SignupPayloadSchema,
   TokensSchema,
   UserProfileSchema,
 } from "@yavoy/contracts";
@@ -11,7 +11,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { unauthorized } from "../../errors.ts";
-import { getUserById, logout, refresh, signin, signup, toProfile } from "./service.ts";
+import { getUserById, logout, refresh, requestOtp, toProfile, verifyOtp } from "./service.ts";
 
 const AUTH_RATE_LIMIT = { rateLimit: { max: 5, timeWindow: "1 minute" } };
 
@@ -23,29 +23,32 @@ export async function authRoutes(fastify: FastifyInstance) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 
   app.post(
-    "/signup",
+    "/otp/request",
     {
       config: AUTH_RATE_LIMIT,
       schema: {
         tags: ["auth"],
-        body: SignupPayloadSchema,
-        response: { 200: AuthResponseSchema, 409: ErrorEnvelopeSchema },
+        body: OtpRequestPayloadSchema,
+        response: { 200: z.object({ ok: z.literal(true) }), 429: ErrorEnvelopeSchema },
       },
     },
-    async (req) => signup(app.db, req.body, meta(req)),
+    async (req) => {
+      await requestOtp(app.db, app.mailer, req.body.email);
+      return { ok: true as const };
+    },
   );
 
   app.post(
-    "/signin",
+    "/otp/verify",
     {
-      config: AUTH_RATE_LIMIT,
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
       schema: {
         tags: ["auth"],
-        body: SigninPayloadSchema,
-        response: { 200: AuthResponseSchema, 401: ErrorEnvelopeSchema },
+        body: OtpVerifyPayloadSchema,
+        response: { 200: OtpVerifyResponseSchema, 401: ErrorEnvelopeSchema },
       },
     },
-    async (req) => signin(app.db, req.body, meta(req)),
+    async (req) => verifyOtp(app.db, req.body, meta(req)),
   );
 
   app.post(

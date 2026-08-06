@@ -164,7 +164,6 @@ export const users = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     email: text("email").notNull(),
-    passwordHash: text("password_hash").notNull(),
     role: userRoleEnum("role").notNull().default("user"),
     isActive: boolean("is_active").notNull().default(true),
     firstName: text("first_name").notNull(),
@@ -175,6 +174,16 @@ export const users = pgTable(
   },
   (t) => [uniqueIndex("users_email_idx").on(t.email)],
 );
+
+// Одноразовые коды входа: одна строка на email (upsert по PK инвалидирует прежний код).
+// Хранится только хэш кода; attempts_left списывается условным UPDATE (гонко-безопасно).
+export const emailOtps = pgTable("email_otps", {
+  email: text("email").primaryKey(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  attemptsLeft: integer("attempts_left").notNull().default(5),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const refreshSessions = pgTable(
   "refresh_sessions",
