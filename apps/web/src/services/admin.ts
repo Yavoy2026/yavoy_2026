@@ -105,3 +105,130 @@ export async function rejectReview(id: string): Promise<void> {
     "Не удалось отклонить",
   );
 }
+
+// ─── Управление турами (бэкофис) ─────────────────────────────
+
+export type AdminTourStatus = "draft" | "pending" | "published" | "rejected" | "archived";
+
+/** Модель тура бэкофиса — snake_case как в API, без адаптации (редактор работает с полями напрямую) */
+export interface AdminTour {
+  id: string;
+  status: AdminTourStatus;
+  city_id: string;
+  city_name: string;
+  title: string;
+  description: string;
+  image_url: string;
+  gallery: string[];
+  price_kopeks: number;
+  original_price_kopeks: number | null;
+  currency: string;
+  duration_type: "one_day" | "multi_day";
+  duration_text: string;
+  transport: "auto" | "water" | "sea" | "bike" | "air";
+  interest: "city" | "educational" | "nature" | "pilgrimage";
+  category: string | null;
+  season: string | null;
+  organizer: {
+    id: string;
+    name: string;
+    rating: number;
+    review_count: number;
+    avatar: string | null;
+    verified: boolean;
+    tours_count: number;
+  };
+  highlights: string[];
+  includes: string[];
+  excludes: string[];
+  what_to_bring: string[];
+  languages: string[];
+  schedule: string | null;
+  group_size: string | null;
+  meeting_point: string | null;
+  meeting_lat: number | null;
+  meeting_lng: number | null;
+  start_time: string | null;
+  booking_conditions: string | null;
+  prepayment: string | null;
+  cancellation_policy: string | null;
+  group_joining_conditions: string | null;
+  is_instant_confirmation: boolean;
+  is_free_cancellation: boolean;
+  is_bestseller: boolean;
+  is_likely_to_sell_out: boolean;
+  popularity: number;
+  rating: number | null;
+  reviews_count: number;
+  published_at: string;
+  created_at: string;
+}
+
+export type TourWritePayload = Partial<
+  Omit<AdminTour, "id" | "status" | "city_name" | "rating" | "reviews_count" | "published_at" | "created_at">
+>;
+
+export interface AdminTourDate {
+  id: string;
+  tour_id: string;
+  starts_on: string;
+  seats_total: number;
+  seats_left: number;
+  price_override_kopeks: number | null;
+  bookings_count: number;
+}
+
+export async function fetchAdminTours(q?: { status?: AdminTourStatus; q?: string }): Promise<AdminTour[]> {
+  const params = new URLSearchParams();
+  if (q?.status) params.set("status", q.status);
+  if (q?.q) params.set("q", q.q);
+  const qs = params.toString();
+  const res = await authFetch(`/admin/tours${qs ? `?${qs}` : ""}`);
+  const body = await ensureOk<{ items: AdminTour[] }>(res, "Не удалось загрузить туры");
+  return body.items;
+}
+
+export async function createTour(payload: TourWritePayload): Promise<AdminTour> {
+  const res = await authFetch("/admin/tours", { method: "POST", body: JSON.stringify(payload) });
+  return ensureOk<AdminTour>(res, "Не удалось создать тур");
+}
+
+export async function updateTour(id: string, payload: TourWritePayload): Promise<AdminTour> {
+  const res = await authFetch(`/admin/tours/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  return ensureOk<AdminTour>(res, "Не удалось сохранить тур");
+}
+
+export async function setTourStatus(id: string, status: "draft" | "published"): Promise<AdminTour> {
+  const res = await authFetch(`/admin/tours/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+  return ensureOk<AdminTour>(res, "Не удалось изменить статус");
+}
+
+export async function fetchTourDates(tourId: string): Promise<AdminTourDate[]> {
+  const res = await authFetch(`/admin/tours/${tourId}/dates`);
+  const body = await ensureOk<{ items: AdminTourDate[] }>(res, "Не удалось загрузить даты");
+  return body.items;
+}
+
+export async function addTourDate(
+  tourId: string,
+  payload: { starts_on: string; seats_total: number; price_override_kopeks?: number | null },
+): Promise<AdminTourDate> {
+  const res = await authFetch(`/admin/tours/${tourId}/dates`, { method: "POST", body: JSON.stringify(payload) });
+  return ensureOk<AdminTourDate>(res, "Не удалось добавить дату");
+}
+
+export async function updateTourDate(
+  tourId: string,
+  dateId: string,
+  payload: { seats_total?: number; price_override_kopeks?: number | null },
+): Promise<AdminTourDate> {
+  const res = await authFetch(`/admin/tours/${tourId}/dates/${dateId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return ensureOk<AdminTourDate>(res, "Не удалось изменить дату");
+}
+
+export async function deleteTourDate(tourId: string, dateId: string): Promise<void> {
+  await ensureOk(await authFetch(`/admin/tours/${tourId}/dates/${dateId}`, { method: "DELETE" }), "Не удалось удалить дату");
+}

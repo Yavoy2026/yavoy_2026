@@ -2,26 +2,24 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ShieldCheck, Check, X, Video, Building2, MessageSquare, Users, FileText,
-  UserCheck, UserX, Shield, Loader2,
+  UserCheck, UserX, Shield, Loader2, Map, Pencil, Plus,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCatalog } from "@/services/catalog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listUsers, type UserProfile } from "@/services/api";
 import {
   approveReview, cancelBookingAdmin, completeBooking, confirmBooking,
-  fetchAdminBookings, fetchPendingReviews, rejectReview,
+  fetchAdminBookings, fetchAdminTours, fetchPendingReviews, rejectReview, setTourStatus,
+  type AdminTour,
 } from "@/services/admin";
+import { TourEditor } from "@/components/backoffice/TourEditor";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 type Tab = "bookings" | "reviews" | "users" | "tours" | "reels" | "partners" | "docs";
-
-const pendingTours = [
-  { id: "mt1", title: "Ночной джаз-квартал", partner: "ООО Джаз-Тур", city: "Санкт-Петербург", price: 2800, image: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&h=300&fit=crop" },
-  { id: "mt2", title: "Винный weekend", partner: "ИП Виноградов", city: "Сочи", price: 6200, image: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=300&fit=crop" },
-];
 
 const pendingPartners = [
   { id: "pp1", name: "ООО «Гастро Москва»", inn: "7712345678", entity: "ООО", email: "info@gastro.ru" },
@@ -44,6 +42,19 @@ export default function Admin() {
   const bookingsQuery = useQuery({ queryKey: ["admin-bookings"], queryFn: () => fetchAdminBookings("requested"), enabled: isStaff && tab === "bookings" });
   const confirmedQuery = useQuery({ queryKey: ["admin-bookings-confirmed"], queryFn: () => fetchAdminBookings("confirmed"), enabled: isStaff && tab === "bookings" });
   const reviewsQuery = useQuery({ queryKey: ["admin-reviews"], queryFn: fetchPendingReviews, enabled: isStaff && tab === "reviews" });
+  const toursQuery = useQuery({ queryKey: ["admin-tours"], queryFn: () => fetchAdminTours(), enabled: isStaff && tab === "tours" });
+  const { cities } = useCatalog();
+  const [tourEditor, setTourEditor] = useState<{ open: boolean; tour: AdminTour | null }>({ open: false, tour: null });
+
+  const tourStatusAction = useMutation({
+    mutationFn: (vars: { id: string; status: "draft" | "published" }) => setTourStatus(vars.id, vars.status),
+    onSuccess: (_, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ["admin-tours"] });
+      void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      toast.success(vars.status === "published" ? "Тур опубликован — виден в каталоге" : "Тур снят с публикации");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+  });
 
   const invalidateBookings = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
@@ -67,7 +78,6 @@ export default function Admin() {
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
   });
-  const [tourQueue, setTourQueue] = useState(pendingTours);
   const [partnerQueue, setPartnerQueue] = useState(pendingPartners);
   const [replyQueue, setReplyQueue] = useState(pendingReplies);
   const [docText, setDocText] = useState("Условия использования сервиса YAVOY…");
@@ -79,7 +89,7 @@ export default function Admin() {
     { k: "bookings", l: "Брони", icon: Check, n: bookingsQuery.data?.length },
     { k: "reviews", l: "Отзывы", icon: MessageSquare, n: reviewsQuery.data?.length },
     { k: "users", l: "Пользователи", icon: Users },
-    { k: "tours", l: "Туры (демо)", icon: Check, n: tourQueue.length },
+    { k: "tours", l: "Туры", icon: Map, n: toursQuery.data?.length },
     { k: "reels", l: "Reels (демо)", icon: Video, n: moderationReels.length },
     { k: "partners", l: "Партнёры (демо)", icon: Building2, n: partnerQueue.length },
     { k: "docs", l: "Документы (демо)", icon: FileText },
@@ -118,21 +128,63 @@ export default function Admin() {
       </div>
 
       {tab === "tours" && (
-        <Queue empty="Нет туров на модерации" items={tourQueue}>
-          {(t) => (
-            <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <img src={t.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold">{t.title}</div>
-                <div className="text-xs text-muted-foreground">{t.partner} · {t.city} · {t.price.toLocaleString("ru-RU")}₽</div>
-              </div>
-              <Actions
-                onApprove={() => { setTourQueue((q) => q.filter((x) => x.id !== t.id)); toast.success("Тур опубликован в общей ленте"); }}
-                onReject={() => { setTourQueue((q) => q.filter((x) => x.id !== t.id)); toast("Тур отклонён"); }}
-              />
-            </div>
+        <div className="space-y-3">
+          <button
+            onClick={() => setTourEditor({ open: true, tour: null })}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal/40 py-3 font-semibold text-teal hover:bg-teal/5"
+          >
+            <Plus size={18} /> Создать тур
+          </button>
+          {toursQuery.isLoading ? (
+            <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-teal" /></div>
+          ) : (
+            <Queue empty="Туров пока нет — создайте первый" items={toursQuery.data ?? []}>
+              {(t) => (
+                <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+                  <img src={t.image_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-semibold">{t.title}</span>
+                      <span className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                        t.status === "published" ? "bg-mint/15 text-mint" : "bg-gold/15 text-gold",
+                      )}>
+                        {t.status === "published" ? "Опубликован" : "Черновик"}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {t.city_name} · {Math.round(t.price_kopeks / 100).toLocaleString("ru-RU")}₽ · {t.organizer.name}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setTourEditor({ open: true, tour: t })}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground"
+                    title="Редактировать"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    onClick={() => tourStatusAction.mutate({ id: t.id, status: t.status === "published" ? "draft" : "published" })}
+                    disabled={tourStatusAction.isPending}
+                    className={cn(
+                      "rounded-xl px-3 py-2 text-xs font-bold",
+                      t.status === "published" ? "bg-secondary text-muted-foreground" : "bg-teal text-white",
+                    )}
+                  >
+                    {t.status === "published" ? "Снять" : "Опубликовать"}
+                  </button>
+                </div>
+              )}
+            </Queue>
           )}
-        </Queue>
+          {tourEditor.open && (
+            <TourEditor
+              tour={tourEditor.tour}
+              cities={cities}
+              onClose={() => setTourEditor({ open: false, tour: null })}
+            />
+          )}
+        </div>
       )}
 
       {tab === "reels" && (

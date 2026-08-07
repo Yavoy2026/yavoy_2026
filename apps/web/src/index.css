@@ -118,3 +118,10 @@ All colors MUST be HSL.
     text-wrap: balance;
   }
 }
+
+@layer components {
+  /* Поле формы бэкофиса (TourEditor и пр.) */
+  .input-base {
+    @apply block w-full rounded-xl border border-border bg-card px-3 py-2 text-sm font-normal text-foreground outline-none focus:border-teal;
+  }
+}
