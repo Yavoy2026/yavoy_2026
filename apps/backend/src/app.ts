@@ -16,6 +16,7 @@ import { AppError } from "./errors.ts";
 import { createMailer, type Mailer } from "./mail/mailer.ts";
 import { authPlugin } from "./plugins/auth.ts";
 import { adminRoutes } from "./modules/admin/routes.ts";
+import { adminPartnersRoutes } from "./modules/admin/partners/routes.ts";
 import { adminToursRoutes } from "./modules/admin/tours/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { bookingsRoutes } from "./modules/bookings/routes.ts";
@@ -97,6 +98,7 @@ export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
       await v1.register(reviewsRoutes);
       await v1.register(adminRoutes);
       await v1.register(adminToursRoutes);
+      await v1.register(adminPartnersRoutes);
       await v1.register(authRoutes, { prefix: "/auth" });
       await v1.register(usersRoutes, { prefix: "/users" });
     },

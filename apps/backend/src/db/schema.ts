@@ -27,7 +27,7 @@ export const categoryTypeEnum = pgEnum("category_type", [
 ]);
 export const seasonTypeEnum = pgEnum("season_type", ["winter", "spring", "summer", "autumn", "all_year"]);
 export const tourStatusEnum = pgEnum("tour_status", ["draft", "pending", "published", "rejected", "archived"]);
-export const userRoleEnum = pgEnum("user_role", ["user", "manager", "admin"]);
+export const userRoleEnum = pgEnum("user_role", ["user", "partner", "manager", "admin"]);
 export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"]);
 export const favoriteEntityEnum = pgEnum("favorite_entity", ["tour", "city"]);
 export const reviewStatusEnum = pgEnum("review_status", ["pending", "published", "rejected"]);
@@ -97,6 +97,9 @@ export const tours = pgTable(
     isBestseller: boolean("is_bestseller").notNull().default(false),
     isLikelyToSellOut: boolean("is_likely_to_sell_out").notNull().default(false),
     popularity: integer("popularity").notNull().default(0),
+    // владелец-партнёр; null — туры самой платформы. organizer-jsonb остаётся витриной,
+    // для партнёрских туров синхронизируется из partner_profiles на write-пути
+    partnerId: uuid("partner_id").references(() => partnerProfiles.id),
     // денормализация по опубликованным отзывам; пересчёт при модерации (M5)
     rating: doublePrecision("rating"),
     reviewsCount: integer("reviews_count").notNull().default(0),
@@ -106,6 +109,7 @@ export const tours = pgTable(
   (t) => [
     index("tours_city_idx").on(t.cityId),
     index("tours_status_idx").on(t.status),
+    index("tours_partner_idx").on(t.partnerId),
     index("tours_popularity_idx").on(t.popularity),
     index("tours_price_idx").on(t.priceKopeks),
   ],
@@ -200,6 +204,23 @@ export const refreshSessions = pgTable(
   },
   (t) => [uniqueIndex("refresh_sessions_hash_idx").on(t.tokenHash), index("refresh_sessions_user_idx").on(t.userId)],
 );
+
+// ─── Партнёры (организаторы туров) ───────────────────────────
+
+// Профиль организации; users.role='partner' + строка здесь. Верификация ИНН — ручная менеджером.
+export const partnerProfiles = pgTable("partner_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id),
+  orgName: text("org_name").notNull(),
+  description: text("description").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  inn: text("inn").notNull().default(""),
+  verified: boolean("verified").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 // ─── Избранное и отзывы (M5) ─────────────────────────────────
 

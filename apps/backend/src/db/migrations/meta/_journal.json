@@ -29,6 +29,13 @@
       "when": 1786059785088,
       "tag": "0003_outgoing_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786061521556,
+      "tag": "0004_perpetual_zarda",
+      "breakpoints": true
     }
   ]
 }

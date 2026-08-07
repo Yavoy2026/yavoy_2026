@@ -232,3 +232,59 @@ export async function updateTourDate(
 export async function deleteTourDate(tourId: string, dateId: string): Promise<void> {
   await ensureOk(await authFetch(`/admin/tours/${tourId}/dates/${dateId}`, { method: "DELETE" }), "Не удалось удалить дату");
 }
+
+// ─── Партнёры (бэкофис) ──────────────────────────────────────
+
+export interface PartnerProfile {
+  id: string;
+  user_id: string;
+  org_name: string;
+  description: string;
+  phone: string;
+  inn: string;
+  verified: boolean;
+  created_at: string;
+  user_email: string;
+  user_name: string;
+}
+
+export async function fetchPartners(): Promise<PartnerProfile[]> {
+  const res = await authFetch("/admin/partners");
+  const body = await ensureOk<{ items: PartnerProfile[] }>(res, "Не удалось загрузить партнёров");
+  return body.items;
+}
+
+/** Назначение партнёра существующему пользователю (admin-only) */
+export async function createPartner(payload: {
+  user_id: string;
+  org_name: string;
+  description?: string;
+  phone?: string;
+  inn?: string;
+}): Promise<PartnerProfile> {
+  const res = await authFetch("/admin/partners", { method: "POST", body: JSON.stringify(payload) });
+  return ensureOk<PartnerProfile>(res, "Не удалось назначить партнёра");
+}
+
+export async function updatePartner(
+  id: string,
+  payload: { org_name?: string; description?: string; phone?: string; inn?: string; verified?: boolean },
+): Promise<PartnerProfile> {
+  const res = await authFetch(`/admin/partners/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  return ensureOk<PartnerProfile>(res, "Не удалось сохранить партнёра");
+}
+
+export async function fetchMyPartnerProfile(): Promise<PartnerProfile> {
+  const res = await authFetch("/admin/partners/me");
+  return ensureOk<PartnerProfile>(res, "Не удалось загрузить профиль организации");
+}
+
+export async function updateMyPartnerProfile(payload: {
+  org_name?: string;
+  description?: string;
+  phone?: string;
+  inn?: string;
+}): Promise<PartnerProfile> {
+  const res = await authFetch("/admin/partners/me", { method: "PATCH", body: JSON.stringify(payload) });
+  return ensureOk<PartnerProfile>(res, "Не удалось сохранить профиль");
+}

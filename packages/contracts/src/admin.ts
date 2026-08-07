@@ -17,6 +17,7 @@ export type TourStatus = z.infer<typeof TourStatusSchema>;
 export const AdminTourSchema = z.object({
   id: z.string().uuid(),
   status: TourStatusSchema,
+  partner_id: z.string().uuid().nullable(),
   city_id: z.string(),
   city_name: z.string(),
   title: z.string(),
@@ -70,8 +71,13 @@ export type AdminTourListQuery = z.infer<typeof AdminTourListQuerySchema>;
 export const AdminTourListResponseSchema = z.object({ items: z.array(AdminTourSchema) });
 export type AdminTourListResponse = z.infer<typeof AdminTourListResponseSchema>;
 
-/** Все редактируемые поля тура; статус меняется отдельным эндпоинтом, создание — всегда draft */
+/**
+ * Все редактируемые поля тура; статус меняется отдельным эндпоинтом, создание — всегда draft.
+ * partner_id (только staff): владелец тура — organizer заполнится из профиля партнёра;
+ * без partner_id organizer обязателен. Для партнёра partner_id всегда принудительно свой.
+ */
 export const TourWritePayloadSchema = z.object({
+  partner_id: z.string().uuid().nullable().optional(),
   city_id: z.string().min(1),
   title: z.string().min(1).max(300),
   description: z.string().default(""),
@@ -86,7 +92,7 @@ export const TourWritePayloadSchema = z.object({
   interest: InterestTypeSchema,
   category: CategoryTypeSchema.nullable().optional(),
   season: SeasonTypeSchema.nullable().optional(),
-  organizer: OrganizerSchema,
+  organizer: OrganizerSchema.optional(),
   highlights: z.array(z.string()).default([]),
   includes: z.array(z.string()).default([]),
   excludes: z.array(z.string()).default([]),
@@ -147,3 +153,46 @@ export const UpdateTourDatePayloadSchema = z.object({
   price_override_kopeks: z.number().int().min(0).nullable().optional(),
 });
 export type UpdateTourDatePayload = z.infer<typeof UpdateTourDatePayloadSchema>;
+
+// ─── Бэкофис: партнёры ───────────────────────────────────────
+
+export const PartnerProfileSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  org_name: z.string(),
+  description: z.string(),
+  phone: z.string(),
+  inn: z.string(),
+  verified: z.boolean(),
+  created_at: z.string(),
+  user_email: z.string(),
+  user_name: z.string(),
+});
+export type PartnerProfile = z.infer<typeof PartnerProfileSchema>;
+
+export const PartnerListResponseSchema = z.object({ items: z.array(PartnerProfileSchema) });
+export type PartnerListResponse = z.infer<typeof PartnerListResponseSchema>;
+
+/** Назначение партнёра: существующему пользователю (admin-only) */
+export const CreatePartnerPayloadSchema = z.object({
+  user_id: z.string().uuid(),
+  org_name: z.string().min(1).max(300),
+  description: z.string().default(""),
+  phone: z.string().default(""),
+  inn: z.string().default(""),
+});
+export type CreatePartnerPayload = z.infer<typeof CreatePartnerPayloadSchema>;
+
+/** Правка staff'ом: поля организации + verified */
+export const UpdatePartnerPayloadSchema = z.object({
+  org_name: z.string().min(1).max(300).optional(),
+  description: z.string().optional(),
+  phone: z.string().optional(),
+  inn: z.string().optional(),
+  verified: z.boolean().optional(),
+});
+export type UpdatePartnerPayload = z.infer<typeof UpdatePartnerPayloadSchema>;
+
+/** Самоправка партнёром — без verified */
+export const UpdateMyPartnerProfilePayloadSchema = UpdatePartnerPayloadSchema.omit({ verified: true });
+export type UpdateMyPartnerProfilePayload = z.infer<typeof UpdateMyPartnerProfilePayloadSchema>;

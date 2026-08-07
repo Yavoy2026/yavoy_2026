@@ -8,8 +8,9 @@ type TourInsert = typeof tours.$inferInsert;
 /** Брони, ссылающиеся на дату (любой статус — FK не даст удалить дату и с отменённой бронью) */
 const BOOKINGS_COUNT_SQL = sql<number>`(select count(*)::int from bookings b where b.tour_date_id = tour_dates.id)`;
 
-export function listAdminTourRows(db: Db, q: AdminTourListQuery) {
+export function listAdminTourRows(db: Db, q: AdminTourListQuery, partnerId?: string) {
   const filters: (SQL | undefined)[] = [];
+  if (partnerId) filters.push(eq(tours.partnerId, partnerId));
   if (q.status) filters.push(eq(tours.status, q.status));
   if (q.city) filters.push(eq(tours.cityId, q.city));
   if (q.q) {

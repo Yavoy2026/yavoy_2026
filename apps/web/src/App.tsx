@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,7 +15,7 @@ import TourDetail from "./pages/TourDetail";
 import Reels from "./pages/Reels";
 import Auth from "./pages/Auth";
 import Partner from "./pages/Partner";
-import Admin from "./pages/Admin";
+import Backoffice from "./pages/Backoffice";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,7 +37,9 @@ const App = () => (
             <Route path="/reels" element={<Reels />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/partner" element={<Partner />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/backoffice" element={<Backoffice />} />
+            {/* старые ссылки/закладки на /admin продолжают работать */}
+            <Route path="/admin" element={<Navigate to="/backoffice" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

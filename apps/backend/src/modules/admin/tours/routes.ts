@@ -24,6 +24,7 @@ import {
   setTourStatus,
   updateTour,
   updateTourDate,
+  type Actor,
 } from "./service.ts";
 
 const IdParams = z.object({ id: z.string().uuid() });
@@ -31,7 +32,9 @@ const DateParams = z.object({ id: z.string().uuid(), dateId: z.string().uuid() }
 
 export async function adminToursRoutes(fastify: FastifyInstance) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
-  const staff = { preHandler: [app.requireRole("manager", "admin")] };
+  // партнёр видит и правит только свои туры (скоупится в service), публикация — только staff
+  const staff = { preHandler: [app.requireRole("partner", "manager", "admin")] };
+  const actor = (req: { user?: Actor | null }): Actor => ({ sub: req.user!.sub, role: req.user!.role });
 
   app.get(
     "/admin/tours",
@@ -43,7 +46,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourListResponseSchema, 403: ErrorEnvelopeSchema },
       },
     },
-    async (req) => ({ items: await listAdminTours(app.db, req.query) }),
+    async (req) => ({ items: await listAdminTours(app.db, actor(req), req.query) }),
   );
 
   app.post(
@@ -56,7 +59,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourSchema, 400: ErrorEnvelopeSchema, 403: ErrorEnvelopeSchema },
       },
     },
-    async (req) => createTour(app.db, req.body),
+    async (req) => createTour(app.db, actor(req), req.body),
   );
 
   app.get(
@@ -69,7 +72,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourSchema, 404: ErrorEnvelopeSchema },
       },
     },
-    async (req) => getAdminTour(app.db, req.params.id),
+    async (req) => getAdminTour(app.db, actor(req), req.params.id),
   );
 
   app.patch(
@@ -83,13 +86,13 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourSchema, 400: ErrorEnvelopeSchema, 404: ErrorEnvelopeSchema },
       },
     },
-    async (req) => updateTour(app.db, req.params.id, req.body),
+    async (req) => updateTour(app.db, actor(req), req.params.id, req.body),
   );
 
   app.patch(
     "/admin/tours/:id/status",
     {
-      ...staff,
+      preHandler: [app.requireRole("manager", "admin")],
       schema: {
         tags: ["admin"],
         params: IdParams,
@@ -110,7 +113,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourDateListResponseSchema, 404: ErrorEnvelopeSchema },
       },
     },
-    async (req) => ({ items: await listTourDatesAdmin(app.db, req.params.id) }),
+    async (req) => ({ items: await listTourDatesAdmin(app.db, actor(req), req.params.id) }),
   );
 
   app.post(
@@ -124,7 +127,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourDateSchema, 404: ErrorEnvelopeSchema, 409: ErrorEnvelopeSchema },
       },
     },
-    async (req) => addTourDate(app.db, req.params.id, req.body),
+    async (req) => addTourDate(app.db, actor(req), req.params.id, req.body),
   );
 
   app.patch(
@@ -138,7 +141,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
         response: { 200: AdminTourDateSchema, 404: ErrorEnvelopeSchema, 409: ErrorEnvelopeSchema },
       },
     },
-    async (req) => updateTourDate(app.db, req.params.id, req.params.dateId, req.body),
+    async (req) => updateTourDate(app.db, actor(req), req.params.id, req.params.dateId, req.body),
   );
 
   app.delete(
@@ -152,7 +155,7 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
       },
     },
     async (req) => {
-      await deleteTourDate(app.db, req.params.id, req.params.dateId);
+      await deleteTourDate(app.db, actor(req), req.params.id, req.params.dateId);
       return { ok: true as const };
     },
   );

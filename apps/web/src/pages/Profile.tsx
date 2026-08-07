@@ -82,8 +82,8 @@ export default function Profile() {
               <div>
                 <h1 className="text-xl font-extrabold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</h1>
                 <p className="text-sm text-white/60">{user.email}</p>
-                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "manager" ? "bg-mint/20 text-mint" : "bg-white/10 text-white/70")}>
-                  {user.role === "admin" ? "Админ" : user.role === "manager" ? "Менеджер" : "Пользователь"}
+                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "manager" ? "bg-mint/20 text-mint" : user.role === "partner" ? "bg-teal/20 text-teal-light" : "bg-white/10 text-white/70")}>
+                  {user.role === "admin" ? "Админ" : user.role === "manager" ? "Менеджер" : user.role === "partner" ? "Партнёр" : "Пользователь"}
                 </span>
               </div>
             </div>
@@ -104,18 +104,29 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* B2B / Admin entry */}
+      {/* Вход в бэкофис — по ролям */}
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button onClick={() => navigate("/partner")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={22} className="text-teal" /></div>
-          <div className="flex-1"><div className="font-bold">Партнёрам</div><div className="text-xs text-muted-foreground">Кабинет организатора экскурсий</div></div>
-          <ChevronRight size={18} className="text-muted-foreground" />
-        </button>
-        <button onClick={() => navigate("/admin")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15"><ShieldCheck size={22} className="text-gold" /></div>
-          <div className="flex-1"><div className="font-bold">Админ-панель</div><div className="text-xs text-muted-foreground">Модерация и управление</div></div>
-          <ChevronRight size={18} className="text-muted-foreground" />
-        </button>
+        {user?.role === "user" || !user ? (
+          <button onClick={() => navigate("/partner")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={22} className="text-teal" /></div>
+            <div className="flex-1"><div className="font-bold">Партнёрам</div><div className="text-xs text-muted-foreground">Как стать организатором экскурсий</div></div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </button>
+        ) : null}
+        {user?.role === "partner" && (
+          <button onClick={() => navigate("/backoffice")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={22} className="text-teal" /></div>
+            <div className="flex-1"><div className="font-bold">Кабинет партнёра</div><div className="text-xs text-muted-foreground">Мои туры и профиль организации</div></div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </button>
+        )}
+        {(user?.role === "admin" || user?.role === "manager") && (
+          <button onClick={() => navigate("/backoffice")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15"><ShieldCheck size={22} className="text-gold" /></div>
+            <div className="flex-1"><div className="font-bold">Бэкофис</div><div className="text-xs text-muted-foreground">Модерация и управление</div></div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </button>
+        )}
       </div>
 
       {/* Sections */}

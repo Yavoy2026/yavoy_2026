@@ -13,7 +13,7 @@ export interface Tokens {
   refresh_expires_at: string;
 }
 
-export type UserRole = "user" | "manager" | "admin";
+export type UserRole = "user" | "partner" | "manager" | "admin";
 
 export interface UserProfile {
   id: string;

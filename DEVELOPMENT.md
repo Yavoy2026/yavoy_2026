@@ -9,7 +9,7 @@
 apps/backend/        Бэкенд: Fastify 5 + Zod + Drizzle + PostgreSQL (основная разработка)
 packages/contracts/  Общие zod-схемы API (бэкенд + клиенты)
 apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
-apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + админка
+apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + бэкофис
                      (нативные ios/ и android/ — в ветке archive/native-apps)
 deploy/              Прод: docker-compose.prod.yml + Caddyfile
 ```
@@ -70,12 +70,13 @@ pnpm test        # из корня; нужен Postgres на 5434
 Покрыто: auth-флоу с ротацией refresh, каталог с пагинацией, бронирования
 (конкуренция за места, RBAC, машина состояний), избранное, отзывы с модерацией.
 
-### Роли и админ-операции
+### Роли и операции бэкофиса
 
-Роли: `user` | `manager` | `admin` (роль в JWT — после смены перелогин).
-Админ-UI пока нет — операции через Swagger:
-`POST /v1/bookings/{id}/confirm|complete`, `GET /v1/admin/bookings`,
-`POST /v1/admin/reviews/{id}/approve|reject`. Назначить админа:
+Роли: `user` | `partner` | `manager` | `admin` (роль в JWT — после смены перелогин;
+refresh обновит её сам в пределах 15 минут). Рабочий UI — веб-бэкофис `/backoffice`;
+те же операции доступны через Swagger (`/v1/admin/*`, `/v1/bookings/{id}/confirm` и т.д.).
+Партнёра назначает админ на вкладке «Партнёры» (роль + профиль организации разом).
+Самого первого админа на пустой базе — руками:
 
 ```bash
 docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin' WHERE email='<email>'"
@@ -97,9 +98,11 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 - Запуск: `cd apps/web && npm install --legacy-peer-deps && VITE_API_URL=http://localhost:3002/v1 npx vite`
 - Сервисный слой зеркалит мобильный: `services/api.ts`, `catalog.ts`, `bookings.ts`, `social.ts`,
   `admin.ts`; избранное — общий серверный кэш с миграцией гостевого (AppContext).
-- **Админка** (`/admin`, роль manager/admin): подтверждение/завершение/отмена броней,
-  модерация отзывов, управление пользователями — всё реальное. Вкладки с пометкой «демо»
-  ждут своих бэкенд-доменов (партнёрка — M6+).
+- **Бэкофис** (`/backoffice`; старый `/admin` редиректит): один кабинет, вкладки по ролям.
+  Manager/admin: брони, модерация отзывов, пользователи, CRUD туров (создание/правка/
+  публикация, даты с местами), партнёры (назначение — admin-only, verified-галочка).
+  Partner: «Мои туры» (создаёт и правит только свои; всё сохраняется черновиком,
+  публикует менеджер) + «Профиль организации».
 - Оставшиеся моки web: только Reels (backlog).
 
 ## CORS, заголовки и прочие уроки локального теста

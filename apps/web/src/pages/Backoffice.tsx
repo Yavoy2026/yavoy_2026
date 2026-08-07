@@ -1,60 +1,50 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, ShieldCheck, Check, X, Video, Building2, MessageSquare, Users, FileText,
-  UserCheck, UserX, Shield, Loader2, Map, Pencil, Plus,
+  ArrowLeft, ShieldCheck, Check, X, Building2, MessageSquare, Users,
+  UserCheck, UserX, Shield, Loader2, Map, Pencil, Plus, BadgeCheck,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCatalog } from "@/services/catalog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listUsers, type UserProfile } from "@/services/api";
 import {
-  approveReview, cancelBookingAdmin, completeBooking, confirmBooking,
-  fetchAdminBookings, fetchAdminTours, fetchPendingReviews, rejectReview, setTourStatus,
-  type AdminTour,
+  approveReview, cancelBookingAdmin, completeBooking, confirmBooking, createPartner,
+  fetchAdminBookings, fetchAdminTours, fetchPartners, fetchPendingReviews, rejectReview,
+  setTourStatus, updatePartner, type AdminTour, type PartnerProfile,
 } from "@/services/admin";
 import { TourEditor } from "@/components/backoffice/TourEditor";
+import { PartnerProfileTab } from "@/components/backoffice/PartnerProfileTab";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type Tab = "bookings" | "reviews" | "users" | "tours" | "reels" | "partners" | "docs";
+type Tab = "bookings" | "reviews" | "users" | "tours" | "partners" | "org";
 
-const pendingPartners = [
-  { id: "pp1", name: "ООО «Гастро Москва»", inn: "7712345678", entity: "ООО", email: "info@gastro.ru" },
-  { id: "pp2", name: "ИП Соколова А.В.", inn: "771234567890", entity: "ИП", email: "sokolova@mail.ru" },
-];
-
-const pendingReplies = [
-  { id: "pr1", partner: "ООО «Гастро Москва»", review: "Невероятно вкусно!", reply: "Спасибо, ждём вас снова на наших турах!" },
-];
-
-export default function Admin() {
+export default function Backoffice() {
   const navigate = useNavigate();
-  const { user, updateUserRole, activateUserById, deactivateUserById } = useAuth();
-  const { moderationReels } = useApp();
-  const [tab, setTab] = useState<Tab>("bookings");
+  const { user, role, updateUserRole, activateUserById, deactivateUserById } = useAuth();
   const queryClient = useQueryClient();
-  const isStaff = user?.role === "admin" || user?.role === "manager";
 
-  const usersQuery = useQuery({ queryKey: ["admin-users"], queryFn: () => listUsers(), enabled: isStaff && tab === "users" });
+  const isPartner = role === "partner";
+  const isStaff = role === "admin" || role === "manager";
+  const isAdmin = role === "admin";
+  const hasAccess = isPartner || isStaff;
+
+  const [tab, setTab] = useState<Tab>(isPartner ? "tours" : "bookings");
+  useEffect(() => {
+    if (isPartner && !["tours", "org"].includes(tab)) setTab("tours");
+  }, [isPartner, tab]);
+
+  const usersQuery = useQuery({ queryKey: ["admin-users"], queryFn: () => listUsers(), enabled: isStaff && (tab === "users" || tab === "partners") });
   const bookingsQuery = useQuery({ queryKey: ["admin-bookings"], queryFn: () => fetchAdminBookings("requested"), enabled: isStaff && tab === "bookings" });
   const confirmedQuery = useQuery({ queryKey: ["admin-bookings-confirmed"], queryFn: () => fetchAdminBookings("confirmed"), enabled: isStaff && tab === "bookings" });
   const reviewsQuery = useQuery({ queryKey: ["admin-reviews"], queryFn: fetchPendingReviews, enabled: isStaff && tab === "reviews" });
-  const toursQuery = useQuery({ queryKey: ["admin-tours"], queryFn: () => fetchAdminTours(), enabled: isStaff && tab === "tours" });
+  const toursQuery = useQuery({ queryKey: ["admin-tours"], queryFn: () => fetchAdminTours(), enabled: hasAccess && tab === "tours" });
+  const partnersQuery = useQuery({ queryKey: ["admin-partners"], queryFn: fetchPartners, enabled: isStaff && tab === "partners" });
   const { cities } = useCatalog();
   const [tourEditor, setTourEditor] = useState<{ open: boolean; tour: AdminTour | null }>({ open: false, tour: null });
-
-  const tourStatusAction = useMutation({
-    mutationFn: (vars: { id: string; status: "draft" | "published" }) => setTourStatus(vars.id, vars.status),
-    onSuccess: (_, vars) => {
-      void queryClient.invalidateQueries({ queryKey: ["admin-tours"] });
-      void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-      toast.success(vars.status === "published" ? "Тур опубликован — виден в каталоге" : "Тур снят с публикации");
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
-  });
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const invalidateBookings = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
@@ -78,22 +68,28 @@ export default function Admin() {
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
   });
-  const [partnerQueue, setPartnerQueue] = useState(pendingPartners);
-  const [replyQueue, setReplyQueue] = useState(pendingReplies);
-  const [docText, setDocText] = useState("Условия использования сервиса YAVOY…");
-  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const tourStatusAction = useMutation({
+    mutationFn: (vars: { id: string; status: "draft" | "published" }) => setTourStatus(vars.id, vars.status),
+    onSuccess: (_, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ["admin-tours"] });
+      void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      toast.success(vars.status === "published" ? "Тур опубликован — виден в каталоге" : "Тур снят с публикации");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+  });
 
-  const isAdmin = isStaff;
-
-  const tabs: { k: Tab; l: string; icon: React.ComponentType<{ size: number; className?: string }>; n?: number }[] = [
-    { k: "bookings", l: "Брони", icon: Check, n: bookingsQuery.data?.length },
-    { k: "reviews", l: "Отзывы", icon: MessageSquare, n: reviewsQuery.data?.length },
-    { k: "users", l: "Пользователи", icon: Users },
-    { k: "tours", l: "Туры", icon: Map, n: toursQuery.data?.length },
-    { k: "reels", l: "Reels (демо)", icon: Video, n: moderationReels.length },
-    { k: "partners", l: "Партнёры (демо)", icon: Building2, n: partnerQueue.length },
-    { k: "docs", l: "Документы (демо)", icon: FileText },
-  ];
+  const tabs: { k: Tab; l: string; icon: React.ComponentType<{ size: number; className?: string }>; n?: number }[] = isPartner
+    ? [
+        { k: "tours", l: "Мои туры", icon: Map, n: toursQuery.data?.length },
+        { k: "org", l: "Профиль организации", icon: Building2 },
+      ]
+    : [
+        { k: "bookings", l: "Брони", icon: Check, n: bookingsQuery.data?.length },
+        { k: "reviews", l: "Отзывы", icon: MessageSquare, n: reviewsQuery.data?.length },
+        { k: "users", l: "Пользователи", icon: Users },
+        { k: "tours", l: "Туры", icon: Map, n: toursQuery.data?.length },
+        { k: "partners", l: "Партнёры", icon: Building2, n: partnersQuery.data?.length },
+      ];
 
   return (
     <Layout>
@@ -101,11 +97,11 @@ export default function Admin() {
         <ArrowLeft size={18} /> Назад
       </button>
 
-      {!isAdmin ? (
+      {!hasAccess ? (
         <div className="rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
           <ShieldCheck size={48} className="mx-auto mb-4 text-muted-foreground" />
           <h2 className="mb-2 text-xl font-extrabold">Доступ запрещён</h2>
-          <p className="text-sm text-muted-foreground">Только администраторы и модераторы могут просматривать эту страницу.</p>
+          <p className="text-sm text-muted-foreground">Бэкофис доступен партнёрам, менеджерам и администраторам.</p>
         </div>
       ) : (
       <>
@@ -113,8 +109,8 @@ export default function Admin() {
       <div className="mb-6 flex items-center gap-3 rounded-3xl bg-navy p-6 text-white">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20"><ShieldCheck size={26} className="text-gold" /></div>
         <div>
-          <h1 className="text-xl font-extrabold">Панель администратора</h1>
-          <p className="text-sm text-white/60">Модерация контента и управление платформой</p>
+          <h1 className="text-xl font-extrabold">{isPartner ? "Кабинет партнёра" : "Бэкофис YaVoy"}</h1>
+          <p className="text-sm text-white/60">{isPartner ? "Ваши туры и профиль организации" : "Модерация контента и управление платформой"}</p>
         </div>
       </div>
 
@@ -129,6 +125,11 @@ export default function Admin() {
 
       {tab === "tours" && (
         <div className="space-y-3">
+          {isPartner && (
+            <div className="rounded-2xl bg-background p-3 text-sm text-muted-foreground ring-1 ring-border/60">
+              Новые туры и правки сохраняются черновиком — на витрину их выводит менеджер после проверки.
+            </div>
+          )}
           <button
             onClick={() => setTourEditor({ open: true, tour: null })}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal/40 py-3 font-semibold text-teal hover:bg-teal/5"
@@ -149,7 +150,7 @@ export default function Admin() {
                         "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
                         t.status === "published" ? "bg-mint/15 text-mint" : "bg-gold/15 text-gold",
                       )}>
-                        {t.status === "published" ? "Опубликован" : "Черновик"}
+                        {t.status === "published" ? "Опубликован" : isPartner ? "Черновик — публикует менеджер" : "Черновик"}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -163,16 +164,18 @@ export default function Admin() {
                   >
                     <Pencil size={15} />
                   </button>
-                  <button
-                    onClick={() => tourStatusAction.mutate({ id: t.id, status: t.status === "published" ? "draft" : "published" })}
-                    disabled={tourStatusAction.isPending}
-                    className={cn(
-                      "rounded-xl px-3 py-2 text-xs font-bold",
-                      t.status === "published" ? "bg-secondary text-muted-foreground" : "bg-teal text-white",
-                    )}
-                  >
-                    {t.status === "published" ? "Снять" : "Опубликовать"}
-                  </button>
+                  {isStaff && (
+                    <button
+                      onClick={() => tourStatusAction.mutate({ id: t.id, status: t.status === "published" ? "draft" : "published" })}
+                      disabled={tourStatusAction.isPending}
+                      className={cn(
+                        "rounded-xl px-3 py-2 text-xs font-bold",
+                        t.status === "published" ? "bg-secondary text-muted-foreground" : "bg-teal text-white",
+                      )}
+                    >
+                      {t.status === "published" ? "Снять" : "Опубликовать"}
+                    </button>
+                  )}
                 </div>
               )}
             </Queue>
@@ -187,43 +190,18 @@ export default function Admin() {
         </div>
       )}
 
-      {tab === "reels" && (
-        <Queue empty="Нет reels на модерации" items={moderationReels}>
-          {(r) => (
-            <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <img src={r.coverImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold">{r.title}</div>
-                <div className="text-xs text-muted-foreground">{r.city} · {r.author}</div>
-              </div>
-              <Actions
-                onApprove={() => toast.success("Reels опубликован в ленте")}
-                onReject={() => toast("Reels отклонён")}
-              />
-            </div>
-          )}
-        </Queue>
+      {tab === "org" && isPartner && <PartnerProfileTab />}
+
+      {tab === "partners" && isStaff && (
+        <PartnersTab
+          partners={partnersQuery.data ?? []}
+          isLoading={partnersQuery.isLoading}
+          isAdmin={isAdmin}
+          users={usersQuery.data ?? []}
+        />
       )}
 
-      {tab === "partners" && (
-        <Queue empty="Нет партнёров на подтверждении" items={partnerQueue}>
-          {(p) => (
-            <div key={p.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal/10"><Building2 size={22} className="text-teal" /></div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold">{p.name}</div>
-                <div className="text-xs text-muted-foreground">{p.entity} · ИНН {p.inn} · {p.email}</div>
-              </div>
-              <Actions
-                onApprove={() => { setPartnerQueue((q) => q.filter((x) => x.id !== p.id)); toast.success("Профиль партнёра подтверждён"); }}
-                onReject={() => { setPartnerQueue((q) => q.filter((x) => x.id !== p.id)); toast("Профиль отклонён"); }}
-              />
-            </div>
-          )}
-        </Queue>
-      )}
-
-      {tab === "bookings" && (
+      {tab === "bookings" && isStaff && (
         <div className="space-y-5">
           <div>
             <h3 className="mb-2 font-bold">Новые заявки</h3>
@@ -262,7 +240,7 @@ export default function Admin() {
         </div>
       )}
 
-      {tab === "reviews" && (
+      {tab === "reviews" && isStaff && (
         <Queue empty="Нет отзывов на модерации" items={reviewsQuery.data ?? []}>
           {(r) => (
             <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
@@ -281,19 +259,20 @@ export default function Admin() {
         </Queue>
       )}
 
-      {tab === "users" && (
+      {tab === "users" && isStaff && (
         <div className="space-y-3">
           <div className="mb-3 rounded-2xl bg-background p-3 ring-1 ring-border/60">
             <p className="text-sm text-muted-foreground">
               <Shield size={14} className="mr-1 inline text-gold" />
               Реальные пользователи платформы. Роли меняет только админ; менять себя нельзя.
+              Роль «Партнёр» назначается на вкладке «Партнёры» (вместе с профилем организации).
             </p>
           </div>
           {(usersQuery.data ?? []).map((u) => (
             <div key={u.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{(u.first_name?.[0] ?? "?").toUpperCase()}</div>
               <div className="min-w-0 flex-1">
-                <div className="font-semibold">{u.first_name}{u.last_name ? ` ${u.last_name}` : ""}{!u.is_active && <span className="ml-2 rounded-full bg-coral/15 px-2 py-0.5 text-[10px] font-semibold text-coral">Деактивирован</span>}</div>
+                <div className="font-semibold">{u.first_name || u.email.split("@")[0]}{u.last_name ? ` ${u.last_name}` : ""}{!u.is_active && <span className="ml-2 rounded-full bg-coral/15 px-2 py-0.5 text-[10px] font-semibold text-coral">Деактивирован</span>}</div>
                 <div className="text-xs text-muted-foreground">{u.email}</div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -305,7 +284,7 @@ export default function Admin() {
                       setActionLoading((p) => ({ ...p, [u.id]: true }));
                       await updateUserRole(u.id, newRole);
                       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-                      toast.success(`Роль изменена на «${newRole === "admin" ? "Админ" : newRole === "manager" ? "Менеджер" : "Пользователь"}»`);
+                      toast.success("Роль изменена");
                     } catch (err) {
                       toast.error(err instanceof Error ? err.message : "Ошибка при изменении роли");
                     } finally {
@@ -316,6 +295,7 @@ export default function Admin() {
                   className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-teal disabled:opacity-50"
                 >
                   <option value="user">Пользователь</option>
+                  <option value="partner">Партнёр</option>
                   <option value="manager">Менеджер</option>
                   <option value="admin">Админ</option>
                 </select>
@@ -365,26 +345,127 @@ export default function Admin() {
           ))}
         </div>
       )}
-
-      {tab === "docs" && (
-        <div className="rounded-2xl bg-card p-5 ring-1 ring-border/60">
-          <h3 className="mb-1 font-bold">Текст соглашений и оферты</h3>
-          <p className="mb-3 text-sm text-muted-foreground">Редактируйте тексты для экрана регистрации партнёров</p>
-          <textarea
-            value={docText}
-            onChange={(e) => setDocText(e.target.value)}
-            rows={10}
-            className="w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none focus:border-teal"
-          />
-          <div className="mt-3 flex gap-2">
-            <button onClick={() => toast.success("Сохранено")} className="rounded-xl bg-secondary px-5 py-2.5 text-sm font-semibold">Сохранить</button>
-            <button onClick={() => toast.success("Сохранено и отправлено уведомление партнёрам")} className="rounded-xl bg-teal px-5 py-2.5 text-sm font-semibold text-white">Сохранить и уведомить</button>
-          </div>
-        </div>
-      )}
       </>
       )}
     </Layout>
+  );
+}
+
+function PartnersTab({
+  partners,
+  isLoading,
+  isAdmin,
+  users,
+}: {
+  partners: PartnerProfile[];
+  isLoading: boolean;
+  isAdmin: boolean;
+  users: UserProfile[];
+}) {
+  const queryClient = useQueryClient();
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignUserId, setAssignUserId] = useState("");
+  const [assignOrg, setAssignOrg] = useState("");
+  const [assignInn, setAssignInn] = useState("");
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+  };
+  const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка");
+
+  const assign = useMutation({
+    mutationFn: () => createPartner({ user_id: assignUserId, org_name: assignOrg, inn: assignInn }),
+    onSuccess: () => {
+      invalidate();
+      setShowAssign(false);
+      setAssignUserId(""); setAssignOrg(""); setAssignInn("");
+      toast.success("Партнёр назначен — при следующем входе увидит кабинет партнёра");
+    },
+    onError,
+  });
+  const toggleVerified = useMutation({
+    mutationFn: (vars: { id: string; verified: boolean }) => updatePartner(vars.id, { verified: vars.verified }),
+    onSuccess: (_, vars) => {
+      invalidate();
+      toast.success(vars.verified ? "Партнёр отмечен проверенным (галочка в карточках туров)" : "Отметка проверки снята");
+    },
+    onError,
+  });
+
+  // партнёрами становятся обычные активные пользователи
+  const candidates = users.filter((u) => u.role === "user" && u.is_active);
+
+  return (
+    <div className="space-y-3">
+      {isAdmin && (
+        <button
+          onClick={() => setShowAssign((v) => !v)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal/40 py-3 font-semibold text-teal hover:bg-teal/5"
+        >
+          <Plus size={18} /> Назначить партнёра
+        </button>
+      )}
+      {showAssign && (
+        <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
+          <label className="block text-xs font-semibold text-muted-foreground">Пользователь (сначала он должен зарегистрироваться сам)
+            <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className="input-base mt-1">
+              <option value="">— выбрать —</option>
+              {candidates.map((u) => (
+                <option key={u.id} value={u.id}>{u.email}{u.first_name ? ` (${u.first_name})` : ""}</option>
+              ))}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-semibold text-muted-foreground">Название организации
+              <input value={assignOrg} onChange={(e) => setAssignOrg(e.target.value)} className="input-base mt-1" />
+            </label>
+            <label className="block text-xs font-semibold text-muted-foreground">ИНН (проверяется вручную)
+              <input value={assignInn} onChange={(e) => setAssignInn(e.target.value)} className="input-base mt-1" />
+            </label>
+          </div>
+          <button
+            onClick={() => assign.mutate()}
+            disabled={!assignUserId || !assignOrg.trim() || assign.isPending}
+            className="flex items-center gap-2 rounded-2xl bg-teal px-5 py-2.5 font-bold text-white disabled:opacity-60"
+          >
+            {assign.isPending && <Loader2 size={16} className="animate-spin" />} Назначить
+          </button>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-teal" /></div>
+      ) : (
+        <Queue empty="Партнёров пока нет" items={partners}>
+          {(p) => (
+            <div key={p.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={20} className="text-teal" /></div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 font-semibold">
+                  {p.org_name}
+                  {p.verified && <BadgeCheck size={15} className="text-mint" />}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {p.user_name || p.user_email} · {p.user_email}{p.inn ? ` · ИНН ${p.inn}` : ""}{p.phone ? ` · ${p.phone}` : ""}
+                </div>
+              </div>
+              <button
+                onClick={() => toggleVerified.mutate({ id: p.id, verified: !p.verified })}
+                disabled={toggleVerified.isPending}
+                className={cn(
+                  "rounded-xl px-3 py-2 text-xs font-bold",
+                  p.verified ? "bg-secondary text-muted-foreground" : "bg-mint/15 text-mint",
+                )}
+              >
+                {p.verified ? "Снять проверку" : "Подтвердить"}
+              </button>
+            </div>
+          )}
+        </Queue>
+      )}
+    </div>
   );
 }
 
