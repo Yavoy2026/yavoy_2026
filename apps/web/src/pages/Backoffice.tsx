@@ -23,7 +23,7 @@ type Tab = "bookings" | "reviews" | "users" | "tours" | "partners" | "org";
 
 export default function Backoffice() {
   const navigate = useNavigate();
-  const { user, role, updateUserRole, activateUserById, deactivateUserById } = useAuth();
+  const { user, role, isLoading: authLoading, updateUserRole, activateUserById, deactivateUserById } = useAuth();
   const queryClient = useQueryClient();
 
   const isPartner = role === "partner";
@@ -97,7 +97,12 @@ export default function Backoffice() {
         <ArrowLeft size={18} /> Назад
       </button>
 
-      {!hasAccess ? (
+      {authLoading ? (
+        // сессия ещё проверяется (whoami) — не показывать «доступ запрещён» раньше времени
+        <div className="flex justify-center rounded-3xl bg-card py-16 ring-1 ring-border/60">
+          <Loader2 size={28} className="animate-spin text-teal" />
+        </div>
+      ) : !hasAccess ? (
         <div className="rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
           <ShieldCheck size={48} className="mx-auto mb-4 text-muted-foreground" />
           <h2 className="mb-2 text-xl font-extrabold">Доступ запрещён</h2>
