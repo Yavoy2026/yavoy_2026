@@ -44,6 +44,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      # HTTP/3 (QUIC): Caddy рекламирует h3 через Alt-Svc — без проброса UDP
+      # браузеры зависают на запросах после перехода на h3
+      - "443:443/udp"
     environment:
       API_DOMAIN: ${API_DOMAIN}
       WEB_DOMAIN: ${WEB_DOMAIN}
