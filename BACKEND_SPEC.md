@@ -100,8 +100,12 @@ yavoy_2026/
 ### 3.1 Ядро
 
 ```
-users              id, email UNIQUE, password_hash, role, is_active,
+users              id, email UNIQUE, role (user|partner|manager|admin), is_active,
                    first_name, last_name, photo_key, created_at, last_login_at
+                   -- пароля нет: вход passwordless по OTP (авг 2026)
+
+email_otps         email PK, code_hash, expires_at (10 мин), attempts_left (5),
+                   last_sent_at (кулдаун 60 c) -- один активный код на email
 
 refresh_sessions   id, user_id FK, token_hash, expires_at, created_at,
                    revoked_at, replaced_by (ротация), user_agent, ip
@@ -181,10 +185,14 @@ reel_likes         reel_id, user_id, PK(reel_id, user_id)
 ### 3.4 Партнёрка, модерация, коммуникации
 
 ```
-partner_profiles   id, user_id FK UNIQUE, inn, ogrn, entity_type (company|ip|self_employed),
+partner_profiles   -- РЕАЛИЗОВАНА упрощённая версия (авг 2026):
+                   -- id, user_id FK UNIQUE, org_name, description, phone,
+                   -- inn (текст, проверка ручная менеджером), verified bool, created_at.
+                   -- Полная анкета ниже — целевая, добирается по мере надобности:
+                   id, user_id FK UNIQUE, inn, ogrn, entity_type (company|ip|self_employed),
                    legal_name, director_name, legal_address,
                    email, phone, telegram,
-                   fns_verified_at, fns_payload jsonb (ответ DaData),
+                   fns_verified_at, fns_payload jsonb (опция: DaData, НЕ обязательство),
                    status (contacts_required|pending_approval|approved|rejected),
                    rejected_reason, accepted_docs jsonb (версии принятых документов), created_at
 
@@ -221,22 +229,24 @@ audit_log          id, actor_user_id, action, entity_type, entity_id, payload js
 
 ## 5. API v1 — эндпоинты по доменам
 
-### 5.1 Auth (Фаза 1)
+### 5.1 Auth (реализовано; авг 2026 — passwordless OTP вместо паролей)
 ```
-POST   /auth/signup            {email, password, first_name} → {tokens, user}
-POST   /auth/signin            {email, password} → {tokens, user}
+POST   /auth/otp/request       {email} → {ok}                  (6-значный код письмом;
+                                                                регистрация и вход — один флоу)
+POST   /auth/otp/verify        {email, code} → {tokens, user, is_new_user}
+                                                               (новый юзер создаётся здесь,
+                                                                имя добирается через PATCH /users/me)
 POST   /auth/refresh           {refresh_token} → {tokens}      (ротация)
 POST   /auth/logout            {refresh_token}                 (отзыв сессии)
-GET    /auth/whoami            → UserProfile (+ partner_status, loyalty_balance)
+GET    /auth/whoami            → UserProfile
 ```
 
-### 5.2 Users (Фаза 1)
+### 5.2 Users (реализовано частично)
 ```
 PATCH  /users/me               {first_name?, last_name?}
-PATCH  /users/me/password      {old_password, new_password}
-POST   /users/me/photo         presigned-flow → {photo_url}
-GET    /users/me/notifications-prefs | PATCH ...
-POST   /users/me/devices       {expo_push_token, platform}
+POST   /users/me/photo         presigned-flow → {photo_url}    (ждёт S3 — backlog)
+GET    /users/me/notifications-prefs | PATCH ...               (backlog)
+POST   /users/me/devices       {expo_push_token, platform}     (backlog)
 ```
 
 ### 5.3 Каталог (Фаза 2, публичный, кэшируемый)
@@ -295,30 +305,31 @@ POST   /gift-certificates      {amount} → оплата через ЮKassa
 POST   /gift-certificates/redeem {code}
 ```
 
-### 5.9 Партнёрка (Фаза 6)
+### 5.9 Партнёрка — РЕАЛИЗОВАНО в упрощённом виде (авг 2026)
+
+Вместо самозаписи с анкетой — назначение админом; кабинет один (`/backoffice` в web),
+вкладки по ролям. Партнёр работает теми же `/admin/tours`-эндпоинтами со скоупингом
+(видит/правит только свои; чужие → 404; правка опубликованного снимает тур в draft;
+публикация — только manager/admin):
+
 ```
-POST   /partner/applications   {inn, ogrn?, entity_type, accepted_docs}
-                               → DaData-верификация → contacts_required
-PATCH  /partner/applications/contacts {email, phone, telegram} → pending_approval
-GET    /partner/application    → статус (+причина отказа)
-GET    /partner/dashboard?period=week|month|half_year|year|all
-                               → {revenue, guests, published, rating}
-POST   /partner/tours          (черновик → pending)  |  GET /partner/tours
-PATCH  /partner/tours/{id}     |  POST /partner/tours/{id}/archive
-GET    /partner/guests?cursor  |  GET /partner/transactions?cursor
-GET    /partner/reviews?cursor
+POST   /admin/partners         {user_id, org_name, inn?, ...} (admin-only)
+                               → профиль + роль partner одной транзакцией
+GET    /admin/partners         (manager/admin)  |  PATCH /admin/partners/{id} (+verified)
+GET    /admin/partners/me      (partner)        |  PATCH /admin/partners/me (без verified)
 ```
 
-### 5.10 Админ (Фаза 6, role ≥ manager; действия → audit_log)
+Целевые допы из старой спеки (самозапись по анкете, dashboard/KPI, гости,
+транзакции) — добираются по триггерам; verified синхронизируется в organizer-jsonb туров.
+
+### 5.10 Админ (role ≥ manager)
 ```
-GET    /admin/stats
-GET    /admin/users?q&cursor   |  PATCH /admin/users/{id}  {role?, is_active?}
-GET    /admin/moderation/{partners|tours|reels|replies|reviews}?status=pending&cursor
-POST   /admin/moderation/{...}/{id}/approve
-POST   /admin/moderation/{...}/{id}/reject  {reason}
-GET    /admin/legal-docs       |  PUT /admin/legal-docs/{key}  {title, body}
-                               → джоба email-рассылки партнёрам
-GET    /admin/emails?cursor
+GET    /admin/users?q          |  PATCH /admin/users/{id}  {role?, is_active?}   [реализовано]
+GET    /admin/bookings?status  |  POST /bookings/{id}/confirm|complete|cancel    [реализовано]
+GET    /admin/reviews          |  POST /admin/reviews/{id}/approve|reject        [реализовано]
+GET/POST /admin/tours, GET/PATCH /admin/tours/{id}, PATCH .../status,
+GET/POST/PATCH/DELETE /admin/tours/{id}/dates[/{dateId}]                         [реализовано]
+GET    /admin/stats            |  audit_log  |  legal-docs  |  emails            [backlog]
 ```
 
 ### 5.11 Чаты и поддержка (Фаза 7)
