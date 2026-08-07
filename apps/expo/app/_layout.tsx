@@ -15,7 +15,6 @@ import { LoyaltyProvider } from "@/providers/LoyaltyProvider";
 import { CertificatesProvider } from "@/providers/CertificatesProvider";
 import { PromoCodesProvider } from "@/providers/PromoCodesProvider";
 import { ReelsProvider } from "@/providers/ReelsProvider";
-import { AdminProvider } from "@/providers/AdminProvider";
 import { SupportProvider } from "@/providers/SupportProvider";
 import { PartnersProvider } from "@/providers/PartnersProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -47,7 +46,7 @@ function RootLayoutNav() {
           animation: "slide_from_right",
         }}
       />
-      <Stack.Screen name="admin" options={{ presentation: "card", animation: "slide_from_right" }} />
+      <Stack.Screen name="backoffice" options={{ presentation: "card", animation: "slide_from_right" }} />
       <Stack.Screen
         name="reels"
         options={{
@@ -85,16 +84,14 @@ export default function RootLayout() {
                         <CertificatesProvider>
                           <PromoCodesProvider>
                             <ReelsProvider>
-                              <AdminProvider>
-                                <SupportProvider>
-                                  <PartnersProvider>
-                                    <ScrollToTopProvider>
-                                      <ThemedStatusBar />
-                                      <RootLayoutNav />
-                                    </ScrollToTopProvider>
-                                  </PartnersProvider>
-                                </SupportProvider>
-                              </AdminProvider>
+                              <SupportProvider>
+                                <PartnersProvider>
+                                  <ScrollToTopProvider>
+                                    <ThemedStatusBar />
+                                    <RootLayoutNav />
+                                  </ScrollToTopProvider>
+                                </PartnersProvider>
+                              </SupportProvider>
                             </ReelsProvider>
                           </PromoCodesProvider>
                         </CertificatesProvider>

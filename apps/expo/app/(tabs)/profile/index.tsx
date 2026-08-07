@@ -924,15 +924,15 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
-        {(auth.role === "admin" || auth.role === "manager") && (
+        {(auth.role === "admin" || auth.role === "manager" || auth.role === "partner") && (
           <TouchableOpacity
             style={[styles.menuItem, { borderBottomColor: colors.border }]}
             activeOpacity={0.7}
-            onPress={() => router.push("/admin")}
-            testID="menu-admin"
+            onPress={() => router.push("/backoffice")}
+            testID="menu-backoffice"
           >
             <ShieldCheck size={20} color={colors.gold} />
-            <Text style={[styles.menuText, { color: colors.text }]}>{"Админ-панель"}</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>{auth.role === "partner" ? "Кабинет партнёра" : "Бэкофис"}</Text>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         )}
