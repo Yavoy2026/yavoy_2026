@@ -187,6 +187,19 @@ ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.y
 
 Образ бэкенда сам прогоняет миграции при старте. Сид каталога (одноразово, стирает
 каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
+
+**Стенд протухает примерно через месяц.** Сид раскладывает даты выездов относительно
+дня запуска (+3/+10/+17/+24), и когда все они уходят в прошлое, у туров не остаётся
+будущих дат: кнопка брони везде неактивна, а в карточке вместо ближайшей даты
+показывается пусто. Досыпать свежие даты, ничего не удаляя (в отличие от сида):
+
+```bash
+ssh root@89.169.21.102 "cd /opt/yavoy && docker compose -f docker-compose.prod.yml \
+  exec -T postgres psql -U yavoy -d yavoy -c \
+  \"INSERT INTO tour_dates (tour_id, starts_on, seats_total, seats_left)
+     SELECT t.id, current_date + o, 12, 12 FROM tours t, unnest(ARRAY[3,10,17,24]) AS o
+     ON CONFLICT (tour_id, starts_on) DO NOTHING;\""
+```
 Для прода (свой домен): поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
 `.env` на сервере, пересобрать веб-образ (URL API зашивается при сборке).
 
