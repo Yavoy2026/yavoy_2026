@@ -13,7 +13,7 @@ packages/contracts/  Общие zod-схемы API — единственный 
 packages/i18n/       Переводы ru/en/uz + плюрализация и форматтеры; общий для всех трёх приложений
 packages/legal/      Оферта и политика конфиденциальности; общий текст для веба и Expo
 apps/expo/           Мобильное приложение (Expo SDK 54, React Query) — npm, НЕ pnpm
-apps/web/            Веб-клиент (Vite + React + shadcn) + бэкофис /backoffice — npm, НЕ pnpm
+apps/web/            Веб-клиент (Vite + React + shadcn) + панель управления /admin — npm, НЕ pnpm
 deploy/              Stage/prod: docker-compose.prod.yml, Caddyfile, .env.example
 ```
 
@@ -57,7 +57,8 @@ npx tsc --noEmit -p tsconfig.app.json && npx vite build
 валидацию + сериализацию + OpenAPI (fastify-type-provider-zod), а типы выводятся
 инференсом. В прод-сборку бэкенда контракты вбандливаются tsup'ом (`noExternal`).
 Клиенты contracts не импортируют — у каждого свой `services/api.ts` с зеркальными
-типами и адаптерами к легаси-типам UI (snake_case API → camelCase, копейки → рубли).
+типами и адаптерами к легаси-типам UI (snake_case API → camelCase, минорные единицы →
+мажорные).
 Меняешь API — меняй контракт, оба сервисных слоя и адаптеры.
 
 **Слои бэкенда** (`apps/backend/src/modules/<домен>/`): `routes.ts` — тонкий HTTP
@@ -66,7 +67,8 @@ npx tsc --noEmit -p tsconfig.app.json && npx vite build
 со стабильными кодами (`{error: {code, message, details}}`), клиенты матчатся по code.
 
 **Жёсткие доменные правила** (BACKEND_SPEC §1.3):
-- Деньги — только integer-копейки; конвертация в рубли — на границе UI.
+- Деньги — только integer в минорных единицах валюты (`bigint`); перевод в мажорные —
+  на границе UI.
 - Статусы броней меняются только через таблицу переходов `modules/bookings/transitions.ts`.
 - Инварианты держит БД + одиночные условные UPDATE (паттерн `reserveSeats`:
   `SET seats_left = seats_left - N WHERE ... seats_left >= N` + CHECK) — так же

@@ -11,10 +11,12 @@ packages/contracts/  Общие zod-схемы API (бэкенд + клиент�
 packages/i18n/       Переводы ru/en/uz, плюрализация, форматы денег и дат (бэкенд + клиенты)
 packages/legal/      Публичная оферта и политика конфиденциальности (веб + Expo)
 apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
-apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + бэкофис
-                     (нативные ios/ и android/ — в ветке archive/native-apps)
+apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением,
+                     плюс панель управления /admin со своим макетом и стилем
 deploy/              Прод: docker-compose.prod.yml + Caddyfile
 ```
+
+Нативные `ios/` и `android/` — в ветке `archive/native-apps`, не развиваются.
 
 ## Требования
 
@@ -54,7 +56,8 @@ EXPO_PUBLIC_API_URL=http://localhost:3002/v1 npx expo start --web --port 8081
 - **Слои** (`apps/backend/src/modules/<домен>/`): `routes.ts` — тонкий HTTP,
   `service.ts` — доменная логика (не импортирует fastify/drizzle),
   `repo.ts` — SQL. Правила — `BACKEND_SPEC.md` §1.3.
-- **Деньги** — integer-копейки. **Статусы** — только через таблицы переходов
+- **Деньги** — integer в минорных единицах валюты (`bigint`; копейки для RUB,
+  тийины для UZS). **Статусы** — только через таблицы переходов
   (`modules/bookings/transitions.ts`).
 - **Миграции**: правка `src/db/schema.ts` → `pnpm db:generate` → `pnpm db:migrate`.
   Сид-данные: `src/db/seed-data.json` (снапшот бывших моков), заливка `pnpm db:seed`.
@@ -120,7 +123,7 @@ pnpm i18n:check   # из корня
 Роли: `user` | `partner` | `manager` | `admin` (роль в JWT — после смены перелогин;
 refresh обновит её сам в пределах 15 минут). Рабочий UI — веб-панель `/admin`;
 те же операции доступны через Swagger (`/v1/admin/*`, `/v1/bookings/{id}/confirm` и т.д.).
-Партнёра назначает админ на вкладке «Партнёры» (роль + профиль организации разом).
+Партнёра назначает админ в разделе «Партнёры» (роль + профиль организации разом).
 Самого первого админа на пустой базе — руками:
 
 ```bash
@@ -163,8 +166,9 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
   перестройки не касается — на телефоне вкладки остаются вкладками, и вход в неё
   из профиля сохранён: своей шапки с адресом там нет.
 - Оставшиеся моки web: только Reels и демо-кабинет партнёра `/partner` (backlog).
-- Переключатель языка — в профиле (`components/LanguageSwitcher.tsx`); в Expo — там же
-  (`components/LanguageSelector.tsx`).
+- Переключатель языка в вебе — в шапке (`components/LanguageMenu.tsx`, компактное
+  меню с кодом языка); в Expo — в профиле (`components/LanguageSelector.tsx`),
+  своей шапки там нет.
 
 ## CORS, заголовки и прочие уроки локального теста
 
