@@ -19,6 +19,8 @@ const STAFF_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = [
 ];
 
 const PARTNER_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = [
+  // заявки первыми: это единственный раздел, где от организатора ждут действия
+  { section: "bookings", label: "backoffice.tabBookingsPartner", icon: Check },
   { section: "tours", label: "backoffice.tabMyTours", icon: Map },
   { section: "org", label: "backoffice.tabOrg", icon: Building2 },
 ];

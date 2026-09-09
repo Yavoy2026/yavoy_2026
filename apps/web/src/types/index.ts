@@ -1,3 +1,14 @@
+/** Статусы брони с бэкенда (YAV-27); зеркалит BookingStatusSchema в контрактах */
+export type BookingApiStatus =
+  | "requested"
+  | "awaiting_partner"
+  | "awaiting_payment"
+  | "confirmed"
+  | "completed"
+  | "rejected"
+  | "expired"
+  | "cancelled";
+
 export type DurationType = "one_day" | "multi_day";
 export type TransportType = "auto" | "water" | "sea" | "bike" | "air";
 export type InterestType = "city" | "educational" | "nature" | "pilgrimage";
@@ -171,7 +182,12 @@ export interface BookedTour {
   confirmationCode: string;
   status: "upcoming" | "completed";
   /** Точный статус с бэкенда: requested — заявка ждёт подтверждения */
-  apiStatus?: "requested" | "confirmed" | "completed" | "cancelled";
+  apiStatus?: BookingApiStatus;
+  organizerPhone?: string;
+  meetingMapUrl?: string;
+  /** Ссылка на платёжную страницу, пока бронь ждёт оплату (YAV-27) */
+  paymentUrl?: string;
+
   bookedAt: string;
   firstName: string;
   lastName: string;

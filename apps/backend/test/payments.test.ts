@@ -34,6 +34,7 @@ const fakeProvider: PaymentProvider = {
 
 let t: TestApp;
 let token: string;
+let staffToken: string;
 let tourDateId: string;
 
 beforeAll(async () => {
@@ -48,6 +49,7 @@ beforeAll(async () => {
     .returning();
   tourDateId = date[0]!.id;
   token = (await signupWithRole(t, "payer@example.com", "user")).token;
+  staffToken = (await signupWithRole(t, "mgr@example.com", "manager")).token;
 });
 afterAll(() => t.teardown());
 
@@ -61,11 +63,38 @@ const payload = (tickets = 1) => ({
 
 const authed = () => ({ authorization: `Bearer ${token}` });
 
+/** Заявка доходит до оплаты только после решения организатора (YAV-27) */
+async function approve(bookingId: string) {
+  const res = await t.app.inject({
+    method: "POST",
+    url: `/v1/bookings/${bookingId}/confirm`,
+    headers: { authorization: `Bearer ${staffToken}` },
+  });
+  expect(res.statusCode).toBe(200);
+  return res.json() as { status: string; payment_url: string | null };
+}
+
+/** Полный путь до ожидания оплаты: заявка → подтверждение → платёж создан */
+async function bookAndApprove(tickets: number) {
+  const create = await t.app.inject({
+    method: "POST",
+    url: "/v1/bookings",
+    headers: authed(),
+    payload: payload(tickets),
+  });
+  const id = (create.json() as { booking: { id: string } }).booking.id;
+  await approve(id);
+  const payment = (
+    await t.app.db.select().from(schema.payments).where(eq(schema.payments.bookingId, id))
+  )[0]!;
+  return { bookingId: id, paymentId: payment.id };
+}
+
 describe("оплата брони", () => {
   let bookingId: string;
   let paymentId: string;
 
-  it("бронь встаёт в pending_payment и отдаёт ссылку на оплату", async () => {
+  it("платить можно только после подтверждения организатора", async () => {
     const res = await t.app.inject({
       method: "POST",
       url: "/v1/bookings",
@@ -74,12 +103,21 @@ describe("оплата брони", () => {
     });
     expect(res.statusCode).toBe(200);
 
-    const body = res.json() as { booking: { id: string; status: string }; payment_url: string };
+    const body = res.json() as { booking: { id: string; status: string }; payment_url: string | null };
     bookingId = body.booking.id;
-    expect(body.booking.status).toBe("pending_payment");
-    expect(body.payment_url).toContain("pay2.octo.uz");
+    // заявка ушла организатору, денег пока не просим
+    expect(body.booking.status).toBe("awaiting_partner");
+    expect(body.payment_url).toBeNull();
+    expect(await t.app.db.select().from(schema.payments).where(eq(schema.payments.bookingId, bookingId))).toHaveLength(0);
 
-    // места удерживаются уже на этапе ожидания оплаты
+    // места удерживаются с самой заявки, иначе подтверждать было бы нечего
+    const held = (await t.app.db.select().from(schema.tourDates).where(eq(schema.tourDates.id, tourDateId)))[0]!;
+    expect(held.seatsLeft).toBe(1);
+
+    const approved = await approve(bookingId);
+    expect(approved.status).toBe("awaiting_payment");
+    expect(approved.payment_url).toContain("pay2.octo.uz");
+
     const date = (await t.app.db.select().from(schema.tourDates).where(eq(schema.tourDates.id, tourDateId)))[0]!;
     expect(date.seatsLeft).toBe(1);
 
@@ -130,21 +168,12 @@ describe("оплата брони", () => {
   });
 
   it("отменённый платёж снимает бронь и возвращает места", async () => {
-    const create = await t.app.inject({
-      method: "POST",
-      url: "/v1/bookings",
-      headers: authed(),
-      payload: payload(1),
-    });
-    const second = (create.json() as { booking: { id: string } }).booking.id;
-    const secondPayment = (
-      await t.app.db.select().from(schema.payments).where(eq(schema.payments.bookingId, second))
-    )[0]!;
+    const { bookingId: second, paymentId: secondPayment } = await bookAndApprove(1);
 
     await t.app.inject({
       method: "POST",
       url: "/v1/webhooks/octo",
-      payload: { paymentId: secondPayment.id, status: "cancelled" },
+      payload: { paymentId: secondPayment, status: "cancelled" },
     });
 
     const booking = (await t.app.db.select().from(schema.bookings).where(eq(schema.bookings.id, second)))[0]!;
@@ -163,13 +192,7 @@ describe("оплата брони", () => {
   });
 
   it("сборщик снимает протухшие неоплаченные брони и возвращает места", async () => {
-    const create = await t.app.inject({
-      method: "POST",
-      url: "/v1/bookings",
-      headers: authed(),
-      payload: payload(1),
-    });
-    const stale = (create.json() as { booking: { id: string } }).booking.id;
+    const { bookingId: stale } = await bookAndApprove(1);
 
     // отматываем время создания платежа за пределы ttl
     await t.app.db
@@ -181,7 +204,8 @@ describe("оплата брони", () => {
     expect(expired).toBe(1);
 
     const booking = (await t.app.db.select().from(schema.bookings).where(eq(schema.bookings.id, stale)))[0]!;
-    expect(booking.status).toBe("cancelled");
+    // истёкший срок — это expired, а не cancelled: их разделяют намеренно
+    expect(booking.status).toBe("expired");
     const date = (await t.app.db.select().from(schema.tourDates).where(eq(schema.tourDates.id, tourDateId)))[0]!;
     expect(date.seatsLeft).toBe(1);
   });

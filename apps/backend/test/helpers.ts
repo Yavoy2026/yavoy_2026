@@ -83,7 +83,7 @@ export async function loginViaOtp(t: Pick<TestApp, "app" | "outbox">, email: str
 export async function signupWithRole(
   t: Pick<TestApp, "app" | "outbox">,
   email: string,
-  role: "user" | "manager" | "admin",
+  role: "user" | "partner" | "manager" | "admin",
   firstName?: string,
 ): Promise<{ id: string; token: string; refreshToken: string }> {
   let result = await loginViaOtp(t, email);

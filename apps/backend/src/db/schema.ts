@@ -36,12 +36,15 @@ export const categoryTypeEnum = pgEnum("category_type", [
 export const seasonTypeEnum = pgEnum("season_type", ["winter", "spring", "summer", "autumn", "all_year"]);
 export const tourStatusEnum = pgEnum("tour_status", ["draft", "pending", "published", "rejected", "archived"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "partner", "manager", "admin"]);
-// pending_payment — бронь удерживает места и ждёт оплату (YAV-21)
+// Жизненный цикл брони — см. BookingStatusSchema в @yavoy/contracts (YAV-27)
 export const bookingStatusEnum = pgEnum("booking_status", [
-  "pending_payment",
   "requested",
+  "awaiting_partner",
+  "awaiting_payment",
   "confirmed",
   "completed",
+  "rejected",
+  "expired",
   "cancelled",
 ]);
 export const paymentProviderEnum = pgEnum("payment_provider", ["octo", "yookassa"]);
@@ -173,6 +176,8 @@ export const bookings = pgTable(
     lastName: text("last_name").notNull(),
     contact: text("contact").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Когда бронь вошла в текущий статус: по этому полю сборщик ищет протухшие */
+    statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   },

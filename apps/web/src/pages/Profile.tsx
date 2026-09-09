@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n/I18nProvider";
 import { translateError } from "@/i18n/errors";
+import type { BookingApiStatus } from "@/types";
 import type { TKey } from "@/i18n/keys";
 
 type Section = "favorites" | "transactions" | "reviews" | "reels" | "promos" | null;
@@ -145,6 +146,15 @@ export default function Profile() {
                     <div className="text-right">
                       <div className="font-bold">{formatMoney(bk.totalPrice)}</div>
                       <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {t(cfg.label)}</div>
+                      {/* организатор подтвердил — платёжная страница банка уже создана (YAV-27) */}
+                      {bk.apiStatus === "awaiting_payment" && bk.paymentUrl && (
+                        <a
+                          href={bk.paymentUrl}
+                          className="mt-1 inline-block rounded-lg bg-teal px-3 py-1 text-xs font-bold text-white"
+                        >
+                          {t("booking.payNow")}
+                        </a>
+                      )}
                       {bk.apiStatus === "completed" && !reviewedBookingIds.has(bk.id) && (
                         <button onClick={() => setReviewBooking(bk)} className="mt-1 text-xs font-semibold text-gold hover:underline">{t("booking.leaveReview")}</button>
                       )}
@@ -263,11 +273,23 @@ export default function Profile() {
   );
 }
 
-function bookingStatusCfg(status: string): { label: TKey; color: string; icon: typeof CheckCircle } {
-  if (status === "confirmed") return { label: "enums.bookingStatus.confirmed", color: "text-mint", icon: CheckCircle };
-  if (status === "completed") return { label: "enums.bookingStatus.completed", color: "text-teal", icon: CheckCircle };
-  if (status === "cancelled") return { label: "enums.bookingStatus.cancelled", color: "text-coral", icon: XCircle };
-  return { label: "enums.bookingStatus.requested", color: "text-orange-500", icon: Clock };
+/**
+ * Явная карта, а не каскад if: раньше неизвестный статус молча притворялся
+ * «заявка отправлена», и новые состояния из YAV-27 попали бы туда же.
+ */
+const BOOKING_STATUS_CFG: Record<BookingApiStatus, { label: TKey; color: string; icon: typeof CheckCircle }> = {
+  requested: { label: "enums.bookingStatus.requested", color: "text-orange-500", icon: Clock },
+  awaiting_partner: { label: "enums.bookingStatus.awaiting_partner", color: "text-orange-500", icon: Clock },
+  awaiting_payment: { label: "enums.bookingStatus.awaiting_payment", color: "text-gold", icon: Clock },
+  confirmed: { label: "enums.bookingStatus.confirmed", color: "text-mint", icon: CheckCircle },
+  completed: { label: "enums.bookingStatus.completed", color: "text-teal", icon: CheckCircle },
+  rejected: { label: "enums.bookingStatus.rejected", color: "text-coral", icon: XCircle },
+  expired: { label: "enums.bookingStatus.expired", color: "text-muted-foreground", icon: XCircle },
+  cancelled: { label: "enums.bookingStatus.cancelled", color: "text-coral", icon: XCircle },
+};
+
+function bookingStatusCfg(status: string) {
+  return BOOKING_STATUS_CFG[status as BookingApiStatus] ?? BOOKING_STATUS_CFG.requested;
 }
 
 function Stat({ value, label, color }: { value: string; label: string; color: string }) {

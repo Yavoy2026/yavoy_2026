@@ -4,7 +4,7 @@ import { bookings, payments } from "../../db/schema.ts";
 import { env } from "../../env.ts";
 import { notFound } from "../../errors.ts";
 import type { Mailer } from "../../mail/mailer.ts";
-import { confirmPaidBooking, expirePendingBooking } from "../bookings/service.ts";
+import { cancelUnpaidBooking, confirmPaidBooking, expireUnpaidBooking } from "../bookings/service.ts";
 import type { PaymentEvent, PaymentProvider } from "./provider.ts";
 
 /**
@@ -85,7 +85,8 @@ export async function applyPaymentEvent(db: Db, mailer: Mailer, event: PaymentEv
   if (event.status === "succeeded") {
     await confirmPaidBooking(db, mailer, payment.bookingId);
   } else if (event.status === "cancelled" || event.status === "failed") {
-    await expirePendingBooking(db, payment.bookingId);
+    // банк закрыл платёж — это отмена, а не истёкший срок: сроком занят сборщик
+    await cancelUnpaidBooking(db, payment.bookingId);
   }
 }
 
@@ -102,14 +103,14 @@ export async function expireStalePayments(db: Db): Promise<number> {
     .innerJoin(bookings, eq(bookings.id, payments.bookingId))
     .where(
       and(
-        eq(bookings.status, "pending_payment"),
+        eq(bookings.status, "awaiting_payment"),
         lt(payments.createdAt, deadline),
       ),
     );
 
   for (const row of stale) {
     await db.update(payments).set({ status: "cancelled", updatedAt: new Date() }).where(eq(payments.id, row.id));
-    await expirePendingBooking(db, row.bookingId);
+    await expireUnpaidBooking(db, row.bookingId);
   }
   return stale.length;
 }

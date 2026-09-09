@@ -1,4 +1,4 @@
-import type { BookedTour } from "@/types/tour";
+import type { BookedTour, BookingApiStatus } from "@/types/tour";
 import { ApiError, authFetch } from "@/services/api";
 
 export interface CreateBookingPayload {
@@ -11,7 +11,7 @@ export interface CreateBookingPayload {
 
 interface ApiBooking {
   id: string;
-  status: "requested" | "confirmed" | "completed" | "cancelled";
+  status: BookingApiStatus;
   tour_id: string;
   tour_title: string;
   tour_image_url: string;
@@ -25,7 +25,10 @@ interface ApiBooking {
   last_name: string;
   contact: string;
   organizer_name: string;
+  organizer_phone: string | null;
   meeting_point: string | null;
+  meeting_map_url: string | null;
+  payment_url: string | null;
   created_at: string;
 }
 
@@ -48,7 +51,10 @@ function adaptBooking(b: ApiBooking): BookedTour {
     lastName: b.last_name,
     contact: b.contact,
     organizerName: b.organizer_name,
+    organizerPhone: b.organizer_phone ?? undefined,
     meetingPoint: b.meeting_point ?? undefined,
+    meetingMapUrl: b.meeting_map_url ?? undefined,
+    paymentUrl: b.payment_url ?? undefined,
   };
 }
 

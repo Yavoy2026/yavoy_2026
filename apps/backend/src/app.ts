@@ -23,6 +23,7 @@ import { bookingsRoutes } from "./modules/bookings/routes.ts";
 import { catalogRoutes } from "./modules/catalog/routes.ts";
 import { createPaymentProvider, type PaymentProvider } from "./modules/payments/index.ts";
 import { paymentsRoutes } from "./modules/payments/routes.ts";
+import { expireStaleRequests } from "./modules/bookings/service.ts";
 import { expireStalePayments } from "./modules/payments/service.ts";
 import { configRoutes } from "./modules/config/routes.ts";
 import { favoritesRoutes } from "./modules/favorites/routes.ts";
@@ -112,18 +113,29 @@ export async function buildApp(db: Db, opts: { mailer?: Mailer; payments?: Payme
     { prefix: "/v1" },
   );
 
-  if (app.payments) startPaymentSweeper(app);
+  // сборщик нужен и без эквайринга: заявки протухают по молчанию организатора
+  startBookingSweeper(app);
 
   return app;
 }
 
 /**
- * Сборщик неоплаченных броней. Отдельного планировщика (BullMQ) пока нет —
- * для одной задачи с минутным горизонтом интервал в процессе дешевле и
- * достаточен; при появлении второй фоновой задачи имеет смысл вынести.
+ * Сборщик протухших броней: заявки, на которые не ответил организатор, и
+ * подтверждённые, но неоплаченные. И те и другие держат места, поэтому
+ * освобождать их — наша задача, а не провайдера.
+ *
+ * Отдельного планировщика (BullMQ) пока нет: для двух задач с минутным
+ * горизонтом интервал в процессе дешевле. Сюда же лягут напоминания перед
+ * поездкой, когда появится подсистема уведомлений.
  */
-function startPaymentSweeper(app: Awaited<ReturnType<typeof buildApp>>): void {
+function startBookingSweeper(app: Awaited<ReturnType<typeof buildApp>>): void {
   const timer = setInterval(() => {
+    void expireStaleRequests(app.db)
+      .then((n) => {
+        if (n > 0) app.log.info({ expired: n }, "заявки без ответа организатора сняты, места возвращены");
+      })
+      .catch((e: unknown) => app.log.error(e, "сборщик заявок без ответа упал"));
+
     void expireStalePayments(app.db)
       .then((n) => {
         if (n > 0) app.log.info({ expired: n }, "неоплаченные брони сняты, места возвращены");

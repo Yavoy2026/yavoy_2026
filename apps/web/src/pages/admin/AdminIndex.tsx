@@ -4,8 +4,8 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 /**
- * /admin сам по себе страницы не имеет: раздел по умолчанию зависит от роли —
- * партнёру показывать очередь модерации бессмысленно, у него её нет.
+ * /admin сам по себе страницы не имеет. Стартовый раздел один для всех —
+ * заявки: и организатор, и менеджер приходят в панель именно за ними.
  */
 export default function AdminIndex() {
   const { role, isLoading } = useAuth();
@@ -18,5 +18,5 @@ export default function AdminIndex() {
     );
   }
 
-  return <Navigate to={role === "partner" ? "/admin/tours" : "/admin/bookings"} replace />;
+  return <Navigate to="/admin/bookings" replace />;
 }

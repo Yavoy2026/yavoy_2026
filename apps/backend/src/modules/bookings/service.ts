@@ -10,7 +10,16 @@ import {
   bookingRequestedAdminMail,
   type Mailer,
 } from "../../mail/mailer.ts";
-import { getBookingViewById, listBookingsByStatus, listUserBookings, releaseSeats, reserveSeats, type BookingViewRow } from "./repo.ts";
+import {
+  getActivePayUrl,
+  getBookingViewById,
+  listBookingsByStatuses,
+  listStaleBookings,
+  listUserBookings,
+  releaseSeats,
+  reserveSeats,
+  type BookingViewRow,
+} from "./repo.ts";
 import type { PaymentProvider } from "../payments/provider.ts";
 import { assertTransition, holdsSeats } from "./transitions.ts";
 
@@ -18,7 +27,12 @@ function generateConfirmationCode(): string {
   return `YV-${randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
-function toBooking(row: BookingViewRow): Booking {
+/** Ссылка на точку сбора в картах; без координат — нечего показывать */
+function mapsUrl(lat: number | null, lng: number | null): string | null {
+  return lat != null && lng != null ? `https://maps.google.com/?q=${lat},${lng}` : null;
+}
+
+function toBooking(row: BookingViewRow, payUrl: string | null = null): Booking {
   const b = row.booking;
   return {
     id: b.id,
@@ -37,24 +51,32 @@ function toBooking(row: BookingViewRow): Booking {
     last_name: b.lastName,
     contact: b.contact,
     organizer_name: row.organizer.name,
+    organizer_phone: row.partnerPhone || null,
     meeting_point: row.meetingPoint,
+    meeting_map_url: mapsUrl(row.meetingLat, row.meetingLng),
+    payment_url: payUrl,
     created_at: b.createdAt.toISOString(),
     cancelled_at: b.cancelledAt?.toISOString() ?? null,
   };
 }
 
+/** Бронь вместе с актуальной ссылкой на оплату, если она сейчас нужна */
+async function loadBooking(db: Db, bookingId: string): Promise<Booking> {
+  const view = (await getBookingViewById(db, bookingId))!;
+  const payUrl = view.booking.status === "awaiting_payment" ? await getActivePayUrl(db, bookingId) : null;
+  return toBooking(view, payUrl);
+}
+
 /**
- * Создаёт бронь. С подключённым эквайрингом бронь встаёт в pending_payment
- * и вместе с ней создаётся платёж — клиент получает ссылку на платёжную
- * страницу банка. Без эквайринга поведение прежнее: requested и ручное
- * подтверждение менеджером.
+ * Создаёт заявку на бронирование (YAV-27). Места удерживаются сразу — иначе
+ * организатор подтверждал бы бронь, на которую мест уже не осталось. Деньги
+ * на этом шаге не берутся: сначала организатор проверяет доступность.
  */
 export async function createBooking(
   db: Db,
   mailer: Mailer,
   userId: string,
   payload: CreateBookingPayload,
-  provider: PaymentProvider | null,
 ): Promise<CreateBookingResponse> {
   const bookingId = await db.transaction(async (tx) => {
     const date = await reserveSeats(tx, payload.tour_date_id, payload.tickets_count);
@@ -82,35 +104,71 @@ export async function createBooking(
         firstName: payload.first_name.trim(),
         lastName: payload.last_name.trim(),
         contact: payload.contact.trim(),
-        status: provider ? "pending_payment" : "requested",
+        status: "requested",
       })
       .returning({ id: bookings.id });
     return inserted[0]!.id;
   });
 
+  // Заявка уходит организатору. Отдельный шаг, а не начальный статус: сюда
+  // встанет отправка уведомления, когда появится её подсистема.
   const view = (await getBookingViewById(db, bookingId))!;
-  const booking = toBooking(view);
-
-  if (provider) {
-    // startPayment импортируется лениво: modules/payments зависит от bookings,
-    // статический импорт замкнул бы цикл
-    const { startPayment } = await import("../payments/service.ts");
-    const payUrl = await startPayment(db, provider, {
-      id: booking.id,
-      amountKopeks: view.booking.amountKopeks,
-      currency: view.booking.currency,
-      contact: view.booking.contact,
-      userId,
-      tourTitle: booking.tour_title,
-    });
-    return { booking, payment_url: payUrl };
-  }
+  await changeStatus(db, view, "awaiting_partner");
 
   // письмо не должно ронять бронирование
+  const booking = await loadBooking(db, bookingId);
   const adminMail = bookingRequestedAdminMail(booking);
   if (adminMail) await mailer.send(adminMail).catch(() => {});
 
   return { booking, payment_url: null };
+}
+
+/**
+ * Решение организатора по заявке. Подтверждение ведёт к оплате; если эквайринг
+ * на инсталляции не подключён, платить негде — бронь сразу подтверждается.
+ */
+export async function respondToBooking(
+  db: Db,
+  mailer: Mailer,
+  provider: PaymentProvider | null,
+  bookingId: string,
+  decision: "approve" | "reject",
+  scopePartnerId?: string,
+): Promise<Booking> {
+  const view = await getBookingViewById(db, bookingId);
+  if (!view) throw notFound("booking_not_found", "Бронь не найдена");
+  // чужая бронь для организатора — 404, как и чужой тур: не палим существование
+  if (scopePartnerId && view.tourPartnerId !== scopePartnerId) {
+    throw notFound("booking_not_found", "Бронь не найдена");
+  }
+
+  if (decision === "reject") {
+    await changeStatus(db, view, "rejected");
+    return loadBooking(db, bookingId);
+  }
+
+  if (!provider) {
+    await changeStatus(db, view, "confirmed");
+    const confirmed = await loadBooking(db, bookingId);
+    const mail = bookingConfirmedClientMail(confirmed);
+    if (mail) await mailer.send(mail).catch(() => {});
+    return confirmed;
+  }
+
+  await changeStatus(db, view, "awaiting_payment");
+  // startPayment импортируется лениво: modules/payments зависит от bookings,
+  // статический импорт замкнул бы цикл
+  const { startPayment } = await import("../payments/service.ts");
+  await startPayment(db, provider, {
+    id: view.booking.id,
+    amountKopeks: view.booking.amountKopeks,
+    currency: view.booking.currency,
+    contact: view.booking.contact,
+    userId: view.booking.userId,
+    tourTitle: view.tourTitle,
+  });
+
+  return loadBooking(db, bookingId);
 }
 
 /**
@@ -120,29 +178,66 @@ export async function createBooking(
  */
 export async function confirmPaidBooking(db: Db, mailer: Mailer, bookingId: string): Promise<void> {
   const view = await getBookingViewById(db, bookingId);
-  if (!view || view.booking.status !== "pending_payment") return;
+  if (!view || view.booking.status !== "awaiting_payment") return;
 
   await changeStatus(db, view, "confirmed");
-  const booking = toBooking((await getBookingViewById(db, bookingId))!);
+  const booking = await loadBooking(db, bookingId);
   const clientMail = bookingConfirmedClientMail(booking);
   if (clientMail) await mailer.send(clientMail).catch(() => {});
 }
 
-/** Оплата не состоялась или истёк срок: снимаем бронь и возвращаем места */
-export async function expirePendingBooking(db: Db, bookingId: string): Promise<void> {
+/** Платёж отменён на стороне банка или провайдера */
+export async function cancelUnpaidBooking(db: Db, bookingId: string): Promise<void> {
   const view = await getBookingViewById(db, bookingId);
-  if (!view || view.booking.status !== "pending_payment") return;
+  if (!view || view.booking.status !== "awaiting_payment") return;
   await changeStatus(db, view, "cancelled");
+}
+
+/** Истёк срок оплаты: место возвращается в продажу */
+export async function expireUnpaidBooking(db: Db, bookingId: string): Promise<void> {
+  const view = await getBookingViewById(db, bookingId);
+  if (!view || view.booking.status !== "awaiting_payment") return;
+  await changeStatus(db, view, "expired");
+}
+
+/**
+ * Организатор не ответил в срок — снимаем заявку и возвращаем места.
+ * Без этого один молчащий организатор морозил бы даты навсегда: места
+ * удерживаются с момента заявки.
+ */
+export async function expireStaleRequests(db: Db): Promise<number> {
+  const deadline = new Date(Date.now() - env.PARTNER_RESPONSE_TTL_H * 3_600_000);
+  // requested — статус броней, созданных до YAV-27; они точно так же держат места
+  const stale = [
+    ...(await listStaleBookings(db, "awaiting_partner", deadline)),
+    ...(await listStaleBookings(db, "requested", deadline)),
+  ];
+  for (const view of stale) {
+    await changeStatus(db, view, "expired");
+  }
+  return stale.length;
 }
 
 export async function listMyBookings(db: Db, userId: string): Promise<Booking[]> {
   const rows = await listUserBookings(db, userId);
-  return rows.map(toBooking);
+  return Promise.all(
+    rows.map(async (row) =>
+      toBooking(
+        row,
+        row.booking.status === "awaiting_payment" ? await getActivePayUrl(db, row.booking.id) : null,
+      ),
+    ),
+  );
 }
 
-export async function listAdminBookings(db: Db, status: BookingStatus): Promise<Booking[]> {
-  const rows = await listBookingsByStatus(db, status);
-  return rows.map(toBooking);
+/** Очередь панели: staff видит все брони, организатор — только по своим турам */
+export async function listAdminBookings(
+  db: Db,
+  statuses: readonly BookingStatus[],
+  scopePartnerId?: string,
+): Promise<Booking[]> {
+  const rows = await listBookingsByStatuses(db, statuses, scopePartnerId);
+  return rows.map((row) => toBooking(row));
 }
 
 async function changeStatus(
@@ -154,9 +249,9 @@ async function changeStatus(
   assertTransition(from, to);
 
   await db.transaction(async (tx) => {
-    const patch: Partial<typeof bookings.$inferInsert> = { status: to };
+    const patch: Partial<typeof bookings.$inferInsert> = { status: to, statusChangedAt: new Date() };
     if (to === "confirmed") patch.confirmedAt = new Date();
-    if (to === "cancelled") patch.cancelledAt = new Date();
+    if (to === "cancelled" || to === "rejected" || to === "expired") patch.cancelledAt = new Date();
     await tx.update(bookings).set(patch).where(eq(bookings.id, view.booking.id));
 
     if (holdsSeats(from) && !holdsSeats(to) && to !== "completed") {
@@ -177,25 +272,12 @@ export async function cancelBooking(
   }
 
   await changeStatus(db, view, "cancelled");
-  return toBooking((await getBookingViewById(db, bookingId))!);
+  return loadBooking(db, bookingId);
 }
 
 export async function completeBooking(db: Db, bookingId: string): Promise<Booking> {
   const view = await getBookingViewById(db, bookingId);
   if (!view) throw notFound("booking_not_found", "Бронь не найдена");
   await changeStatus(db, view, "completed");
-  return toBooking((await getBookingViewById(db, bookingId))!);
-}
-
-export async function confirmBooking(db: Db, mailer: Mailer, bookingId: string): Promise<Booking> {
-  const view = await getBookingViewById(db, bookingId);
-  if (!view) throw notFound("booking_not_found", "Бронь не найдена");
-
-  await changeStatus(db, view, "confirmed");
-  const booking = toBooking((await getBookingViewById(db, bookingId))!);
-
-  const clientMail = bookingConfirmedClientMail(booking);
-  if (clientMail) await mailer.send(clientMail).catch(() => {});
-
-  return booking;
+  return loadBooking(db, bookingId);
 }

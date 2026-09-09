@@ -49,6 +49,11 @@ const EnvSchema = z.object({
   PAYMENT_RETURN_URL: optional(z.string().url()),
   /** Сколько минут бронь ждёт оплату, потом отменяется и места возвращаются */
   PAYMENT_TTL_MIN: z.coerce.number().int().min(5).max(120).default(30),
+  /**
+   * Сколько часов заявка ждёт ответа организатора. Места удерживаются с момента
+   * заявки, поэтому молчание не может длиться вечно (YAV-27).
+   */
+  PARTNER_RESPONSE_TTL_H: z.coerce.number().int().min(1).max(168).default(24),
 
   OCTO_SHOP_ID: z.coerce.number().int().optional(),
   OCTO_SECRET: optional(z.string()),

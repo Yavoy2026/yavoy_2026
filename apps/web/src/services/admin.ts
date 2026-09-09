@@ -1,4 +1,4 @@
-import type { BookedTour } from "@/types";
+import type { BookedTour, BookingApiStatus } from "@/types";
 import { ApiError, authFetch, type UserProfile } from "@/services/api";
 import type { MyReview } from "@/services/social";
 
@@ -15,7 +15,7 @@ async function ensureOk<T>(res: Response, fallbackCode: string): Promise<T> {
 
 interface ApiBooking {
   id: string;
-  status: string;
+  status: BookingApiStatus;
   tour_title: string;
   tour_image_url: string;
   tour_date: string;
@@ -29,7 +29,7 @@ interface ApiBooking {
 
 export interface AdminBooking {
   id: string;
-  status: string;
+  status: BookingApiStatus;
   tourTitle: string;
   tourImage: string;
   tourDate: string;
@@ -55,14 +55,20 @@ function adaptAdminBooking(b: ApiBooking): AdminBooking {
   };
 }
 
-export async function fetchAdminBookings(status: "requested" | "confirmed"): Promise<AdminBooking[]> {
-  const res = await authFetch(`/admin/bookings?status=${status}`);
+/** Очередь панели; несколько статусов сразу — список через запятую (YAV-27) */
+export async function fetchAdminBookings(...statuses: BookingApiStatus[]): Promise<AdminBooking[]> {
+  const res = await authFetch(`/admin/bookings?status=${statuses.join(",")}`);
   const body = await ensureOk<{ items: ApiBooking[] }>(res, "requestsLoadFailed");
   return body.items.map(adaptAdminBooking);
 }
 
 export async function confirmBooking(id: string): Promise<void> {
   await ensureOk(await authFetch(`/bookings/${id}/confirm`, { method: "POST" }), "bookingConfirmFailed");
+}
+
+/** Отказ организатора: места сразу возвращаются в продажу */
+export async function rejectBooking(id: string): Promise<void> {
+  await ensureOk(await authFetch(`/bookings/${id}/reject`, { method: "POST" }), "bookingRejectFailed");
 }
 
 export async function completeBooking(id: string): Promise<void> {

@@ -85,6 +85,11 @@ export function bookingRequestedAdminMail(booking: {
   };
 }
 
+/**
+ * Ваучер клиенту. Кроме кода в нём то, что нужно в дороге: сколько заплачено,
+ * с кем связаться и куда идти (YAV-27). Пустые поля выпадают из письма —
+ * у туров самой платформы организатора-партнёра нет, координаты есть не у всех.
+ */
 export function bookingConfirmedClientMail(booking: {
   contact: string;
   confirmation_code: string;
@@ -92,7 +97,11 @@ export function bookingConfirmedClientMail(booking: {
   tour_date: string;
   start_time: string | null;
   meeting_point: string | null;
+  meeting_map_url: string | null;
   tickets_count: number;
+  amount_kopeks: number;
+  organizer_name: string;
+  organizer_phone: string | null;
 }): MailMessage | null {
   if (!isEmail(booking.contact)) return null; // телефоном займётся менеджер
   return {
@@ -106,7 +115,12 @@ export function bookingConfirmedClientMail(booking: {
         date: booking.start_time ? `${booking.tour_date}, ${booking.start_time}` : booking.tour_date,
       }),
       booking.meeting_point ? t("mail.bookingConfirmedMeeting", { point: booking.meeting_point }) : "",
+      booking.meeting_map_url ? t("mail.bookingConfirmedMap", { url: booking.meeting_map_url }) : "",
       t("mail.bookingConfirmedTickets", { tickets: booking.tickets_count }),
+      t("mail.bookingConfirmedAmount", { amount: money(booking.amount_kopeks) }),
+      ``,
+      t("mail.bookingConfirmedOrganizer", { organizer: booking.organizer_name }),
+      booking.organizer_phone ? t("mail.bookingConfirmedPhone", { phone: booking.organizer_phone }) : "",
       ``,
       t("mail.bookingConfirmedCode", { code: booking.confirmation_code }),
       t("mail.bookingConfirmedHint"),

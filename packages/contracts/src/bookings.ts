@@ -1,19 +1,39 @@
 import { z } from "zod";
 
 /**
- * pending_payment — бронь создана, места удержаны, ждём оплату (YAV-21).
- * Появляется только на инсталляциях с подключённым эквайрингом; там, где
- * PAYMENT_PROVIDER=none, бронь по-прежнему создаётся сразу в requested
- * и подтверждается менеджером руками.
+ * Жизненный цикл брони (YAV-27):
+ *
+ *   requested → awaiting_partner → awaiting_payment → confirmed → completed
+ *
+ * requested        — заявка создана, места удержаны, клиенту показано «ожидаем подтверждения»
+ * awaiting_partner — заявка ушла организатору, ждём проверки доступности
+ * awaiting_payment — организатор подтвердил, ждём оплату
+ * confirmed        — оплачено, выдан ваучер
+ * completed        — поездка состоялась
+ *
+ * Тупики разделены намеренно: rejected (организатор отказал), expired (истёк
+ * срок ответа или оплаты), cancelled (отменил клиент или менеджер). У них
+ * разные письма и разный смысл в отчётах, схлопывать их в один нельзя.
  */
 export const BookingStatusSchema = z.enum([
-  "pending_payment",
   "requested",
+  "awaiting_partner",
+  "awaiting_payment",
   "confirmed",
   "completed",
+  "rejected",
+  "expired",
   "cancelled",
 ]);
 export type BookingStatus = z.infer<typeof BookingStatusSchema>;
+
+/** Статусы, в которых бронь ещё живая: занимает места и ждёт чьего-то действия */
+export const ACTIVE_BOOKING_STATUSES = [
+  "requested",
+  "awaiting_partner",
+  "awaiting_payment",
+  "confirmed",
+] as const;
 
 export const TourDateSchema = z.object({
   id: z.string().uuid(),
@@ -51,16 +71,23 @@ export const BookingSchema = z.object({
   last_name: z.string(),
   contact: z.string(),
   organizer_name: z.string(),
+  /** Телефон организатора для ваучера; у туров самой платформы партнёра нет */
+  organizer_phone: z.string().nullable(),
   meeting_point: z.string().nullable(),
+  /** Точка сбора в картах — собирается из координат тура */
+  meeting_map_url: z.string().nullable(),
+  /** Заполнена, пока бронь ждёт оплату: кнопка «оплатить» ведёт сюда */
+  payment_url: z.string().nullable(),
   created_at: z.string(),
   cancelled_at: z.string().nullable(),
 });
 export type Booking = z.infer<typeof BookingSchema>;
 
 /**
- * Ответ на создание брони. payment_url заполнен, когда бронь ждёт оплаты:
- * клиент должен отправить пользователя на платёжную страницу банка.
- * Реквизиты карты вводятся там — мы их не видим и не храним.
+ * Ответ на создание брони. payment_url всегда null: платить можно только
+ * после того, как организатор подтвердит доступность (YAV-27). Ссылка на
+ * оплату появляется в самой броне, когда та переходит в awaiting_payment.
+ * Поле оставлено, чтобы клиенты не ломались на форме ответа.
  */
 export const CreateBookingResponseSchema = z.object({
   booking: BookingSchema,
