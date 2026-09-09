@@ -2,6 +2,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Compass, Map, Heart, User, Play, Sun, Moon, Search } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Footer } from "@/components/Footer";
+import LanguageMenu from "@/components/LanguageMenu";
 import { useT } from "@/i18n/I18nProvider";
 import type { TKey } from "@/i18n/keys";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <Play size={16} fill="#FF6B6B" /> Reels
             </button>
+            <LanguageMenu />
             <button
               onClick={() => setThemeMode(isDark ? "light" : "dark")}
               aria-label={t("nav.theme")}
@@ -78,7 +80,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pt-6 md:px-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-6 md:pb-16">{children}</main>
 
       <Footer />
 

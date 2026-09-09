@@ -6,7 +6,7 @@ import { Image } from "expo-image";
 import { MapPin, Navigation, X, ArrowDownNarrowWide, TrendingUp, Clock, DollarSign } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useLocation } from "@/providers/LocationProvider";
-import { useCatalog } from "@/services/catalog";
+import { hasAvailableDate, useCatalog } from "@/services/catalog";
 import { DurationType, TransportType, InterestType, SortType, CategoryType, SeasonType } from "@/types/tour";
 import CitySelector from "@/components/CitySelector";
 import FilterDropdown from "@/components/FilterDropdown";
@@ -143,7 +143,8 @@ export default function HomeScreen() {
       );
     }
     if (selectedDate) {
-      result = result.filter((t) => t.nextAvailableDate >= selectedDate);
+      // без hasAvailableDate заглушка 2099-12-31 проходила любой фильтр по дате
+      result = result.filter((t) => hasAvailableDate(t) && t.nextAvailableDate >= selectedDate);
     }
 
     switch (selectedSort) {

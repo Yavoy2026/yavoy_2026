@@ -8,7 +8,7 @@ import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { useCatalog } from "@/services/catalog";
+import { hasAvailableDate, useCatalog } from "@/services/catalog";
 import { createBooking } from "@/services/bookings";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ export default function TourDetail() {
   const [contact, setContact] = useState("");
   // акцепт оферты обязателен перед оплатой — требование банка, п.7 (YAV-21)
   const [offerAccepted, setOfferAccepted] = useState(false);
-  const { t, formatNumber, formatMoney } = useI18n();
+  const { t, formatNumber, formatMoney, formatDate } = useI18n();
 
   const tour = useMemo(() => tours.find((t) => t.id === id), [tours, id]);
   const index = useMemo(() => tours.findIndex((t) => t.id === id), [tours, id]);
@@ -232,7 +232,13 @@ export default function TourDetail() {
             </div>
 
             <div className="mb-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2"><Calendar size={15} className="text-teal" /> {t("tour.nearestDate")}: <span className="font-semibold">{tour.nextAvailableDate}</span></div>
+              {/* дат нет — вместо ближайшей показывалась заглушка сортировки 2099-12-31 */}
+              {hasAvailableDate(tour) && (
+                <div className="flex items-center gap-2">
+                  <Calendar size={15} className="text-teal" /> {t("tour.nearestDate")}:{" "}
+                  <span className="font-semibold">{formatDate(tour.nextAvailableDate)}</span>
+                </div>
+              )}
               {tour.isInstantConfirmation && <div className="flex items-center gap-2 text-teal"><Zap size={15} fill="#0FA3B1" /> {t("tour.instantConfirmation")}</div>}
               {tour.isFreeCancellation && <div className="flex items-center gap-2 text-mint"><ShieldCheck size={15} /> {t("tour.freeCancellation")}</div>}
             </div>

@@ -85,7 +85,11 @@ interface ApiTour {
 }
 
 /** Тур без будущих дат: фильтр по дате не должен его прятать */
-const NO_DATE_FALLBACK = "2099-12-31";
+export const NO_DATE_FALLBACK = "2099-12-31";
+
+/** Есть ли у тура реальная ближайшая дата, а не заглушка сортировки */
+export const hasAvailableDate = (tour: { nextAvailableDate: string }): boolean =>
+  tour.nextAvailableDate !== NO_DATE_FALLBACK;
 
 function adaptTour(t: ApiTour): Tour {
   return {

@@ -13,7 +13,7 @@ export default function LanguageSwitcher({ className = "" }: { className?: strin
         <button
           key={code}
           onClick={() => setLocale(code)}
-          className={`flex-1 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+          className={`rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
             locale === code ? "border-teal bg-teal/10 text-teal" : "border-border text-muted-foreground"
           }`}
         >
