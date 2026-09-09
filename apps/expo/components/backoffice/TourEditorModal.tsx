@@ -26,24 +26,27 @@ import {
   type BackofficeTour,
   type TourWritePayload,
 } from "@/services/backoffice";
+import { useT } from "@/providers/I18nProvider";
+import { translateError } from "@/i18n/errors";
+import type { TKey } from "@/i18n/keys";
 
 const DURATIONS = [
-  { v: "one_day", l: "Однодневный" },
-  { v: "multi_day", l: "Многодневный" },
-] as const;
+  { v: "one_day", l: "enums.durationSingular.one_day" },
+  { v: "multi_day", l: "enums.durationSingular.multi_day" },
+] as const satisfies readonly { v: string; l: TKey }[];
 const TRANSPORTS = [
-  { v: "auto", l: "Авто" },
-  { v: "water", l: "Вода" },
-  { v: "sea", l: "Море" },
-  { v: "bike", l: "Вело" },
-  { v: "air", l: "Авиа" },
-] as const;
+  { v: "auto", l: "enums.transport.auto" },
+  { v: "water", l: "enums.transport.water" },
+  { v: "sea", l: "enums.transport.sea" },
+  { v: "bike", l: "enums.transport.bike" },
+  { v: "air", l: "enums.transport.air" },
+] as const satisfies readonly { v: string; l: TKey }[];
 const INTERESTS = [
-  { v: "city", l: "Город" },
-  { v: "educational", l: "Познавательный" },
-  { v: "nature", l: "Природа" },
-  { v: "pilgrimage", l: "Паломничество" },
-] as const;
+  { v: "city", l: "enums.interest.city" },
+  { v: "educational", l: "enums.interest.educational" },
+  { v: "nature", l: "enums.interest.nature" },
+  { v: "pilgrimage", l: "enums.interest.pilgrimage" },
+] as const satisfies readonly { v: string; l: TKey }[];
 
 interface FormState {
   city_id: string;
@@ -97,7 +100,8 @@ function initialForm(tour: BackofficeTour | null, defaultCity: string): FormStat
     includes: joinLines(tour?.includes ?? []),
     excludes: joinLines(tour?.excludes ?? []),
     what_to_bring: joinLines(tour?.what_to_bring ?? []),
-    languages: joinLines(tour?.languages ?? ["Русский"]),
+    // языки экскурсии хранятся кодами (enums.tourLanguage), см. YAV-25
+    languages: joinLines(tour?.languages ?? ["ru"]),
     schedule: tour?.schedule ?? "",
     group_size: tour?.group_size ?? "",
     meeting_point: tour?.meeting_point ?? "",
@@ -171,6 +175,7 @@ export function TourEditorModal({
   onSuccess: (msg: string) => void;
 }) {
   const { colors } = useTheme();
+  const t = useT();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(() => initialForm(tour, cities[0]?.id ?? ""));
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
@@ -178,7 +183,7 @@ export function TourEditorModal({
   const save = useMutation({
     mutationFn: () => {
       if (!form.title.trim() || !form.image_url.trim() || !form.price_rub || !form.city_id) {
-        throw new Error("Заполните обязательные поля: город, название, картинка, цена");
+        throw new Error(t("tourEditor.requiredFields"));
       }
       const payload = toPayload(form, tour, isPartner);
       return tour ? updateTour(tour.id, payload) : createTour(payload);
@@ -186,14 +191,14 @@ export function TourEditorModal({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["backoffice-tours"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-      onSuccess(tour ? "Тур сохранён" : "Тур создан черновиком");
+      onSuccess(t(tour ? "tourEditor.tourSaved" : "tourEditor.tourCreatedShort"));
       onClose();
     },
-    onError: (e: unknown) => onError(e instanceof Error ? e.message : "Ошибка сохранения"),
+    onError: (e: unknown) => onError(translateError(e, t, "backoffice.saveFailed")),
   });
 
   const inputStyle = [styles.input, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }];
-  const label = (t: string) => <Text style={[styles.label, { color: colors.textMuted }]}>{t}</Text>;
+  const label = (text: string) => <Text style={[styles.label, { color: colors.textMuted }]}>{text}</Text>;
 
   const chipRow = <T extends string>(
     options: readonly { v: T; l: string }[],
@@ -224,7 +229,7 @@ export function TourEditorModal({
       >
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {tour ? "Редактирование тура" : "Новый тур"}
+            {t(tour ? "tourEditor.titleEdit" : "tourEditor.titleNew")}
           </Text>
           <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.inputBg }]}>
             <X size={20} color={colors.text} />
@@ -232,103 +237,103 @@ export function TourEditorModal({
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Section title="Основное" colors={colors}>
-            {label("Город *")}
+          <Section title={t("tourEditor.sectionMain")} colors={colors}>
+            {label(t("tourEditor.city"))}
             {chipRow(
               cities.map((c) => ({ v: c.id, l: c.name })),
               form.city_id,
               (v) => set("city_id", v),
             )}
-            {label("Название *")}
+            {label(t("tourEditor.name"))}
             <TextInput style={inputStyle} value={form.title} onChangeText={(v) => set("title", v)} />
-            {label("Описание")}
+            {label(t("tourEditor.description"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.description} onChangeText={(v) => set("description", v)} multiline />
-            {label("Картинка (URL) *")}
+            {label(t("tourEditor.image"))}
             <TextInput style={inputStyle} value={form.image_url} onChangeText={(v) => set("image_url", v)} autoCapitalize="none" />
-            {label("Галерея (URL, по одному на строку)")}
+            {label(t("tourEditor.gallery"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.gallery} onChangeText={(v) => set("gallery", v)} multiline autoCapitalize="none" />
           </Section>
 
-          <Section title="Цена" colors={colors}>
+          <Section title={t("tourEditor.sectionPrice")} colors={colors}>
             <View style={styles.row2}>
               <View style={styles.flex1}>
-                {label("Цена, ₽ *")}
+                {label(t("tourEditor.price"))}
                 <TextInput style={inputStyle} value={form.price_rub} onChangeText={(v) => set("price_rub", v.replace(/\D/g, ""))} keyboardType="number-pad" />
               </View>
               <View style={styles.flex1}>
-                {label("До скидки, ₽")}
+                {label(t("tourEditor.originalPriceShort"))}
                 <TextInput style={inputStyle} value={form.original_price_rub} onChangeText={(v) => set("original_price_rub", v.replace(/\D/g, ""))} keyboardType="number-pad" />
               </View>
             </View>
           </Section>
 
-          <Section title="Классификация" colors={colors}>
-            {label("Длительность")}
-            {chipRow(DURATIONS, form.duration_type, (v) => set("duration_type", v))}
-            {label("Текст длительности (например «8 часов»)")}
+          <Section title={t("tourEditor.sectionClassification")} colors={colors}>
+            {label(t("tourEditor.duration"))}
+            {chipRow(DURATIONS.map((o) => ({ v: o.v, l: t(o.l) })), form.duration_type, (v) => set("duration_type", v))}
+            {label(t("tourEditor.durationTextHint"))}
             <TextInput style={inputStyle} value={form.duration_text} onChangeText={(v) => set("duration_text", v)} />
-            {label("Транспорт")}
-            {chipRow(TRANSPORTS, form.transport, (v) => set("transport", v))}
-            {label("Интерес")}
-            {chipRow(INTERESTS, form.interest, (v) => set("interest", v))}
+            {label(t("tourEditor.transport"))}
+            {chipRow(TRANSPORTS.map((o) => ({ v: o.v, l: t(o.l) })), form.transport, (v) => set("transport", v))}
+            {label(t("tourEditor.interest"))}
+            {chipRow(INTERESTS.map((o) => ({ v: o.v, l: t(o.l) })), form.interest, (v) => set("interest", v))}
           </Section>
 
           {!isPartner && (
-            <Section title="Организатор" colors={colors}>
-              {label("Название организатора")}
+            <Section title={t("tourEditor.sectionOrganizer")} colors={colors}>
+              {label(t("tourEditor.organizerName"))}
               <TextInput style={inputStyle} value={form.organizer_name} onChangeText={(v) => set("organizer_name", v)} />
             </Section>
           )}
 
-          <Section title="Программа (по пункту на строку)" colors={colors}>
-            {label("Хайлайты")}
+          <Section title={t("tourEditor.sectionProgramShort")} colors={colors}>
+            {label(t("tourEditor.highlights"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.highlights} onChangeText={(v) => set("highlights", v)} multiline />
-            {label("Включено")}
+            {label(t("tourEditor.includes"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.includes} onChangeText={(v) => set("includes", v)} multiline />
-            {label("Не включено")}
+            {label(t("tourEditor.excludes"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.excludes} onChangeText={(v) => set("excludes", v)} multiline />
-            {label("Взять с собой")}
+            {label(t("tourEditor.whatToBring"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.what_to_bring} onChangeText={(v) => set("what_to_bring", v)} multiline />
-            {label("Языки")}
+            {label(t("tourEditor.languages"))}
             <TextInput style={inputStyle} value={form.languages} onChangeText={(v) => set("languages", v)} />
           </Section>
 
-          <Section title="Логистика" colors={colors}>
-            {label("Расписание")}
+          <Section title={t("tourEditor.sectionLogistics")} colors={colors}>
+            {label(t("tourEditor.schedule"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.schedule} onChangeText={(v) => set("schedule", v)} multiline />
             <View style={styles.row2}>
               <View style={styles.flex1}>
-                {label("Размер группы")}
+                {label(t("tourEditor.groupSize"))}
                 <TextInput style={inputStyle} value={form.group_size} onChangeText={(v) => set("group_size", v)} />
               </View>
               <View style={styles.flex1}>
-                {label("Время старта")}
+                {label(t("tourEditor.startTime"))}
                 <TextInput style={inputStyle} value={form.start_time} onChangeText={(v) => set("start_time", v)} placeholder="09:00" placeholderTextColor={colors.textMuted} />
               </View>
             </View>
-            {label("Место встречи")}
+            {label(t("tourEditor.meetingPoint"))}
             <TextInput style={inputStyle} value={form.meeting_point} onChangeText={(v) => set("meeting_point", v)} />
           </Section>
 
-          <Section title="Условия" colors={colors}>
-            {label("Условия брони")}
+          <Section title={t("tourEditor.sectionBookingTermsShort")} colors={colors}>
+            {label(t("tourEditor.bookingConditions"))}
             <TextInput style={[...inputStyle, styles.multiline]} value={form.booking_conditions} onChangeText={(v) => set("booking_conditions", v)} multiline />
             <View style={styles.row2}>
               <View style={styles.flex1}>
-                {label("Предоплата")}
+                {label(t("tourEditor.prepayment"))}
                 <TextInput style={inputStyle} value={form.prepayment} onChangeText={(v) => set("prepayment", v)} />
               </View>
               <View style={styles.flex1}>
-                {label("Политика отмены")}
+                {label(t("tourEditor.cancellationPolicy"))}
                 <TextInput style={inputStyle} value={form.cancellation_policy} onChangeText={(v) => set("cancellation_policy", v)} />
               </View>
             </View>
           </Section>
 
-          <Section title="Витрина" colors={colors}>
-            <SwitchRow label="Моментальное подтверждение" value={form.is_instant_confirmation} onChange={(v) => set("is_instant_confirmation", v)} colors={colors} />
-            <SwitchRow label="Бесплатная отмена" value={form.is_free_cancellation} onChange={(v) => set("is_free_cancellation", v)} colors={colors} />
-            <SwitchRow label="Бестселлер" value={form.is_bestseller} onChange={(v) => set("is_bestseller", v)} colors={colors} />
+          <Section title={t("tourEditor.sectionShowcase")} colors={colors}>
+            <SwitchRow label={t("tourEditor.instantConfirmation")} value={form.is_instant_confirmation} onChange={(v) => set("is_instant_confirmation", v)} colors={colors} />
+            <SwitchRow label={t("tourEditor.freeCancellation")} value={form.is_free_cancellation} onChange={(v) => set("is_free_cancellation", v)} colors={colors} />
+            <SwitchRow label={t("tourEditor.bestseller")} value={form.is_bestseller} onChange={(v) => set("is_bestseller", v)} colors={colors} />
           </Section>
 
           {tour && <DatesPanel tourId={tour.id} colors={colors} onError={onError} onSuccess={onSuccess} />}
@@ -341,7 +346,7 @@ export function TourEditorModal({
             {save.isPending ? (
               <ActivityIndicator color="#FFF" size="small" />
             ) : (
-              <Text style={styles.saveBtnText}>{tour ? "Сохранить" : "Создать черновик"}</Text>
+              <Text style={styles.saveBtnText}>{t(tour ? "common.save" : "tourEditor.createDraft")}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -365,33 +370,34 @@ function DatesPanel({
   const dates = useQuery({ queryKey: ["backoffice-tour-dates", tourId], queryFn: () => fetchTourDates(tourId) });
   const [newDate, setNewDate] = useState("");
   const [newSeats, setNewSeats] = useState("12");
+  const t = useT();
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["backoffice-tour-dates", tourId] });
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
   };
-  const err = (e: unknown) => onError(e instanceof Error ? e.message : "Ошибка");
+  const err = (e: unknown) => onError(translateError(e, t));
 
   const add = useMutation({
     mutationFn: () => addTourDate(tourId, { starts_on: newDate.trim(), seats_total: Number(newSeats) }),
-    onSuccess: () => { invalidate(); setNewDate(""); onSuccess("Дата добавлена"); },
+    onSuccess: () => { invalidate(); setNewDate(""); onSuccess(t("tourEditor.dateAdded")); },
     onError: err,
   });
   const changeSeats = useMutation({
     mutationFn: (vars: { dateId: string; seats: number }) => updateTourDate(tourId, vars.dateId, { seats_total: vars.seats }),
-    onSuccess: () => { invalidate(); onSuccess("Вместимость изменена"); },
+    onSuccess: () => { invalidate(); onSuccess(t("tourEditor.capacityChanged")); },
     onError: err,
   });
   const remove = useMutation({
     mutationFn: (dateId: string) => deleteTourDate(tourId, dateId),
-    onSuccess: () => { invalidate(); onSuccess("Дата удалена"); },
+    onSuccess: () => { invalidate(); onSuccess(t("tourEditor.dateRemoved")); },
     onError: err,
   });
 
   const validNewDate = /^\d{4}-\d{2}-\d{2}$/.test(newDate.trim());
 
   return (
-    <Section title="Даты выездов" colors={colors}>
+    <Section title={t("tourEditor.sectionDates")} colors={colors}>
       {dates.isLoading ? (
         <ActivityIndicator color={colors.teal} />
       ) : (
@@ -399,7 +405,7 @@ function DatesPanel({
           {(dates.data ?? []).map((d) => (
             <View key={d.id} style={[styles.dateRow, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
               <Text style={[styles.dateText, { color: colors.text }]}>{d.starts_on}</Text>
-              <Text style={[styles.dateBooked, { color: colors.textMuted }]}>занято {d.seats_total - d.seats_left}</Text>
+              <Text style={[styles.dateBooked, { color: colors.textMuted }]}>{t("units.seatsTaken", { count: d.seats_total - d.seats_left })}</Text>
               <SeatsInput
                 initial={d.seats_total}
                 colors={colors}
@@ -421,7 +427,7 @@ function DatesPanel({
               style={[styles.input, styles.flex1, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
               value={newDate}
               onChangeText={setNewDate}
-              placeholder="ГГГГ-ММ-ДД"
+              placeholder={t("tourEditor.datePlaceholder")}
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
             />

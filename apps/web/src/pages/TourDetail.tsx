@@ -12,6 +12,9 @@ import { useCatalog } from "@/services/catalog";
 import { createBooking } from "@/services/bookings";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { tourLanguageList } from "@yavoy/i18n";
+import { useI18n } from "@/i18n/I18nProvider";
+import { translateError } from "@/i18n/errors";
 
 export default function TourDetail() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +30,7 @@ export default function TourDetail() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [contact, setContact] = useState("");
+  const { t, formatNumber } = useI18n();
 
   const tour = useMemo(() => tours.find((t) => t.id === id), [tours, id]);
   const index = useMemo(() => tours.findIndex((t) => t.id === id), [tours, id]);
@@ -37,9 +41,9 @@ export default function TourDetail() {
       void queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
       setBooking(false);
-      toast.success(`Заявка отправлена! Код брони: ${b.confirmationCode}. Мы свяжемся с вами для подтверждения.`, { duration: 8000 });
+      toast.success(`${t("booking.sentTitle")} ${t("booking.sentText", { code: b.confirmationCode })}`, { duration: 8000 });
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Не удалось забронировать"),
+    onError: (e: unknown) => toast.error(translateError(e, t, "booking.failed")),
   });
 
   if (isLoading) {
@@ -47,7 +51,7 @@ export default function TourDetail() {
       <Layout>
         <div className="flex flex-col items-center py-20">
           <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-teal border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Загружаем экскурсию…</p>
+          <p className="text-sm text-muted-foreground">{t("tour.loading")}</p>
         </div>
       </Layout>
     );
@@ -57,8 +61,8 @@ export default function TourDetail() {
     return (
       <Layout>
         <div className="py-20 text-center">
-          <h1 className="text-2xl font-bold">Экскурсия не найдена</h1>
-          <button onClick={() => navigate("/")} className="mt-4 rounded-xl bg-teal px-5 py-2.5 font-semibold text-white">На главную</button>
+          <h1 className="text-2xl font-bold">{t("tour.notFound")}</h1>
+          <button onClick={() => navigate("/")} className="mt-4 rounded-xl bg-teal px-5 py-2.5 font-semibold text-white">{t("common.home")}</button>
         </div>
       </Layout>
     );
@@ -71,7 +75,7 @@ export default function TourDetail() {
     const url = window.location.href;
     try {
       if (navigator.share) await navigator.share({ title: tour.title, url });
-      else { await navigator.clipboard.writeText(url); toast.success("Ссылка скопирована"); }
+      else { await navigator.clipboard.writeText(url); toast.success(t("tour.linkCopied")); }
     } catch { /* cancelled */ }
   };
 
@@ -82,7 +86,7 @@ export default function TourDetail() {
     <Layout>
       <div className="mb-4 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={18} /> Назад
+          <ArrowLeft size={18} /> {t("common.back")}
         </button>
         <div className="flex items-center gap-2">
           <button onClick={goPrev} disabled={index <= 0} className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary disabled:opacity-40">
@@ -108,7 +112,7 @@ export default function TourDetail() {
               </button>
             </div>
             {tour.isBestseller && (
-              <span className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-navy">Хит продаж</span>
+              <span className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-bold text-navy">{t("tourCard.bestseller")}</span>
             )}
           </div>
 
@@ -126,7 +130,7 @@ export default function TourDetail() {
             <span className="flex items-center gap-1.5"><MapPin size={15} className="text-teal" /> {cityNameMap[tour.city]}</span>
             <span className="flex items-center gap-1.5"><Clock size={15} /> {tour.durationText}</span>
             <span className="flex items-center gap-1.5"><Users size={15} /> {tour.groupSize}</span>
-            <span className="flex items-center gap-1.5"><Globe size={15} /> {tour.languages.join(", ")}</span>
+            <span className="flex items-center gap-1.5"><Globe size={15} /> {tourLanguageList(tour.languages, t as (k: string) => string)}</span>
           </div>
 
           <h1 className="mb-4 text-3xl font-extrabold leading-tight">{tour.title}</h1>
@@ -144,12 +148,12 @@ export default function TourDetail() {
             </div>
             <div className="text-right text-xs text-muted-foreground">
               <div className="font-bold text-foreground">{tour.organizer.toursCount}</div>
-              экскурсий
+              {t("units.excursionsBare", { count: tour.organizer.toursCount })}
             </div>
           </div>
 
           {/* Highlights */}
-          <Section title="Что вас ждёт">
+          <Section title={t("tour.whatYouGet")}>
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {tour.highlights.map((h) => (
                 <li key={h} className="flex items-center gap-2 text-sm">
@@ -161,14 +165,14 @@ export default function TourDetail() {
           </Section>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <Section title="Включено">
+            <Section title={t("tour.includes")}>
               <ul className="space-y-2">
                 {tour.includes.map((x) => (
                   <li key={x} className="flex items-center gap-2 text-sm"><Check size={15} className="text-teal" /> {x}</li>
                 ))}
               </ul>
             </Section>
-            <Section title="Не включено">
+            <Section title={t("tour.excludes")}>
               <ul className="space-y-2">
                 {tour.excludes.map((x) => (
                   <li key={x} className="flex items-center gap-2 text-sm text-muted-foreground"><X size={15} className="text-coral" /> {x}</li>
@@ -178,7 +182,7 @@ export default function TourDetail() {
           </div>
 
           {tour.whatToBring && (
-            <Section title="Что взять с собой">
+            <Section title={t("tour.whatToBring")}>
               <div className="flex flex-wrap gap-2">
                 {tour.whatToBring.map((w) => (
                   <span key={w} className="rounded-full bg-secondary px-3 py-1.5 text-sm">{w}</span>
@@ -188,7 +192,7 @@ export default function TourDetail() {
           )}
 
           {/* Reviews */}
-          <Section title={`Отзывы (${tour.reviews.length})`}>
+          <Section title={`${t("tour.reviews")} (${tour.reviews.length})`}>
             <div className="space-y-3">
               {tour.reviews.map((r) => (
                 <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
@@ -211,22 +215,22 @@ export default function TourDetail() {
         <div>
           <div className="sticky top-24 rounded-3xl bg-card p-6 shadow-lg ring-1 ring-border/60">
             <div className="mb-4 flex items-end gap-2">
-              <span className="text-3xl font-extrabold text-teal">{tour.price.toLocaleString("ru-RU")}{tour.currency}</span>
-              {tour.originalPrice && <span className="mb-1 text-sm text-muted-foreground line-through">{tour.originalPrice.toLocaleString("ru-RU")}{tour.currency}</span>}
-              <span className="mb-1 text-xs text-muted-foreground">/ чел.</span>
+              <span className="text-3xl font-extrabold text-teal">{formatNumber(tour.price)}{tour.currency}</span>
+              {tour.originalPrice && <span className="mb-1 text-sm text-muted-foreground line-through">{formatNumber(tour.originalPrice)}{tour.currency}</span>}
+              <span className="mb-1 text-xs text-muted-foreground">{t("common.perPersonShort")}</span>
             </div>
 
             <div className="mb-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2"><Calendar size={15} className="text-teal" /> Ближайшая дата: <span className="font-semibold">{tour.nextAvailableDate}</span></div>
-              {tour.isInstantConfirmation && <div className="flex items-center gap-2 text-teal"><Zap size={15} fill="#0FA3B1" /> Мгновенное подтверждение</div>}
-              {tour.isFreeCancellation && <div className="flex items-center gap-2 text-mint"><ShieldCheck size={15} /> Бесплатная отмена</div>}
+              <div className="flex items-center gap-2"><Calendar size={15} className="text-teal" /> {t("tour.nearestDate")}: <span className="font-semibold">{tour.nextAvailableDate}</span></div>
+              {tour.isInstantConfirmation && <div className="flex items-center gap-2 text-teal"><Zap size={15} fill="#0FA3B1" /> {t("tour.instantConfirmation")}</div>}
+              {tour.isFreeCancellation && <div className="flex items-center gap-2 text-mint"><ShieldCheck size={15} /> {t("tour.freeCancellation")}</div>}
             </div>
 
             {!booking ? (
               <button
                 onClick={() => {
                   if (!isAuthenticated) {
-                    toast("Войдите, чтобы бронировать экскурсии");
+                    toast(t("booking.authRequiredText"));
                     navigate("/auth");
                     return;
                   }
@@ -235,12 +239,12 @@ export default function TourDetail() {
                 }}
                 className="w-full rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform hover:scale-[1.02]"
               >
-                Забронировать
+                {t("tour.book")}
               </button>
             ) : (
               <div className="space-y-3">
                 {(tour.dates ?? []).length === 0 ? (
-                  <p className="text-sm text-coral">Нет доступных дат</p>
+                  <p className="text-sm text-coral">{t("booking.noDates")}</p>
                 ) : (
                   <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
                     {(tour.dates ?? []).map((d) => (
@@ -250,25 +254,25 @@ export default function TourDetail() {
                         className={`shrink-0 rounded-xl border px-3 py-2 text-center text-xs font-semibold transition-colors ${dateId === d.id ? "border-teal bg-teal text-white" : "border-border bg-secondary"}`}
                       >
                         <div>{d.date}</div>
-                        <div className={dateId === d.id ? "text-white/80" : "text-muted-foreground"}>мест: {d.seatsLeft}</div>
+                        <div className={dateId === d.id ? "text-white/80" : "text-muted-foreground"}>{t("units.seats", { count: d.seatsLeft })}</div>
                       </button>
                     ))}
                   </div>
                 )}
                 <div className="flex items-center justify-between rounded-2xl bg-secondary p-3">
-                  <span className="text-sm font-semibold">Билеты</span>
+                  <span className="text-sm font-semibold">{t("booking.tickets")}</span>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setTickets((t) => Math.max(1, t - 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-card font-bold">−</button>
                     <span className="w-6 text-center font-bold">{tickets}</span>
                     <button onClick={() => setTickets((t) => Math.min(10, t + 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-card font-bold">+</button>
                   </div>
                 </div>
-                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Имя" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Фамилия" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Телефон или email" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t("booking.firstName")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t("booking.lastName")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder={t("booking.contact")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Итого</span>
-                  <span className="text-xl font-extrabold text-teal">{(tour.price * tickets).toLocaleString("ru-RU")}{tour.currency}</span>
+                  <span className="text-muted-foreground">{t("common.total")}</span>
+                  <span className="text-xl font-extrabold text-teal">{formatNumber(tour.price * tickets)}{tour.currency}</span>
                 </div>
                 <button
                   disabled={bookMutation.isPending || !dateId || !firstName.trim() || !lastName.trim() || contact.trim().length < 3}
@@ -284,9 +288,9 @@ export default function TourDetail() {
                   }}
                   className="w-full rounded-2xl bg-gold py-3.5 font-bold text-navy transition-transform hover:scale-[1.02] disabled:opacity-50"
                 >
-                  {bookMutation.isPending ? "Отправляем…" : "Отправить заявку"}
+                  {bookMutation.isPending ? t("common.sending") : t("booking.submit")}
                 </button>
-                <button onClick={() => setBooking(false)} className="w-full py-1 text-center text-xs text-muted-foreground">Отмена</button>
+                <button onClick={() => setBooking(false)} className="w-full py-1 text-center text-xs text-muted-foreground">{t("common.cancel")}</button>
               </div>
             )}
 

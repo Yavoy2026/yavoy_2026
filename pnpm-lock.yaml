@@ -25,6 +25,9 @@ importers:
       '@yavoy/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@yavoy/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       drizzle-orm:
         specifier: ^0.44.0
         version: 0.44.7(postgres@3.4.9)
@@ -81,6 +84,15 @@ importers:
         specifier: ^3.25.0
         version: 3.25.76
     devDependencies:
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+
+  packages/i18n:
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.0
       typescript:
         specifier: ^5.8.0
         version: 5.9.3

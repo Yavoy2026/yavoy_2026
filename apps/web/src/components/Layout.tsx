@@ -1,13 +1,15 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Compass, Map, Heart, User, Play, Sun, Moon, Search } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useT } from "@/i18n/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { to: "/", label: "Экскурсии", icon: Compass, end: true },
-  { to: "/explore", label: "Направления", icon: Map },
-  { to: "/favorites", label: "Избранное", icon: Heart },
-  { to: "/profile", label: "Профиль", icon: User },
+const navItems: { to: string; key: TKey; icon: typeof Compass; end?: boolean }[] = [
+  { to: "/", key: "nav.tours", icon: Compass, end: true },
+  { to: "/explore", key: "nav.explore", icon: Map },
+  { to: "/favorites", key: "nav.favorites", icon: Heart },
+  { to: "/profile", key: "nav.profile", icon: User },
 ];
 
 function Logo() {
@@ -27,13 +29,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { themeMode, setThemeMode, isDark } = useApp();
+  const t = useT();
 
   return (
     <div className="min-h-screen bg-background">
       {/* Top header (desktop) */}
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
-          <button onClick={() => navigate("/")} aria-label="Главная">
+          <button onClick={() => navigate("/")} aria-label={t("nav.main")}>
             <Logo />
           </button>
 
@@ -51,7 +54,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 }
               >
                 <item.icon size={18} />
-                {item.label}
+                {t(item.key)}
               </NavLink>
             ))}
           </nav>
@@ -65,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </button>
             <button
               onClick={() => setThemeMode(isDark ? "light" : "dark")}
-              aria-label="Тема"
+              aria-label={t("nav.theme")}
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground transition-colors hover:bg-secondary/70"
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -92,7 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <item.icon size={22} />
-                {item.label}
+                {t(item.key)}
               </NavLink>
             );
           })}

@@ -5,6 +5,8 @@ import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
 import { useApp } from "@/context/AppContext";
 import { useCatalog } from "@/services/catalog";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 import { cn } from "@/lib/utils";
 
 export default function Explore() {
@@ -12,18 +14,19 @@ export default function Explore() {
   const { tours, cities, cityNameMap } = useCatalog();
   const { favoriteCities, toggleFavoriteCity } = useApp();
   const [transport, setTransport] = useState<string | null>(null);
+  const { t, formatNumber } = useI18n();
 
   const topRated = useMemo(
     () => [...tours].sort((a, b) => b.organizer.rating - a.organizer.rating).slice(0, 6),
     [tours],
   );
 
-  const transportCats = [
-    { key: "auto", label: "Авто", emoji: "🚗" },
-    { key: "water", label: "Водные", emoji: "🛶" },
-    { key: "sea", label: "Морские", emoji: "⛵" },
-    { key: "bike", label: "Вело", emoji: "🚲" },
-    { key: "air", label: "Авиа", emoji: "✈️" },
+  const transportCats: { key: string; label: TKey; emoji: string }[] = [
+    { key: "auto", label: "enums.transport.auto", emoji: "🚗" },
+    { key: "water", label: "enums.transport.water", emoji: "🛶" },
+    { key: "sea", label: "enums.transport.sea", emoji: "⛵" },
+    { key: "bike", label: "enums.transport.bike", emoji: "🚲" },
+    { key: "air", label: "enums.transport.air", emoji: "✈️" },
   ];
 
   const filtered = useMemo(
@@ -33,14 +36,14 @@ export default function Explore() {
 
   return (
     <Layout>
-      <h1 className="mb-1 text-3xl font-extrabold">Направления</h1>
-      <p className="mb-8 text-muted-foreground">Выбирайте город и формат — мы покажем лучшие маршруты</p>
+      <h1 className="mb-1 text-3xl font-extrabold">{t("explore.title")}</h1>
+      <p className="mb-8 text-muted-foreground">{t("explore.subtitle")}</p>
 
       {/* Cities grid */}
       <section className="mb-10">
         <div className="mb-4 flex items-center gap-2">
           <MapPin size={20} className="text-teal" />
-          <h2 className="text-xl font-bold">Популярные города</h2>
+          <h2 className="text-xl font-bold">{t("explore.popularCities")}</h2>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {cities.map((city) => (
@@ -64,7 +67,7 @@ export default function Explore() {
                 <div className="text-xl">{city.emoji}</div>
                 <div className="text-base font-bold text-white">{city.name}</div>
                 <div className="line-clamp-1 text-[11px] text-white/70">{city.description}</div>
-                <div className="mt-1.5 inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{city.tourCount} туров</div>
+                <div className="mt-1.5 inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{t("units.tours", { count: city.tourCount })}</div>
               </div>
             </button>
           ))}
@@ -73,7 +76,7 @@ export default function Explore() {
 
       {/* Transport categories */}
       <section className="mb-10">
-        <h2 className="mb-4 text-xl font-bold">По транспорту</h2>
+        <h2 className="mb-4 text-xl font-bold">{t("explore.byTransport")}</h2>
         <div className="flex flex-wrap gap-3">
           {transportCats.map((c) => (
             <button
@@ -100,7 +103,7 @@ export default function Explore() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{tour.title}</div>
                   <div className="text-xs text-muted-foreground">{cityNameMap[tour.city]} · {tour.durationText}</div>
-                  <div className="text-sm font-bold text-teal">от {tour.price.toLocaleString("ru-RU")}{tour.currency}</div>
+                  <div className="text-sm font-bold text-teal">{t("common.from")} {formatNumber(tour.price)}{tour.currency}</div>
                 </div>
                 <ChevronRight size={18} className="text-muted-foreground" />
               </button>
@@ -113,7 +116,7 @@ export default function Explore() {
       <section className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
         <div className="mb-4 flex items-center gap-2">
           <TrendingUp size={20} className="text-gold" />
-          <h2 className="text-xl font-bold">Лучшие по рейтингу</h2>
+          <h2 className="text-xl font-bold">{t("explore.topRated")}</h2>
         </div>
         <div className="divide-y divide-border">
           {topRated.map((tour, i) => (
@@ -128,7 +131,7 @@ export default function Explore() {
                 <div className="truncate font-semibold">{tour.title}</div>
                 <StarRating rating={tour.organizer.rating} size={12} showValue reviewCount={tour.organizer.reviewCount} />
               </div>
-              <div className="text-sm font-bold text-teal">от {tour.price.toLocaleString("ru-RU")}{tour.currency}</div>
+              <div className="text-sm font-bold text-teal">{t("common.from")} {formatNumber(tour.price)}{tour.currency}</div>
             </button>
           ))}
         </div>

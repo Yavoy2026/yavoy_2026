@@ -3,6 +3,7 @@ import { View, TextInput, StyleSheet, TouchableOpacity, Animated, Platform, Acti
 import { Search, X, Mic, MicOff } from "lucide-react-native";
 import { Audio } from "expo-av";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 
 const STT_URL = "https://toolkit.rork.com/stt/transcribe/";
 
@@ -12,8 +13,9 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-export default React.memo(function SearchBar({ value, onChangeText, placeholder = "Найти экскурсию..." }: SearchBarProps) {
+export default React.memo(function SearchBar({ value, onChangeText, placeholder }: SearchBarProps) {
   const { colors } = useTheme();
+  const t = useT();
   const focusAnim = useRef(new Animated.Value(0)).current;
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
@@ -223,7 +225,7 @@ export default React.memo(function SearchBar({ value, onChangeText, placeholder 
         style={[styles.input, { color: colors.text }]}
         value={value}
         onChangeText={onChangeText}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("home.searchPlaceholderShort")}
         placeholderTextColor={colors.textMuted}
         onFocus={handleFocus}
         onBlur={handleBlur}

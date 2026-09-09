@@ -2,12 +2,13 @@
  * Бэкофис (роли partner/manager/admin) — зеркало apps/web/src/services/admin.ts.
  * Все вызовы идут на /v1/admin/* и /v1/bookings/*; скоупинг партнёра делает сервер.
  */
-import { authFetch, type UserProfile, type UserRole } from "@/services/api";
+import { ApiError, authFetch, type UserProfile, type UserRole } from "@/services/api";
 
-async function ensureOk<T>(res: Response, fallback: string): Promise<T> {
+/** fallbackCode — ключ каталога `api.*`; UI переводит ошибку по коду, а не по тексту */
+async function ensureOk<T>(res: Response, fallbackCode: string): Promise<T> {
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-    throw new Error(body?.error?.message ?? fallback);
+    const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+    throw new ApiError(res.status, body?.error?.code ?? fallbackCode, body?.error?.message ?? fallbackCode);
   }
   return res.json() as Promise<T>;
 }
@@ -43,7 +44,7 @@ export interface BackofficeBooking {
 
 export async function fetchBackofficeBookings(status: "requested" | "confirmed"): Promise<BackofficeBooking[]> {
   const res = await authFetch(`/admin/bookings?status=${status}`);
-  const body = await ensureOk<{ items: ApiAdminBooking[] }>(res, "Не удалось загрузить заявки");
+  const body = await ensureOk<{ items: ApiAdminBooking[] }>(res, "requestsLoadFailed");
   return body.items.map((b) => ({
     id: b.id,
     status: b.status,
@@ -59,15 +60,15 @@ export async function fetchBackofficeBookings(status: "requested" | "confirmed")
 }
 
 export async function confirmBooking(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/bookings/${id}/confirm`, { method: "POST" }), "Не удалось подтвердить");
+  await ensureOk(await authFetch(`/bookings/${id}/confirm`, { method: "POST" }), "bookingConfirmFailed");
 }
 
 export async function completeBooking(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/bookings/${id}/complete`, { method: "POST" }), "Не удалось завершить");
+  await ensureOk(await authFetch(`/bookings/${id}/complete`, { method: "POST" }), "bookingCompleteFailed");
 }
 
 export async function cancelBookingAdmin(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/bookings/${id}/cancel`, { method: "POST" }), "Не удалось отменить");
+  await ensureOk(await authFetch(`/bookings/${id}/cancel`, { method: "POST" }), "bookingCancelActionFailed");
 }
 
 // ─── Модерация отзывов ───────────────────────────────────────
@@ -94,7 +95,7 @@ export interface PendingReview {
 
 export async function fetchPendingReviews(): Promise<PendingReview[]> {
   const res = await authFetch("/admin/reviews");
-  const body = await ensureOk<{ items: ApiPendingReview[] }>(res, "Не удалось загрузить отзывы");
+  const body = await ensureOk<{ items: ApiPendingReview[] }>(res, "reviewsLoadFailed");
   return body.items.map((r) => ({
     id: r.id,
     tourTitle: r.tour_title,
@@ -107,13 +108,13 @@ export async function fetchPendingReviews(): Promise<PendingReview[]> {
 }
 
 export async function approveReview(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/admin/reviews/${id}/approve`, { method: "POST" }), "Не удалось опубликовать");
+  await ensureOk(await authFetch(`/admin/reviews/${id}/approve`, { method: "POST" }), "reviewApproveFailed");
 }
 
 export async function rejectReview(id: string): Promise<void> {
   await ensureOk(
     await authFetch(`/admin/reviews/${id}/reject`, { method: "POST", body: JSON.stringify({}) }),
-    "Не удалось отклонить",
+    "reviewRejectFailed",
   );
 }
 
@@ -121,13 +122,13 @@ export async function rejectReview(id: string): Promise<void> {
 
 export async function listUsers(q?: string): Promise<UserProfile[]> {
   const res = await authFetch(`/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`);
-  const body = await ensureOk<{ items: UserProfile[] }>(res, "Не удалось загрузить пользователей");
+  const body = await ensureOk<{ items: UserProfile[] }>(res, "usersLoadFailed");
   return body.items;
 }
 
 export async function updateUserRole(userId: string, role: UserRole): Promise<UserProfile> {
   const res = await authFetch(`/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) });
-  return ensureOk<UserProfile>(res, "Не удалось изменить роль");
+  return ensureOk<UserProfile>(res, "roleChangeFailed");
 }
 
 export async function setUserActive(userId: string, isActive: boolean): Promise<UserProfile> {
@@ -135,7 +136,7 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
     method: "PATCH",
     body: JSON.stringify({ is_active: isActive }),
   });
-  return ensureOk<UserProfile>(res, "Не удалось изменить статус пользователя");
+  return ensureOk<UserProfile>(res, "userStatusFailed");
 }
 
 // ─── Туры ────────────────────────────────────────────────────
@@ -213,28 +214,28 @@ export interface BackofficeTourDate {
 
 export async function fetchBackofficeTours(): Promise<BackofficeTour[]> {
   const res = await authFetch("/admin/tours");
-  const body = await ensureOk<{ items: BackofficeTour[] }>(res, "Не удалось загрузить туры");
+  const body = await ensureOk<{ items: BackofficeTour[] }>(res, "toursLoadFailed");
   return body.items;
 }
 
 export async function createTour(payload: TourWritePayload): Promise<BackofficeTour> {
   const res = await authFetch("/admin/tours", { method: "POST", body: JSON.stringify(payload) });
-  return ensureOk<BackofficeTour>(res, "Не удалось создать тур");
+  return ensureOk<BackofficeTour>(res, "tourCreateFailed");
 }
 
 export async function updateTour(id: string, payload: TourWritePayload): Promise<BackofficeTour> {
   const res = await authFetch(`/admin/tours/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
-  return ensureOk<BackofficeTour>(res, "Не удалось сохранить тур");
+  return ensureOk<BackofficeTour>(res, "tourSaveFailed");
 }
 
 export async function setTourStatus(id: string, status: "draft" | "published"): Promise<BackofficeTour> {
   const res = await authFetch(`/admin/tours/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
-  return ensureOk<BackofficeTour>(res, "Не удалось изменить статус");
+  return ensureOk<BackofficeTour>(res, "tourStatusFailed");
 }
 
 export async function fetchTourDates(tourId: string): Promise<BackofficeTourDate[]> {
   const res = await authFetch(`/admin/tours/${tourId}/dates`);
-  const body = await ensureOk<{ items: BackofficeTourDate[] }>(res, "Не удалось загрузить даты");
+  const body = await ensureOk<{ items: BackofficeTourDate[] }>(res, "datesLoadFailed");
   return body.items;
 }
 
@@ -243,7 +244,7 @@ export async function addTourDate(
   payload: { starts_on: string; seats_total: number; price_override_kopeks?: number | null },
 ): Promise<BackofficeTourDate> {
   const res = await authFetch(`/admin/tours/${tourId}/dates`, { method: "POST", body: JSON.stringify(payload) });
-  return ensureOk<BackofficeTourDate>(res, "Не удалось добавить дату");
+  return ensureOk<BackofficeTourDate>(res, "dateAddFailed");
 }
 
 export async function updateTourDate(
@@ -255,13 +256,13 @@ export async function updateTourDate(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  return ensureOk<BackofficeTourDate>(res, "Не удалось изменить дату");
+  return ensureOk<BackofficeTourDate>(res, "dateUpdateFailed");
 }
 
 export async function deleteTourDate(tourId: string, dateId: string): Promise<void> {
   await ensureOk(
     await authFetch(`/admin/tours/${tourId}/dates/${dateId}`, { method: "DELETE" }),
-    "Не удалось удалить дату",
+    "dateDeleteFailed",
   );
 }
 
@@ -282,7 +283,7 @@ export interface PartnerProfile {
 
 export async function fetchPartners(): Promise<PartnerProfile[]> {
   const res = await authFetch("/admin/partners");
-  const body = await ensureOk<{ items: PartnerProfile[] }>(res, "Не удалось загрузить партнёров");
+  const body = await ensureOk<{ items: PartnerProfile[] }>(res, "partnersLoadFailed");
   return body.items;
 }
 
@@ -294,7 +295,7 @@ export async function createPartner(payload: {
   inn?: string;
 }): Promise<PartnerProfile> {
   const res = await authFetch("/admin/partners", { method: "POST", body: JSON.stringify(payload) });
-  return ensureOk<PartnerProfile>(res, "Не удалось назначить партнёра");
+  return ensureOk<PartnerProfile>(res, "partnerAssignFailed");
 }
 
 export async function updatePartner(
@@ -302,12 +303,12 @@ export async function updatePartner(
   payload: { org_name?: string; description?: string; phone?: string; inn?: string; verified?: boolean },
 ): Promise<PartnerProfile> {
   const res = await authFetch(`/admin/partners/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
-  return ensureOk<PartnerProfile>(res, "Не удалось сохранить партнёра");
+  return ensureOk<PartnerProfile>(res, "partnerSaveFailed");
 }
 
 export async function fetchMyPartnerProfile(): Promise<PartnerProfile> {
   const res = await authFetch("/admin/partners/me");
-  return ensureOk<PartnerProfile>(res, "Не удалось загрузить профиль организации");
+  return ensureOk<PartnerProfile>(res, "orgProfileLoadFailed");
 }
 
 export async function updateMyPartnerProfile(payload: {
@@ -317,5 +318,5 @@ export async function updateMyPartnerProfile(payload: {
   inn?: string;
 }): Promise<PartnerProfile> {
   const res = await authFetch("/admin/partners/me", { method: "PATCH", body: JSON.stringify(payload) });
-  return ensureOk<PartnerProfile>(res, "Не удалось сохранить профиль");
+  return ensureOk<PartnerProfile>(res, "orgProfileSaveFailed");
 }

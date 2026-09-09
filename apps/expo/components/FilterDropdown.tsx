@@ -25,10 +25,12 @@ import {
   Check,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
 interface FilterDropdownProps<T extends string> {
-  label: string;
-  options: { key: T; label: string; icon?: string }[];
+  label: TKey;
+  options: { key: T; label: TKey; icon?: string }[];
   selected: T | null;
   onSelect: (key: T | null) => void;
 }
@@ -54,6 +56,7 @@ function FilterDropdownInner<T extends string>({
   onSelect,
 }: FilterDropdownProps<T>) {
   const { colors } = useTheme();
+  const t = useT();
   const [open, setOpen] = useState<boolean>(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -122,7 +125,7 @@ function FilterDropdownInner<T extends string>({
             selected != null && { color: "#FFFFFF" },
           ]}
         >
-          {selectedOption ? selectedOption.label : label}
+          {t(selectedOption ? selectedOption.label : label)}
         </Text>
         <Animated.View style={{ transform: [{ rotate }] }}>
           <ChevronDown
@@ -147,7 +150,7 @@ function FilterDropdownInner<T extends string>({
               web: { shadowColor: colors.navy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24 },
             })]}>
               <View style={[styles.dropdownHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.dropdownTitle, { color: colors.text }]}>{label}</Text>
+                <Text style={[styles.dropdownTitle, { color: colors.text }]}>{t(label)}</Text>
               </View>
               {options.map((option) => {
                 const isActive = selected === option.key;
@@ -180,7 +183,7 @@ function FilterDropdownInner<T extends string>({
                           isActive && { color: colors.text, fontWeight: "700" as const },
                         ]}
                       >
-                        {option.label}
+                        {t(option.label)}
                       </Text>
                     </View>
                     {isActive && <Check size={18} color={colors.teal} />}

@@ -14,10 +14,12 @@ import {
   Church,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
 interface CategoryItem {
   key: string;
-  label: string;
+  label: TKey;
   icon: string;
   color: string;
   bgColor: string;
@@ -25,23 +27,23 @@ interface CategoryItem {
 }
 
 const transportCategories: CategoryItem[] = [
-  { key: "auto", label: "Авто", icon: "car", color: "#3B82F6", bgColor: "#EFF6FF", bgColorDark: "rgba(59,130,246,0.15)" },
-  { key: "water", label: "Водные", icon: "waves", color: "#06B6D4", bgColor: "#ECFEFF", bgColorDark: "rgba(6,182,212,0.15)" },
-  { key: "sea", label: "Морские", icon: "ship", color: "#0EA5E9", bgColor: "#F0F9FF", bgColorDark: "rgba(14,165,233,0.15)" },
-  { key: "bike", label: "Вело", icon: "bike", color: "#22C55E", bgColor: "#F0FDF4", bgColorDark: "rgba(34,197,94,0.15)" },
-  { key: "air", label: "Авиа", icon: "plane", color: "#8B5CF6", bgColor: "#F5F3FF", bgColorDark: "rgba(139,92,246,0.15)" },
+  { key: "auto", label: "enums.transport.auto", icon: "car", color: "#3B82F6", bgColor: "#EFF6FF", bgColorDark: "rgba(59,130,246,0.15)" },
+  { key: "water", label: "enums.transport.water", icon: "waves", color: "#06B6D4", bgColor: "#ECFEFF", bgColorDark: "rgba(6,182,212,0.15)" },
+  { key: "sea", label: "enums.transport.sea", icon: "ship", color: "#0EA5E9", bgColor: "#F0F9FF", bgColorDark: "rgba(14,165,233,0.15)" },
+  { key: "bike", label: "enums.transport.bike", icon: "bike", color: "#22C55E", bgColor: "#F0FDF4", bgColorDark: "rgba(34,197,94,0.15)" },
+  { key: "air", label: "enums.transport.air", icon: "plane", color: "#8B5CF6", bgColor: "#F5F3FF", bgColorDark: "rgba(139,92,246,0.15)" },
 ];
 
 const interestCategories: CategoryItem[] = [
-  { key: "city", label: "Городские", icon: "building", color: "#F59E0B", bgColor: "#FFFBEB", bgColorDark: "rgba(245,158,11,0.15)" },
-  { key: "educational", label: "Познавательные", icon: "book", color: "#EC4899", bgColor: "#FDF2F8", bgColorDark: "rgba(236,72,153,0.15)" },
-  { key: "nature", label: "Природные", icon: "tree", color: "#10B981", bgColor: "#ECFDF5", bgColorDark: "rgba(16,185,129,0.15)" },
-  { key: "pilgrimage", label: "Паломничество", icon: "church", color: "#6366F1", bgColor: "#EEF2FF", bgColorDark: "rgba(99,102,241,0.15)" },
+  { key: "city", label: "enums.interest.city", icon: "building", color: "#F59E0B", bgColor: "#FFFBEB", bgColorDark: "rgba(245,158,11,0.15)" },
+  { key: "educational", label: "enums.interest.educational", icon: "book", color: "#EC4899", bgColor: "#FDF2F8", bgColorDark: "rgba(236,72,153,0.15)" },
+  { key: "nature", label: "enums.interest.nature", icon: "tree", color: "#10B981", bgColor: "#ECFDF5", bgColorDark: "rgba(16,185,129,0.15)" },
+  { key: "pilgrimage", label: "enums.interest.pilgrimage", icon: "church", color: "#6366F1", bgColor: "#EEF2FF", bgColorDark: "rgba(99,102,241,0.15)" },
 ];
 
 const durationCategories: CategoryItem[] = [
-  { key: "one_day", label: "Однодневные", icon: "sun", color: "#F97316", bgColor: "#FFF7ED", bgColorDark: "rgba(249,115,22,0.15)" },
-  { key: "multi_day", label: "Многодневные", icon: "moon", color: "#6366F1", bgColor: "#EEF2FF", bgColorDark: "rgba(99,102,241,0.15)" },
+  { key: "one_day", label: "enums.duration.one_day", icon: "sun", color: "#F97316", bgColor: "#FFF7ED", bgColorDark: "rgba(249,115,22,0.15)" },
+  { key: "multi_day", label: "enums.duration.multi_day", icon: "moon", color: "#6366F1", bgColor: "#EEF2FF", bgColorDark: "rgba(99,102,241,0.15)" },
 ];
 
 const iconMap: Record<string, React.ComponentType<{ size: number; color: string }>> = {
@@ -67,6 +69,7 @@ interface CategoryGridProps {
 
 export default React.memo(function CategoryGrid({ type, selected, onSelect, title }: CategoryGridProps) {
   const { colors, isDark } = useTheme();
+  const t = useT();
   const categories = type === "transport"
     ? transportCategories
     : type === "interest"
@@ -101,7 +104,7 @@ export default React.memo(function CategoryGrid({ type, selected, onSelect, titl
                 ]}
                 numberOfLines={1}
               >
-                {cat.label}
+                {t(cat.label)}
               </Text>
             </TouchableOpacity>
           );

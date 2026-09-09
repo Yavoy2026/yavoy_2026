@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Heart, MapPin, ChevronRight } from "lucide-react-native";
 import { Image } from "expo-image";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 import { useCatalog } from "@/services/catalog";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useFavoriteCities } from "@/providers/FavoriteCitiesProvider";
@@ -15,6 +16,7 @@ type TabType = "tours" | "cities";
 export default function FavoritesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const t = useT();
   const { favoriteIds } = useFavorites();
   const { favoriteCityIds, toggleFavoriteCity } = useFavoriteCities();
   const [activeTab, setActiveTab] = useState<TabType>("tours");
@@ -45,12 +47,12 @@ export default function FavoritesScreen() {
         <Heart size={40} color={colors.textMuted} />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
-        {activeTab === "tours" ? "Нет избранных экскурсий" : "Нет избранных городов"}
+        {t(activeTab === "tours" ? "favorites.emptyToursTitle" : "favorites.emptyCitiesTitle")}
       </Text>
       <Text style={[styles.emptyText, { color: colors.textMuted }]}>
         {activeTab === "tours"
-          ? "Нажмите на сердечко на карточке экскурсии, чтобы добавить её в избранное"
-          : "Отметьте города как избранные, чтобы они появились здесь"}
+          ? t("favorites.emptyToursText")
+          : t("favorites.emptyCitiesText")}
       </Text>
     </View>
   ), [colors, activeTab]);
@@ -80,7 +82,7 @@ export default function FavoritesScreen() {
           <View style={styles.cityActions}>
             <View style={[styles.tourCountBadge, { backgroundColor: colors.tealSoft }]}>
               <MapPin size={11} color={colors.teal} />
-              <Text style={[styles.tourCountText, { color: colors.teal }]}>{`${item.tourCount} туров`}</Text>
+              <Text style={[styles.tourCountText, { color: colors.teal }]}>{t("units.tours", { count: item.tourCount })}</Text>
             </View>
           </View>
         </View>
@@ -112,7 +114,7 @@ export default function FavoritesScreen() {
             styles.tabText,
             { color: activeTab === "tours" ? "#FFFFFF" : colors.textMuted },
           ]}>
-            {`Экскурсии${favoriteTours.length > 0 ? ` (${favoriteTours.length})` : ""}`}
+            {`${t("favorites.tabTours")}${favoriteTours.length > 0 ? ` (${favoriteTours.length})` : ""}`}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -129,7 +131,7 @@ export default function FavoritesScreen() {
             styles.tabText,
             { color: activeTab === "cities" ? "#FFFFFF" : colors.textMuted },
           ]}>
-            {`Города${favoriteCities.length > 0 ? ` (${favoriteCities.length})` : ""}`}
+            {`${t("favorites.tabCities")}${favoriteCities.length > 0 ? ` (${favoriteCities.length})` : ""}`}
           </Text>
         </TouchableOpacity>
       </View>

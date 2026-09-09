@@ -1,3 +1,4 @@
+import { monthNames, weekdayNamesShort } from "@yavoy/i18n";
 import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
@@ -11,18 +12,12 @@ import {
 } from "react-native";
 import { CalendarDays, ChevronDown, Check, X } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useI18n } from "@/providers/I18nProvider";
 
 interface DateSelectorProps {
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
 }
-
-const MONTHS_RU = [
-  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-];
-
-const WEEKDAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -33,15 +28,19 @@ function getFirstDayOfWeek(year: number, month: number): number {
   return day === 0 ? 6 : day - 1;
 }
 
-function formatDateShort(dateStr: string): string {
+function formatDateShortLocal(dateStr: string, monthNames: string[]): string {
   const d = new Date(dateStr);
   const day = d.getDate();
-  const monthShort = MONTHS_RU[d.getMonth()].slice(0, 3).toLowerCase();
+  const monthShort = (monthNames[d.getMonth()] ?? "").slice(0, 3).toLowerCase();
   return `${day} ${monthShort}`;
 }
 
 export default React.memo(function DateSelector({ selectedDate, onSelectDate }: DateSelectorProps) {
   const { colors } = useTheme();
+  const { t, locale } = useI18n();
+  // названия месяцев и дней недели берём из Intl — свои списки были только на русском
+  const months = useMemo(() => monthNames(locale), [locale]);
+  const weekdays = useMemo(() => weekdayNamesShort(locale), [locale]);
   const [open, setOpen] = useState<boolean>(false);
 
   const today = useMemo(() => new Date(), []);
@@ -128,7 +127,7 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
       >
         <CalendarDays size={16} color={selectedDate ? colors.teal : colors.textMuted} />
         {selectedDate ? (
-          <Text style={[styles.triggerText, { color: colors.teal }]}>{formatDateShort(selectedDate)}</Text>
+          <Text style={[styles.triggerText, { color: colors.teal }]}>{formatDateShortLocal(selectedDate, months)}</Text>
         ) : null}
         <ChevronDown size={14} color={selectedDate ? colors.teal : colors.textMuted} />
       </TouchableOpacity>
@@ -155,12 +154,12 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
               onPress={(e) => e.stopPropagation()}
             >
               <View style={[styles.dropdownHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.dropdownTitle, { color: colors.text }]}>{"Дата экскурсии"}</Text>
+                <Text style={[styles.dropdownTitle, { color: colors.text }]}>{t("dateSelector.title")}</Text>
                 {selectedDate ? (
                   <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <View style={[styles.clearBtn, { backgroundColor: colors.surfaceSecondary }]}>
                       <X size={14} color={colors.textMuted} />
-                      <Text style={[styles.clearText, { color: colors.textMuted }]}>{"Сбросить"}</Text>
+                      <Text style={[styles.clearText, { color: colors.textMuted }]}>{t("common.reset")}</Text>
                     </View>
                   </TouchableOpacity>
                 ) : null}
@@ -175,7 +174,7 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
                   <Text style={[styles.monthArrowText, { color: colors.teal }]}>{"‹"}</Text>
                 </TouchableOpacity>
                 <Text style={[styles.monthTitle, { color: colors.text }]}>
-                  {`${MONTHS_RU[viewMonth]} ${viewYear}`}
+                  {`${months[viewMonth] ?? ""} ${viewYear}`}
                 </Text>
                 <TouchableOpacity onPress={handleNextMonth} style={styles.monthArrow}>
                   <Text style={[styles.monthArrowText, { color: colors.teal }]}>{"›"}</Text>
@@ -183,7 +182,7 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
               </View>
 
               <View style={styles.weekdaysRow}>
-                {WEEKDAYS_RU.map((wd) => (
+                {weekdays.map((wd) => (
                   <Text key={wd} style={[styles.weekday, { color: colors.textMuted }]}>{wd}</Text>
                 ))}
               </View>
@@ -238,7 +237,7 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
                     setOpen(false);
                   }}
                 >
-                  <Text style={[styles.quickBtnText, { color: colors.teal }]}>{"Сегодня"}</Text>
+                  <Text style={[styles.quickBtnText, { color: colors.teal }]}>{t("dateSelector.today")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.quickBtn, { backgroundColor: colors.teal + "14" }]}
@@ -252,7 +251,7 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
                     setOpen(false);
                   }}
                 >
-                  <Text style={[styles.quickBtnText, { color: colors.teal }]}>{"Завтра"}</Text>
+                  <Text style={[styles.quickBtnText, { color: colors.teal }]}>{t("dateSelector.tomorrow")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.quickBtn, { backgroundColor: colors.teal + "14" }]}
@@ -268,7 +267,7 @@ export default React.memo(function DateSelector({ selectedDate, onSelectDate }: 
                     setOpen(false);
                   }}
                 >
-                  <Text style={[styles.quickBtnText, { color: colors.teal }]}>{"Выходные"}</Text>
+                  <Text style={[styles.quickBtnText, { color: colors.teal }]}>{t("dateSelector.weekend")}</Text>
                 </TouchableOpacity>
               </View>
             </Pressable>

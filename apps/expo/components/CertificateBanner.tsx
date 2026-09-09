@@ -2,6 +2,7 @@ import React, { useRef, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import { Gift } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 
 interface CertificateBannerProps {
   onPress: () => void;
@@ -9,6 +10,7 @@ interface CertificateBannerProps {
 
 export default React.memo(function CertificateBanner({ onPress }: CertificateBannerProps) {
   const { colors } = useTheme();
+  const t = useT();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
@@ -33,8 +35,8 @@ export default React.memo(function CertificateBanner({ onPress }: CertificateBan
           <Gift size={22} color="#1B2838" />
         </View>
         <View style={styles.textWrap}>
-          <Text style={styles.title}>{"Подарите путешествие!"}</Text>
-          <Text style={styles.subtitle}>{"Купить подарочный сертификат YAVOY"}</Text>
+          <Text style={styles.title}>{t("certificate.bannerTitle")}</Text>
+          <Text style={styles.subtitle}>{t("certificate.bannerSubtitle")}</Text>
         </View>
         <Text style={styles.arrow}>{"→"}</Text>
       </TouchableOpacity>

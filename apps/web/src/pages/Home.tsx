@@ -5,47 +5,50 @@ import { Layout } from "@/components/Layout";
 import { TourCard } from "@/components/TourCard";
 import { useApp } from "@/context/AppContext";
 import { useCatalog } from "@/services/catalog";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { TKey } from "@/i18n/keys";
+import { SLOT, withSlot } from "@/i18n/slot";
 import { cn } from "@/lib/utils";
 import type { DurationType, TransportType, SortType, SeasonType } from "@/types";
 
-const durationOptions: { key: DurationType; label: string }[] = [
-  { key: "one_day", label: "Однодневные" },
-  { key: "multi_day", label: "Многодневные" },
+const durationOptions: { key: DurationType; label: TKey }[] = [
+  { key: "one_day", label: "enums.duration.one_day" },
+  { key: "multi_day", label: "enums.duration.multi_day" },
 ];
-const transportOptions: { key: TransportType; label: string }[] = [
-  { key: "auto", label: "Авто" },
-  { key: "water", label: "Водные" },
-  { key: "sea", label: "Морские" },
-  { key: "bike", label: "Вело" },
-  { key: "air", label: "Авиа" },
+const transportOptions: { key: TransportType; label: TKey }[] = [
+  { key: "auto", label: "enums.transport.auto" },
+  { key: "water", label: "enums.transport.water" },
+  { key: "sea", label: "enums.transport.sea" },
+  { key: "bike", label: "enums.transport.bike" },
+  { key: "air", label: "enums.transport.air" },
 ];
-const interestOptions: { key: string; label: string }[] = [
-  { key: "city", label: "Городские" },
-  { key: "educational", label: "Познавательные" },
-  { key: "nature", label: "Природные" },
-  { key: "wine", label: "Винные" },
-  { key: "photo", label: "Фототуры" },
-  { key: "glamping", label: "Глэмпинг" },
-  { key: "gastro", label: "Гастро" },
+const interestOptions: { key: string; label: TKey }[] = [
+  { key: "city", label: "enums.interest.city" },
+  { key: "educational", label: "enums.interest.educational" },
+  { key: "nature", label: "enums.interest.nature" },
+  { key: "wine", label: "enums.category.wine" },
+  { key: "photo", label: "enums.category.photo" },
+  { key: "glamping", label: "enums.category.glamping" },
+  { key: "gastro", label: "enums.category.gastro" },
 ];
-const seasonOptions: { key: SeasonType; label: string }[] = [
-  { key: "winter", label: "Зима" },
-  { key: "spring", label: "Весна" },
-  { key: "summer", label: "Лето" },
-  { key: "autumn", label: "Осень" },
+const seasonOptions: { key: SeasonType; label: TKey }[] = [
+  { key: "winter", label: "enums.season.winter" },
+  { key: "spring", label: "enums.season.spring" },
+  { key: "summer", label: "enums.season.summer" },
+  { key: "autumn", label: "enums.season.autumn" },
 ];
-const sortOptions: { key: SortType; label: string }[] = [
-  { key: "popularity", label: "Популярные" },
-  { key: "newest", label: "Новинки" },
-  { key: "price_asc", label: "Дешевле" },
-  { key: "price_desc", label: "Дороже" },
+const sortOptions: { key: SortType; label: TKey }[] = [
+  { key: "popularity", label: "enums.sort.popularity" },
+  { key: "newest", label: "enums.sort.newest" },
+  { key: "price_asc", label: "enums.sort.price_asc" },
+  { key: "price_desc", label: "enums.sort.price_desc" },
 ];
 
-const advantages = [
-  { icon: ShieldCheck, title: "Проверенные гиды", text: "Рейтинговая система и модерация каждого организатора" },
-  { icon: BadgeCheck, title: "Мгновенное бронирование", text: "Подтверждение брони за секунды" },
-  { icon: Wallet, title: "Безопасная оплата", text: "Защищённые платежи и возвраты" },
-  { icon: Headphones, title: "Поддержка 24/7", text: "Всегда на связи до и во время поездки" },
+const advantages: { icon: typeof ShieldCheck; title: TKey; text: TKey }[] = [
+  { icon: ShieldCheck, title: "advantages.guidesTitle", text: "advantages.guidesText" },
+  { icon: BadgeCheck, title: "advantages.bookingTitle", text: "advantages.bookingText" },
+  { icon: Wallet, title: "advantages.paymentTitle", text: "advantages.paymentAltText" },
+  { icon: Headphones, title: "advantages.supportTitle", text: "advantages.supportAltText" },
 ];
 
 function Chip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
@@ -68,6 +71,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { publishedReels, favoriteCities, toggleFavoriteCity } = useApp();
   const { tours, cities, cityNameMap, isLoading: catalogLoading } = useCatalog();
+  const { t } = useI18n();
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [duration, setDuration] = useState<DurationType | null>(null);
   const [transport, setTransport] = useState<TransportType | null>(null);
@@ -117,20 +121,23 @@ export default function Home() {
         <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
         <div className="relative max-w-2xl">
           <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-light">
-            500+ экскурсий · 50+ городов России
+            {t("home.heroBadge")}
           </span>
           <h1 className="mb-3 text-3xl font-extrabold leading-tight md:text-5xl">
-            Откройте Россию <br className="hidden md:block" />через <span className="text-teal-light">впечатления</span>
+            {withSlot(
+              t("home.heroTitle", { accent: SLOT }),
+              <span className="text-teal-light">{t("home.heroTitleAccent")}</span>,
+            )}
           </h1>
           <p className="mb-6 max-w-lg text-sm text-white/70 md:text-base">
-            Находите и бронируйте уникальные экскурсии с проверенными гидами. От обзорных прогулок до многодневных приключений.
+            {t("home.heroSubtitle")}
           </p>
           <div className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-lg">
             <Search size={20} className="ml-2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск по городу, гиду или экскурсии…"
+              placeholder={t("home.searchPlaceholder")}
               className="flex-1 bg-transparent py-2 text-sm text-navy outline-none placeholder:text-muted-foreground"
             />
             {search && (
@@ -145,9 +152,9 @@ export default function Home() {
       {/* City selector */}
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Куда поедем?</h2>
+          <h2 className="text-xl font-bold">{t("home.whereTo")}</h2>
           {selectedCity && (
-            <button onClick={() => setSelectedCity(null)} className="text-sm font-semibold text-teal">Все города</button>
+            <button onClick={() => setSelectedCity(null)} className="text-sm font-semibold text-teal">{t("home.allCities")}</button>
           )}
         </div>
         <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
@@ -167,7 +174,7 @@ export default function Home() {
                 <div className="absolute bottom-3 left-3 right-3">
                   <div className="text-lg">{city.emoji}</div>
                   <div className="font-bold text-white">{city.name}</div>
-                  <div className="text-[11px] text-white/70">{city.tourCount} туров</div>
+                  <div className="text-[11px] text-white/70">{t("units.tours", { count: city.tourCount })}</div>
                 </div>
                 <span
                   role="button"
@@ -188,9 +195,9 @@ export default function Home() {
       {!hasFilters && publishedReels.length > 0 && (
         <section className="mb-8">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xl font-bold">Reels из туров</h2>
+            <h2 className="text-xl font-bold">{t("home.reelsTitle")}</h2>
             <button onClick={() => navigate("/reels")} className="flex items-center text-sm font-semibold text-teal">
-              Все <ChevronRight size={16} />
+              {t("common.all")} <ChevronRight size={16} />
             </button>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
@@ -218,7 +225,7 @@ export default function Home() {
       {/* Popular carousel */}
       {!hasFilters && (
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-bold">Популярные сейчас</h2>
+          <h2 className="mb-3 text-xl font-bold">{t("home.popularNow")}</h2>
           <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
             {popular.map((tour) => (
               <div key={tour.id} className="w-72 shrink-0">
@@ -233,18 +240,18 @@ export default function Home() {
       <section className="mb-6 space-y-3">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
           {durationOptions.map((o) => (
-            <Chip key={o.key} active={duration === o.key} label={o.label} onClick={() => setDuration(duration === o.key ? null : o.key)} />
+            <Chip key={o.key} active={duration === o.key} label={t(o.label)} onClick={() => setDuration(duration === o.key ? null : o.key)} />
           ))}
           {transportOptions.map((o) => (
-            <Chip key={o.key} active={transport === o.key} label={o.label} onClick={() => setTransport(transport === o.key ? null : o.key)} />
+            <Chip key={o.key} active={transport === o.key} label={t(o.label)} onClick={() => setTransport(transport === o.key ? null : o.key)} />
           ))}
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
           {interestOptions.map((o) => (
-            <Chip key={o.key} active={interest === o.key} label={o.label} onClick={() => setInterest(interest === o.key ? null : o.key)} />
+            <Chip key={o.key} active={interest === o.key} label={t(o.label)} onClick={() => setInterest(interest === o.key ? null : o.key)} />
           ))}
           {seasonOptions.map((o) => (
-            <Chip key={o.key} active={season === o.key} label={o.label} onClick={() => setSeason(season === o.key ? null : o.key)} />
+            <Chip key={o.key} active={season === o.key} label={t(o.label)} onClick={() => setSeason(season === o.key ? null : o.key)} />
           ))}
         </div>
       </section>
@@ -253,9 +260,9 @@ export default function Home() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-extrabold">
-            {selectedCity ? cityNameMap[selectedCity] : "Все направления"}
+            {selectedCity ? cityNameMap[selectedCity] : t("home.allDestinations")}
           </h2>
-          <p className="text-sm text-muted-foreground">{filtered.length} {pluralTours(filtered.length)}</p>
+          <p className="text-sm text-muted-foreground">{t("units.excursions", { count: filtered.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <ArrowDownNarrowWide size={16} className="text-muted-foreground" />
@@ -269,12 +276,12 @@ export default function Home() {
                   sort === o.key ? "bg-teal text-white" : "bg-secondary text-muted-foreground hover:text-foreground",
                 )}
               >
-                {o.label}
+                {t(o.label)}
               </button>
             ))}
           </div>
           {hasFilters && (
-            <button onClick={resetAll} className="ml-1 text-sm font-semibold text-teal">Сбросить</button>
+            <button onClick={resetAll} className="ml-1 text-sm font-semibold text-teal">{t("common.reset")}</button>
           )}
         </div>
       </div>
@@ -283,13 +290,13 @@ export default function Home() {
       {catalogLoading ? (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-card py-20 text-center">
           <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-teal border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Загружаем экскурсии…</p>
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-card py-20 text-center">
           <div className="mb-3 text-5xl">🧭</div>
-          <h3 className="text-lg font-bold">Экскурсии не найдены</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Попробуйте изменить фильтры или выбрать другой город</p>
+          <h3 className="text-lg font-bold">{t("home.emptyTitle")}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{t("home.emptyText")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -301,28 +308,19 @@ export default function Home() {
 
       {/* Advantages */}
       <section className="mt-12 rounded-3xl bg-card p-6 ring-1 ring-border/60 md:p-8">
-        <h2 className="mb-6 text-center text-2xl font-extrabold">Почему YaVoy</h2>
+        <h2 className="mb-6 text-center text-2xl font-extrabold">{t("advantages.title")}</h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {advantages.map((a) => (
             <div key={a.title} className="flex flex-col items-center text-center">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal/10">
                 <a.icon size={26} className="text-teal" />
               </div>
-              <h3 className="mb-1 font-bold">{a.title}</h3>
-              <p className="text-sm text-muted-foreground">{a.text}</p>
+              <h3 className="mb-1 font-bold">{t(a.title)}</h3>
+              <p className="text-sm text-muted-foreground">{t(a.text)}</p>
             </div>
           ))}
         </div>
       </section>
     </Layout>
   );
-}
-
-function pluralTours(count: number): string {
-  const t = count % 100;
-  const o = count % 10;
-  if (t >= 11 && t <= 19) return "экскурсий";
-  if (o === 1) return "экскурсия";
-  if (o >= 2 && o <= 4) return "экскурсии";
-  return "экскурсий";
 }

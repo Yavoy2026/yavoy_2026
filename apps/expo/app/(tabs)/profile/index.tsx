@@ -52,6 +52,7 @@ import {
   ShieldCheck,
   Headphones,
   Building2,
+  Languages,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { BellRing, BellOff, Tag, Star as StarIcon, Navigation, Megaphone } from "lucide-react-native";
@@ -67,6 +68,10 @@ import { transactions } from "@/mocks/bookings";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createReview, fetchMyReviews } from "@/services/social";
 import { useCatalog } from "@/services/catalog";
+import { useI18n } from "@/providers/I18nProvider";
+import { translateError } from "@/i18n/errors";
+import type { TKey } from "@/i18n/keys";
+import LanguageSelector from "@/components/LanguageSelector";
 import { BookedTour, GiftCertificate } from "@/types/tour";
 import CertificateModal from "@/components/CertificateModal";
 
@@ -89,10 +94,10 @@ const DEFAULT_NOTIF: NotificationSettings = {
   promotions: false,
 };
 
-const themeOptions: { key: ThemeMode; label: string; icon: React.ComponentType<{ size: number; color: string }> }[] = [
-  { key: "system", label: "Системная", icon: Smartphone },
-  { key: "light", label: "Светлая", icon: Sun },
-  { key: "dark", label: "Тёмная", icon: Moon },
+const themeOptions: { key: ThemeMode; label: TKey; icon: React.ComponentType<{ size: number; color: string }> }[] = [
+  { key: "system", label: "enums.theme.system", icon: Smartphone },
+  { key: "light", label: "enums.theme.light", icon: Sun },
+  { key: "dark", label: "enums.theme.dark", icon: Moon },
 ];
 
 const TERMS_CONTENT = `Условия использования сервиса YAVOY
@@ -168,6 +173,7 @@ export default function ProfileScreen() {
   const { tours, cityNameMap } = useCatalog();
   const router = useRouter();
   const { colors, themeMode, setTheme } = useTheme();
+  const { t, formatNumber } = useI18n();
   const auth = useAuth();
   const { favoriteIds } = useFavorites();
   const { bookings, upcomingBookings, completedBookings } = useBookings();
@@ -204,10 +210,10 @@ export default function ProfileScreen() {
       setReviewBooking(null);
       setReviewText("");
       setReviewRating(5);
-      Alert.alert("Спасибо!", "Отзыв отправлен на модерацию и появится после проверки.");
+      Alert.alert(t("profile.reviewSentTitle"), t("profile.reviewSentText"));
     },
     onError: (e: unknown) => {
-      Alert.alert("Не получилось", e instanceof Error ? e.message : "Попробуйте ещё раз");
+      Alert.alert(t("common.error"), translateError(e, t, "profile.reviewFailed"));
     },
   });
   const [voucherCert, setVoucherCert] = useState<GiftCertificate | null>(null);
@@ -274,19 +280,13 @@ export default function ProfileScreen() {
     setReelTourTitle("");
     setReelCity("");
     setPickedVideoUri(undefined);
-    Alert.alert("Reels отправлен", `Видео отправлено администратору на модерацию. На бонусный счёт начислено ${reward} баллов за добавление reels.`);
-  }, [submitReel, addPromoPoints, reelTitle, reelTourTitle, reelCity, pickedVideoUri]);
+    Alert.alert(t("profile.reelSentTitle"), t("profile.reelSentText", { points: reward }));
+  }, [submitReel, addPromoPoints, reelTitle, reelTourTitle, reelCity, pickedVideoUri, t]);
 
-  const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ size: number; color: string }> }> = {
-    completed: { label: "Оплачено", color: colors.green, icon: CheckCircle },
-    pending: { label: "В обработке", color: colors.orange, icon: Clock },
-    refunded: { label: "Возврат", color: colors.red, icon: XCircle },
-  };
-
-  const bookingStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    upcoming: { label: "Предстоит", color: colors.teal, bgColor: colors.tealSoft },
-    completed: { label: "Завершён", color: colors.green, bgColor: colors.greenLight },
-    cancelled: { label: "Отменён", color: colors.red, bgColor: "rgba(255,107,107,0.1)" },
+  const statusConfig: Record<string, { label: TKey; color: string; icon: React.ComponentType<{ size: number; color: string }> }> = {
+    completed: { label: "enums.transactionStatus.completed", color: colors.green, icon: CheckCircle },
+    pending: { label: "enums.transactionStatus.pending", color: colors.orange, icon: Clock },
+    refunded: { label: "enums.transactionStatus.refunded", color: colors.red, icon: XCircle },
   };
 
   console.log("[ProfileScreen] Rendering with", favoriteIds.length, "favorites");
@@ -327,27 +327,27 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.userName}>
           {auth.isAuthenticated
-            ? `${auth.user?.first_name ?? ""} ${auth.user?.last_name ?? ""}`.trim() || "Пользователь"
-            : "Гость"}
+            ? `${auth.user?.first_name ?? ""} ${auth.user?.last_name ?? ""}`.trim() || t("profile.user")
+            : t("profile.guest")}
         </Text>
         <Text style={[styles.userEmail, { color: colors.textMuted }]}>
-          {auth.isAuthenticated ? auth.user?.email ?? "" : "Войдите, чтобы открыть все возможности"}
+          {auth.isAuthenticated ? auth.user?.email ?? "" : t("profile.guestHint")}
         </Text>
 
         <View style={[styles.statsRow, { backgroundColor: colors.navyLight }]}>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.tealLight }]}>{String(bookings.length)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{"Поездки"}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t("profile.statTrips")}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.gray300 + "30" }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.gold }]}>{String(points)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{"Баллы"}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t("profile.statPoints")}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.gray300 + "30" }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.tealLight }]}>{String(favoriteIds.length)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{"Избранное"}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t("profile.statFavorites")}</Text>
           </View>
         </View>
       </View>
@@ -364,8 +364,8 @@ export default function ProfileScreen() {
               <Plane size={20} color={colors.teal} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Мои поездки"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${bookings.length} поездок · ${upcomingBookings.length} предстоит`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myTrips")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.tripsCount", { total: t("units.trips", { count: bookings.length }), upcoming: upcomingBookings.length })}</Text>
             </View>
           </View>
           {expandedSection === "myBookings" ? (
@@ -377,7 +377,7 @@ export default function ProfileScreen() {
         {expandedSection === "myBookings" ? (
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
             {bookings.length === 0 ? (
-              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{"Нет поездок"}</Text>
+              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noTrips")}</Text>
             ) : (
               <>
                 {bookings.map((bk) => {
@@ -394,14 +394,14 @@ export default function ProfileScreen() {
                         </View>
                         <View style={styles.purchasedBottom}>
                           <View style={[styles.statusPill, { backgroundColor: isUpcoming ? colors.tealSoft : colors.greenLight }]}>
-                            <Text style={[styles.statusPillText, { color: isUpcoming ? colors.teal : colors.green }]}>{isUpcoming ? "Предстоит" : "Завершено"}</Text>
+                            <Text style={[styles.statusPillText, { color: isUpcoming ? colors.teal : colors.green }]}>{t(isUpcoming ? "profile.upcoming" : "profile.completed")}</Text>
                           </View>
                           <TouchableOpacity onPress={() => setVoucherBooking(bk)} activeOpacity={0.7}>
-                            <Text style={[styles.voucherLink, { color: colors.teal }]}>{"Ваучер"}</Text>
+                            <Text style={[styles.voucherLink, { color: colors.teal }]}>{t("booking.voucher")}</Text>
                           </TouchableOpacity>
                           {bk.status === "completed" && !reviewedBookingIds.has(bk.id) ? (
                             <TouchableOpacity onPress={() => setReviewBooking(bk)} activeOpacity={0.7}>
-                              <Text style={[styles.voucherLink, { color: colors.gold }]}>{"Оставить отзыв"}</Text>
+                              <Text style={[styles.voucherLink, { color: colors.gold }]}>{t("booking.leaveReview")}</Text>
                             </TouchableOpacity>
                           ) : null}
                         </View>
@@ -425,8 +425,8 @@ export default function ProfileScreen() {
               <Heart size={20} color={colors.coral} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Избранные туры"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${favoriteTours.length} экскурсий`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.favoriteTours")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.excursions", { count: favoriteTours.length })}</Text>
             </View>
           </View>
           {expandedSection === "favorites" ? (
@@ -438,7 +438,7 @@ export default function ProfileScreen() {
         {expandedSection === "favorites" ? (
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
             {favoriteTours.length === 0 ? (
-              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{"Нет избранных экскурсий"}</Text>
+              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noFavoriteTours")}</Text>
             ) : (
               favoriteTours.map((tour) => (
                 <TouchableOpacity
@@ -476,8 +476,8 @@ export default function ProfileScreen() {
               <MessageSquare size={20} color={colors.gold} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Мои отзывы"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${userReviews.length} отзывов`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReviews")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.reviews", { count: userReviews.length })}</Text>
             </View>
           </View>
           {expandedSection === "reviews" ? (
@@ -498,7 +498,7 @@ export default function ProfileScreen() {
                       {renderStars(review.rating)}
                     </View>
                     <Text style={[styles.reviewDateText, { color: colors.textMuted }]}>
-                      {review.status === "pending" ? "На модерации" : review.status === "rejected" ? "Отклонён" : review.date}
+                      {review.status === "pending" ? t("enums.tourStatus.pending") : review.status === "rejected" ? t("enums.tourStatus.rejected") : review.date}
                     </Text>
                   </View>
                 </View>
@@ -506,7 +506,7 @@ export default function ProfileScreen() {
               </View>
             ))}
             {userReviews.length === 0 ? (
-              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{"Отзывов пока нет — они появятся после завершённых поездок"}</Text>
+              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noReviews")}</Text>
             ) : null}
           </View>
         ) : null}
@@ -522,8 +522,8 @@ export default function ProfileScreen() {
               <Gift size={20} color={colors.gold} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Мои сертификаты"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${certificates.length} сертификатов`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myCertificates")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.certificates", { count: certificates.length })}</Text>
             </View>
           </View>
           {expandedSection === "certificates" ? (
@@ -536,14 +536,14 @@ export default function ProfileScreen() {
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
             {certificates.length === 0 ? (
               <View>
-                <Text style={[styles.emptySection, { color: colors.textMuted }]}>{"Нет сертификатов"}</Text>
+                <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noCertificates")}</Text>
                 <TouchableOpacity
                   style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
                   onPress={() => setCertModalVisible(true)}
                   activeOpacity={0.7}
                 >
                   <Gift size={14} color="#FFFFFF" />
-                  <Text style={styles.buyNewBtnText}>{"Купить сертификат"}</Text>
+                  <Text style={styles.buyNewBtnText}>{t("profile.buyCertificate")}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -560,7 +560,7 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.certInfo}>
                       <Text style={[styles.certNominal, { color: colors.text }]}>{`${cert.nominal.toLocaleString()} ${cert.currency}`}</Text>
-                      <Text style={[styles.certTo, { color: colors.textMuted }]}>{`Для: ${cert.toName}`}</Text>
+                      <Text style={[styles.certTo, { color: colors.textMuted }]}>{t("certificate.forWhom", { name: cert.toName })}</Text>
                     </View>
                     <Text style={[styles.certCode, { color: colors.textMuted }]}>{cert.code}</Text>
                   </TouchableOpacity>
@@ -571,7 +571,7 @@ export default function ProfileScreen() {
                   activeOpacity={0.7}
                 >
                   <Gift size={14} color="#FFFFFF" />
-                  <Text style={styles.buyNewBtnText}>{"Купить ещё"}</Text>
+                  <Text style={styles.buyNewBtnText}>{t("profile.buyMore")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -589,8 +589,8 @@ export default function ProfileScreen() {
               <Share2 size={20} color={colors.green} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Мои промокоды"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${promoCodes.length} промокодов · 2000 баллов за друга`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myPromoCodes")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${t("units.promoCodes", { count: promoCodes.length })} · ${t("profile.promoSubtitle")}`}</Text>
             </View>
           </View>
           {expandedSection === "promos" ? (
@@ -603,7 +603,7 @@ export default function ProfileScreen() {
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
             <View style={[styles.promoInfo, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}>
               <Award size={16} color={colors.teal} />
-              <Text style={[styles.promoInfoText, { color: colors.teal }]}>{"Пригласите друга и получите 2000 баллов за каждый активированный промокод!"}</Text>
+              <Text style={[styles.promoInfoText, { color: colors.teal }]}>{t("profile.promoInvite")}</Text>
             </View>
             {promoCodes.map((promo) => (
               <View key={promo.id} style={[styles.promoCard, { backgroundColor: colors.surface }]}>
@@ -611,8 +611,8 @@ export default function ProfileScreen() {
                   <Text style={styles.promoCodeText}>{promo.code}</Text>
                 </View>
                 <View style={styles.promoMeta}>
-                  <Text style={[styles.promoDate, { color: colors.textMuted }]}>{`Создан: ${promo.createdAt}`}</Text>
-                  <Text style={[styles.promoActivations, { color: colors.textSecondary }]}>{`Активаций: ${promo.activatedBy.length}`}</Text>
+                  <Text style={[styles.promoDate, { color: colors.textMuted }]}>{t("profile.promoCreated", { date: promo.createdAt })}</Text>
+                  <Text style={[styles.promoActivations, { color: colors.textSecondary }]}>{t("units.activations", { count: promo.activatedBy.length })}</Text>
                 </View>
               </View>
             ))}
@@ -622,7 +622,7 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <Copy size={14} color="#FFFFFF" />
-              <Text style={styles.buyNewBtnText}>{"Создать промокод"}</Text>
+              <Text style={styles.buyNewBtnText}>{t("profile.createPromo")}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -638,8 +638,8 @@ export default function ProfileScreen() {
               <Video size={20} color={colors.coral} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Мои Reels"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${moderationReels.length} на модерации · +${rewardPoints} баллов за публикацию`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReels")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.reelsCount", { count: moderationReels.length, points: rewardPoints })}</Text>
             </View>
           </View>
           {expandedSection === "reels" ? (
@@ -652,30 +652,30 @@ export default function ProfileScreen() {
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}> 
             <View style={[styles.reelsRewardBox, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}> 
               <Coins size={16} color={colors.teal} />
-              <Text style={[styles.reelsRewardText, { color: colors.teal }]}>{`За добавление reels начисляется ${rewardPoints} баллов. Видео появится в ленте после модерации администратором.`}</Text>
+              <Text style={[styles.reelsRewardText, { color: colors.teal }]}>{t("profile.reelsReward", { points: rewardPoints })}</Text>
             </View>
             <TouchableOpacity style={[styles.videoPickCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={pickReelVideo} activeOpacity={0.75}>
               <View style={[styles.videoPickIcon, { backgroundColor: colors.coral + "20" }]}> 
                 <Upload size={18} color={colors.coral} />
               </View>
               <View style={styles.videoPickTextWrap}>
-                <Text style={[styles.videoPickTitle, { color: colors.text }]}>{pickedVideoUri ? "Видео выбрано" : "Добавить видео"}</Text>
-                <Text style={[styles.videoPickSub, { color: colors.textMuted }]}>{pickedVideoUri ? "Готово к отправке на модерацию" : "Выберите короткий ролик из галереи"}</Text>
+                <Text style={[styles.videoPickTitle, { color: colors.text }]}>{t(pickedVideoUri ? "profile.videoPicked" : "profile.pickVideo")}</Text>
+                <Text style={[styles.videoPickSub, { color: colors.textMuted }]}>{t(pickedVideoUri ? "profile.videoReady" : "profile.pickVideoHint")}</Text>
               </View>
             </TouchableOpacity>
-            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder="Название reels" placeholderTextColor={colors.textMuted} value={reelTitle} onChangeText={setReelTitle} />
-            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder="Название экскурсии или тура" placeholderTextColor={colors.textMuted} value={reelTourTitle} onChangeText={setReelTourTitle} />
-            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder="Город" placeholderTextColor={colors.textMuted} value={reelCity} onChangeText={setReelCity} />
+            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelTitlePlaceholder")} placeholderTextColor={colors.textMuted} value={reelTitle} onChangeText={setReelTitle} />
+            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelTourPlaceholder")} placeholderTextColor={colors.textMuted} value={reelTourTitle} onChangeText={setReelTourTitle} />
+            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelCityPlaceholder")} placeholderTextColor={colors.textMuted} value={reelCity} onChangeText={setReelCity} />
             <TouchableOpacity style={[styles.buyNewBtn, { backgroundColor: colors.coral }]} onPress={handleSubmitReel} activeOpacity={0.7}>
               <Video size={14} color="#FFFFFF" />
-              <Text style={styles.buyNewBtnText}>{"Отправить на модерацию"}</Text>
+              <Text style={styles.buyNewBtnText}>{t("profile.submitForModeration")}</Text>
             </TouchableOpacity>
             {moderationReels.map((reel) => (
               <View key={reel.id} style={[styles.moderationCard, { backgroundColor: colors.surface }]}> 
                 <Image source={{ uri: reel.coverImage }} style={styles.moderationImage} contentFit="cover" />
                 <View style={styles.moderationInfo}>
                   <Text style={[styles.moderationTitle, { color: colors.text }]} numberOfLines={1}>{reel.title}</Text>
-                  <Text style={[styles.moderationStatus, { color: colors.orange }]}>На модерации администратора</Text>
+                  <Text style={[styles.moderationStatus, { color: colors.orange }]}>{t("profile.reelsOnModeration")}</Text>
                 </View>
               </View>
             ))}
@@ -693,8 +693,8 @@ export default function ProfileScreen() {
               <Receipt size={20} color={colors.orange} />
             </View>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Транзакции"}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${transactions.length} операций`}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.transactions")}</Text>
+              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.operations", { count: transactions.length })}</Text>
             </View>
           </View>
           {expandedSection === "transactions" ? (
@@ -721,7 +721,7 @@ export default function ProfileScreen() {
                     </Text>
                     <View style={styles.transactionStatus}>
                       <StatusIcon size={12} color={config.color} />
-                      <Text style={[styles.transactionStatusText, { color: config.color }]}>{config.label}</Text>
+                      <Text style={[styles.transactionStatusText, { color: config.color }]}>{t(config.label)}</Text>
                     </View>
                   </View>
                 </View>
@@ -739,14 +739,14 @@ export default function ProfileScreen() {
           testID="settings-notifications"
         >
           <Bell size={20} color={colors.textSecondary} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Уведомления"}</Text>
+          <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.notifications")}</Text>
           {notifSettings.allEnabled ? (
             <View style={[styles.notifBadge, { backgroundColor: colors.green }]}>
-              <Text style={styles.notifBadgeText}>{"Вкл"}</Text>
+              <Text style={styles.notifBadgeText}>{t("common.on")}</Text>
             </View>
           ) : (
             <View style={[styles.notifBadge, { backgroundColor: colors.gray400 }]}>
-              <Text style={styles.notifBadgeText}>{"Выкл"}</Text>
+              <Text style={styles.notifBadgeText}>{t("common.off")}</Text>
             </View>
           )}
           {showNotifSettings ? (
@@ -767,8 +767,8 @@ export default function ProfileScreen() {
                 )}
               </View>
               <View style={styles.notifTextWrap}>
-                <Text style={[styles.notifLabel, { color: colors.text }]}>{"Все уведомления"}</Text>
-                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{"Главный переключатель"}</Text>
+                <Text style={[styles.notifLabel, { color: colors.text }]}>{t("profile.notifAll")}</Text>
+                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{t("profile.notifAllDesc")}</Text>
               </View>
               <Switch
                 value={notifSettings.allEnabled}
@@ -784,8 +784,8 @@ export default function ProfileScreen() {
                 <Navigation size={14} color={notifSettings.newTours ? colors.teal : colors.gray400} />
               </View>
               <View style={styles.notifTextWrap}>
-                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{"Новые туры"}</Text>
-                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{"Экскурсии в избранных городах"}</Text>
+                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{t("profile.notifNewTours")}</Text>
+                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{t("profile.notifNewToursDesc")}</Text>
               </View>
               <Switch
                 value={notifSettings.newTours}
@@ -802,8 +802,8 @@ export default function ProfileScreen() {
                 <Tag size={14} color={notifSettings.priceDrops ? colors.orange : colors.gray400} />
               </View>
               <View style={styles.notifTextWrap}>
-                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{"Снижение цен"}</Text>
-                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{"Скидки на избранные туры"}</Text>
+                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{t("profile.notifPriceDrop")}</Text>
+                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{t("profile.notifPriceDropDesc")}</Text>
               </View>
               <Switch
                 value={notifSettings.priceDrops}
@@ -820,8 +820,8 @@ export default function ProfileScreen() {
                 <StarIcon2 size={14} color={notifSettings.bookingUpdates ? colors.green : colors.gray400} />
               </View>
               <View style={styles.notifTextWrap}>
-                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{"Статус бронирования"}</Text>
-                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{"Обновления по вашим поездкам"}</Text>
+                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{t("profile.notifBooking")}</Text>
+                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{t("profile.notifBookingDesc")}</Text>
               </View>
               <Switch
                 value={notifSettings.bookingUpdates}
@@ -838,8 +838,8 @@ export default function ProfileScreen() {
                 <Megaphone size={14} color={notifSettings.promotions ? colors.gold : colors.gray400} />
               </View>
               <View style={styles.notifTextWrap}>
-                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{"Акции и промо"}</Text>
-                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{"Специальные предложения"}</Text>
+                <Text style={[styles.notifLabel, { color: notifSettings.allEnabled ? colors.text : colors.textMuted }]}>{t("profile.notifPromo")}</Text>
+                <Text style={[styles.notifDesc, { color: colors.textMuted }]}>{t("profile.notifPromoDesc")}</Text>
               </View>
               <Switch
                 value={notifSettings.promotions}
@@ -860,7 +860,7 @@ export default function ProfileScreen() {
           testID="settings-theme"
         >
           <Settings size={20} color={colors.textSecondary} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Тема оформления"}</Text>
+          <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.theme")}</Text>
           {showThemeSettings ? (
             <ChevronDown size={18} color={colors.textMuted} />
           ) : (
@@ -889,7 +889,7 @@ export default function ProfileScreen() {
                     <OptionIcon size={16} color={isActive ? "#FFFFFF" : colors.textMuted} />
                   </View>
                   <Text style={[styles.themeOptionText, { color: isActive ? colors.text : colors.textSecondary }]}>
-                    {option.label}
+                    {t(option.label)}
                   </Text>
                   {isActive && <Check size={18} color={colors.teal} />}
                 </TouchableOpacity>
@@ -898,6 +898,12 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
+        <View style={[styles.menuItem, { borderBottomColor: colors.border }]}>
+          <Languages size={20} color={colors.textSecondary} />
+          <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.language")}</Text>
+          <LanguageSelector />
+        </View>
+
         <TouchableOpacity
           style={[styles.menuItem, { borderBottomColor: colors.border }]}
           activeOpacity={0.7}
@@ -905,7 +911,7 @@ export default function ProfileScreen() {
           testID="menu-support"
         >
           <Headphones size={20} color={colors.teal} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Поддержка YAVOY"}</Text>
+          <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.support")}</Text>
           <View style={[styles.notifBadge, { backgroundColor: colors.teal }]}>
             <Text style={styles.notifBadgeText}>{"AI"}</Text>
           </View>
@@ -918,7 +924,7 @@ export default function ProfileScreen() {
           testID="menu-partner"
         >
           <Building2 size={20} color={colors.teal} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Партнёры"}</Text>
+          <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.partners")}</Text>
           <View style={[styles.notifBadge, { backgroundColor: colors.teal }]}>
             <Text style={styles.notifBadgeText}>{"B2B"}</Text>
           </View>
@@ -932,13 +938,13 @@ export default function ProfileScreen() {
             testID="menu-backoffice"
           >
             <ShieldCheck size={20} color={colors.gold} />
-            <Text style={[styles.menuText, { color: colors.text }]}>{auth.role === "partner" ? "Кабинет партнёра" : "Бэкофис"}</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>{t(auth.role === "partner" ? "profile.partnerCabinet" : "profile.backoffice")}</Text>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         )}
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
           <HelpCircle size={20} color={colors.textSecondary} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Помощь"}</Text>
+          <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.help")}</Text>
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
         {auth.isAuthenticated ? (
@@ -950,7 +956,7 @@ export default function ProfileScreen() {
             }}
           >
             <LogOut size={20} color={colors.red} />
-            <Text style={[styles.menuText, { color: colors.red }]}>{"Выйти"}</Text>
+            <Text style={[styles.menuText, { color: colors.red }]}>{t("common.logout")}</Text>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         ) : (
@@ -960,7 +966,7 @@ export default function ProfileScreen() {
             onPress={() => router.push("/auth/login")}
           >
             <LogOut size={20} color={colors.teal} />
-            <Text style={[styles.menuText, { color: colors.teal }]}>{"Войти / Зарегистрироваться"}</Text>
+            <Text style={[styles.menuText, { color: colors.teal }]}>{t("common.loginOrRegister")}</Text>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         )}
@@ -970,7 +976,7 @@ export default function ProfileScreen() {
         <View style={[styles.legalModalOverlay, { backgroundColor: colors.backdrop }]}>
           <View style={[styles.legalModalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.legalModalHeader}>
-              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{"Ваучер"}</Text>
+              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{t("booking.voucher")}</Text>
               <TouchableOpacity onPress={() => setVoucherBooking(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <X size={22} color={colors.textMuted} />
               </TouchableOpacity>
@@ -983,32 +989,32 @@ export default function ProfileScreen() {
                     <Text style={[styles.voucherBrand, { color: colors.teal }]}>{"YAVOY"}</Text>
                     <Ticket size={24} color={colors.gold} />
                   </View>
-                  <Text style={[styles.voucherType, { color: colors.textMuted }]}>{"ВАУЧЕР НА ЭКСКУРСИЮ"}</Text>
+                  <Text style={[styles.voucherType, { color: colors.textMuted }]}>{t("voucher.type")}</Text>
                   <Text style={[styles.voucherTourName, { color: colors.text }]}>{voucherBooking.tourTitle}</Text>
                   <View style={[styles.voucherDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Дата:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.date")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.text }]}>{voucherBooking.tourDate}</Text>
                   </View>
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Время:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.time")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.text }]}>{voucherBooking.tourStartTime}</Text>
                   </View>
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Участник:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.guest")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.text }]}>{`${voucherBooking.firstName} ${voucherBooking.lastName}`}</Text>
                   </View>
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Оплата:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.payment")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.teal }]}>{`${voucherBooking.totalPrice.toLocaleString()} ${voucherBooking.currency}`}</Text>
                   </View>
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Организатор:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.organizer")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.text }]}>{voucherBooking.organizerName}</Text>
                   </View>
                   {voucherBooking.meetingPoint ? (
                     <View style={styles.voucherRow}>
-                      <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Место встречи:"}</Text>
+                      <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.meetingPoint")}</Text>
                       <Text style={[styles.voucherFieldValue, { color: colors.text, flex: 1 }]} numberOfLines={2}>{voucherBooking.meetingPoint}</Text>
                     </View>
                   ) : null}
@@ -1023,24 +1029,30 @@ export default function ProfileScreen() {
                     style={[styles.voucherActionBtn, { backgroundColor: colors.teal }]}
                     onPress={() => {
                       Share.share({
-                        message: `YAVOY Ваучер\n${voucherBooking.tourTitle}\nДата: ${voucherBooking.tourDate}\nВремя: ${voucherBooking.tourStartTime}\nКод: ${voucherBooking.confirmationCode}`,
-                        title: "Ваучер YAVOY",
+                        message: [
+                          `YAVOY ${t("voucher.title")}`,
+                          voucherBooking.tourTitle,
+                          `${t("voucher.date")} ${voucherBooking.tourDate}`,
+                          `${t("voucher.time")} ${voucherBooking.tourStartTime}`,
+                          `${t("certificate.code")} ${voucherBooking.confirmationCode}`,
+                        ].join("\n"),
+                        title: `${t("voucher.title")} YAVOY`,
                       }).catch(() => {});
                     }}
                     activeOpacity={0.7}
                   >
                     <Share2 size={16} color="#FFFFFF" />
-                    <Text style={styles.voucherActionText}>{"Поделиться"}</Text>
+                    <Text style={styles.voucherActionText}>{t("common.share")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.voucherActionBtn, { backgroundColor: colors.gold }]}
                     onPress={() => {
-                      Alert.alert("Wallet", "Ваучер будет добавлен в Apple Wallet / Google Pay");
+                      Alert.alert(t("voucher.walletTitle"), t("voucher.walletVoucherText"));
                     }}
                     activeOpacity={0.7}
                   >
                     <Wallet size={16} color="#1B2838" />
-                    <Text style={[styles.voucherActionText, { color: "#1B2838" }]}>{"В Wallet"}</Text>
+                    <Text style={[styles.voucherActionText, { color: "#1B2838" }]}>{t("voucher.toWallet")}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -1052,7 +1064,7 @@ export default function ProfileScreen() {
       <Modal visible={!!reviewBooking} transparent animationType="slide" onRequestClose={() => setReviewBooking(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{"Ваш отзыв"}</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("profile.reviewTitle")}</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]} numberOfLines={2}>{reviewBooking?.tourTitle ?? ""}</Text>
             <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginVertical: 12 }}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -1067,7 +1079,7 @@ export default function ProfileScreen() {
             </View>
             <TextInput
               style={[styles.reviewInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-              placeholder="Расскажите, как прошла поездка (минимум 3 символа)"
+              placeholder={t("profile.reviewPlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={reviewText}
               onChangeText={setReviewText}
@@ -1085,10 +1097,10 @@ export default function ProfileScreen() {
               activeOpacity={0.8}
               testID="review-submit"
             >
-              <Text style={styles.modalPrimaryBtnText}>{reviewMutation.isPending ? "Отправляем…" : "Отправить отзыв"}</Text>
+              <Text style={styles.modalPrimaryBtnText}>{t(reviewMutation.isPending ? "common.sending" : "profile.reviewSubmit")}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setReviewBooking(null)} style={{ alignItems: "center", paddingVertical: 10 }} activeOpacity={0.7}>
-              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{"Отмена"}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{t("common.cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1098,7 +1110,7 @@ export default function ProfileScreen() {
         <View style={[styles.legalModalOverlay, { backgroundColor: colors.backdrop }]}>
           <View style={[styles.legalModalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.legalModalHeader}>
-              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{"Сертификат"}</Text>
+              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{t("certificate.title")}</Text>
               <TouchableOpacity onPress={() => setVoucherCert(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <X size={22} color={colors.textMuted} />
               </TouchableOpacity>
@@ -1111,15 +1123,15 @@ export default function ProfileScreen() {
                     <Text style={[styles.voucherBrand, { color: colors.gold }]}>{"YAVOY"}</Text>
                     <Gift size={24} color={colors.gold} />
                   </View>
-                  <Text style={[styles.voucherType, { color: colors.textMuted }]}>{"ПОДАРОЧНЫЙ СЕРТИФИКАТ"}</Text>
+                  <Text style={[styles.voucherType, { color: colors.textMuted }]}>{t("certificate.type")}</Text>
                   <Text style={[styles.voucherNominalLarge, { color: colors.gold }]}>{`${voucherCert.nominal.toLocaleString()} ${voucherCert.currency}`}</Text>
                   <View style={[styles.voucherDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"Кому:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("certificate.to")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.text }]}>{voucherCert.toName}</Text>
                   </View>
                   <View style={styles.voucherRow}>
-                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{"От:"}</Text>
+                    <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("certificate.from")}</Text>
                     <Text style={[styles.voucherFieldValue, { color: colors.text }]}>{voucherCert.fromName}</Text>
                   </View>
                   <View style={[styles.qrPlaceholder, { borderColor: colors.gold + "30" }]}>
@@ -1133,24 +1145,30 @@ export default function ProfileScreen() {
                     style={[styles.voucherActionBtn, { backgroundColor: colors.teal }]}
                     onPress={() => {
                       Share.share({
-                        message: `YAVOY Подарочный сертификат\nНоминал: ${voucherCert.nominal.toLocaleString()} ${voucherCert.currency}\nКому: ${voucherCert.toName}\nОт: ${voucherCert.fromName}\nКод: ${voucherCert.code}`,
-                        title: "Сертификат YAVOY",
+                        message: [
+                          `YAVOY ${t("certificate.type")}`,
+                          `${t("certificate.nominal")}: ${formatNumber(voucherCert.nominal)} ${voucherCert.currency}`,
+                          `${t("certificate.to")} ${voucherCert.toName}`,
+                          `${t("certificate.from")} ${voucherCert.fromName}`,
+                          `${t("certificate.code")} ${voucherCert.code}`,
+                        ].join("\n"),
+                        title: `${t("certificate.title")} YAVOY`,
                       }).catch(() => {});
                     }}
                     activeOpacity={0.7}
                   >
                     <Share2 size={16} color="#FFFFFF" />
-                    <Text style={styles.voucherActionText}>{"Поделиться"}</Text>
+                    <Text style={styles.voucherActionText}>{t("common.share")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.voucherActionBtn, { backgroundColor: colors.gold }]}
                     onPress={() => {
-                      Alert.alert("Wallet", "Сертификат будет добавлен в Apple Wallet / Google Pay");
+                      Alert.alert(t("voucher.walletTitle"), t("voucher.walletCertText"));
                     }}
                     activeOpacity={0.7}
                   >
                     <Wallet size={16} color="#1B2838" />
-                    <Text style={[styles.voucherActionText, { color: "#1B2838" }]}>{"В Wallet"}</Text>
+                    <Text style={[styles.voucherActionText, { color: "#1B2838" }]}>{t("voucher.toWallet")}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -1169,7 +1187,7 @@ export default function ProfileScreen() {
           testID="link-terms"
         >
           <FileText size={14} color={colors.textMuted} />
-          <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{"Условия использования"}</Text>
+          <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{t("profile.terms")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerLink}
@@ -1178,7 +1196,7 @@ export default function ProfileScreen() {
           testID="link-about"
         >
           <Info size={14} color={colors.textMuted} />
-          <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{"О компании"}</Text>
+          <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{t("profile.about")}</Text>
         </TouchableOpacity>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>{`YAVOY v${APP_VERSION}`}</Text>
       </View>
@@ -1187,7 +1205,7 @@ export default function ProfileScreen() {
         <View style={[styles.legalModalOverlay, { backgroundColor: colors.backdrop }]}>
           <View style={[styles.legalModalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.legalModalHeader}>
-              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{"Условия использования"}</Text>
+              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{t("profile.terms")}</Text>
               <TouchableOpacity onPress={() => setTermsModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <X size={22} color={colors.textMuted} />
               </TouchableOpacity>
@@ -1203,7 +1221,7 @@ export default function ProfileScreen() {
         <View style={[styles.legalModalOverlay, { backgroundColor: colors.backdrop }]}>
           <View style={[styles.legalModalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.legalModalHeader}>
-              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{"О компании"}</Text>
+              <Text style={[styles.legalModalTitle, { color: colors.text }]}>{t("profile.about")}</Text>
               <TouchableOpacity onPress={() => setAboutModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <X size={22} color={colors.textMuted} />
               </TouchableOpacity>

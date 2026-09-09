@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Heart, Play, Eye } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 import { TravelReel } from "@/types/tour";
 
 interface ReelsSectionProps {
@@ -13,6 +14,7 @@ interface ReelsSectionProps {
 
 export default function ReelsSection({ reels }: ReelsSectionProps) {
   const { colors } = useTheme();
+  const t = useT();
   const router = useRouter();
 
   const handlePress = useCallback(
@@ -28,8 +30,8 @@ export default function ReelsSection({ reels }: ReelsSectionProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={[styles.title, { color: colors.text }]}>Reels из туров</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>Короткие истории реальных экскурсий</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t("home.reelsTitle")}</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t("home.reelsSubtitle")}</Text>
         </View>
         <View style={[styles.liveBadge, { backgroundColor: colors.coral + "22" }]}>
           <Play size={12} color={colors.coral} fill={colors.coral} />

@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { addFavorite, fetchFavorites, removeFavorite, type FavoriteKind } from "@/services/social";
 import { initialReels } from "@/data/reels";
 import type { TravelReel } from "@/types";
+import { useI18n } from "@/i18n/I18nProvider";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -110,6 +111,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => load<ThemeMode>(THEME_KEY, "dark"));
   const [systemDark, setSystemDark] = useState<boolean>(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
   const [reels, setReels] = useState<TravelReel[]>(initialReels);
+  const { t } = useI18n();
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -140,25 +142,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const reward = 500;
     const newReel: TravelReel = {
       id: `reel-${Date.now()}`,
-      title: input.title || "Без названия",
+      title: input.title || t("profile.reelUntitled"),
       city: input.city || "—",
       tourTitle: input.tourTitle || "—",
       coverImage: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=900&fit=crop",
-      author: "Вы",
+      author: t("profile.reelAuthorSelf"),
       duration: "0:20",
       views: "0",
       likes: "0",
       viewsCount: 0,
       likesCount: 0,
       likedByMe: false,
-      story: "Ваше видео отправлено на модерацию.",
+      story: t("profile.reelPendingStory"),
       status: "moderation",
       createdAt: new Date().toISOString().slice(0, 10),
     };
     setReels((prev) => [newReel, ...prev]);
     setPoints((p) => p + reward);
     return reward;
-  }, []);
+  }, [t]);
 
   const toggleReelLike = useCallback((id: string) => {
     setReels((prev) =>

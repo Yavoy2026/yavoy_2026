@@ -11,7 +11,8 @@ import {
 import { Image } from "expo-image";
 import { Sparkles, Star, Clock } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
-import { categoryLabels } from "@/constants/categories";
+import { useT } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 import { CategoryType } from "@/types/tour";
 
 const CARD_WIDTH = Dimensions.get("window").width * 0.65;
@@ -65,6 +66,7 @@ const CategoryCard = React.memo(function CategoryCard({
   onPress: () => void;
 }) {
   const { colors } = useTheme();
+  const t = useT();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
@@ -96,12 +98,12 @@ const CategoryCard = React.memo(function CategoryCard({
         <View style={[styles.accentStrip, { backgroundColor: accent }]} />
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={2}>
-            {categoryLabels[category] || category}
+            {t(`enums.category.${category}` as TKey)}
           </Text>
           <View style={styles.cardMeta}>
             <View style={[styles.tourCountBadge, { backgroundColor: accent }]}>
               <Text style={styles.tourCountText}>
-                {`${categoryTourCount[category] || 0} туров`}
+                {t("units.tours", { count: categoryTourCount[category] || 0 })}
               </Text>
             </View>
           </View>
@@ -113,13 +115,14 @@ const CategoryCard = React.memo(function CategoryCard({
 
 export default React.memo(function InterestingSection({ onCategoryPress }: InterestingSectionProps) {
   const { colors } = useTheme();
+  const t = useT();
   console.log("[InterestingSection] Rendering");
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Sparkles size={20} color={colors.gold} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{"Самое интересное"}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t("home.interesting")}</Text>
         </View>
       </View>
       <ScrollView

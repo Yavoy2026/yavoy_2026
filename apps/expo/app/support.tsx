@@ -13,10 +13,12 @@ import {
 import { Stack } from "expo-router";
 import { Send, Sparkles, UserCog, RefreshCw } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 import { useSupport } from "@/providers/SupportProvider";
 
 export default function SupportScreen() {
   const { colors } = useTheme();
+  const t = useT();
   const { messages, sendMessage, isThinking, escalated, reset } = useSupport();
   const [text, setText] = useState<string>("");
   const scrollRef = useRef<ScrollView | null>(null);
@@ -36,7 +38,7 @@ export default function SupportScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          title: "Поддержка YAVOY",
+          title: t("support.title"),
           headerStyle: { backgroundColor: colors.headerBg },
           headerTintColor: "#FFFFFF",
           headerRight: () => (
@@ -50,7 +52,7 @@ export default function SupportScreen() {
       <View style={[styles.statusBanner, { backgroundColor: escalated ? colors.orangeLight : colors.tealSoft, borderColor: escalated ? colors.orange + "44" : colors.teal + "30" }]}>
         {escalated ? <UserCog size={16} color={colors.orange} /> : <Sparkles size={16} color={colors.teal} />}
         <Text style={[styles.statusText, { color: escalated ? colors.orange : colors.teal }]}>
-          {escalated ? "Чат переведён на менеджера YAVOY" : "AI-консультант поможет подобрать тур"}
+          {t(escalated ? "support.escalated" : "support.aiHint")}
         </Text>
       </View>
 
@@ -75,7 +77,7 @@ export default function SupportScreen() {
                     <View style={styles.bubbleHeader}>
                       {isAgent ? <UserCog size={12} color={colors.orange} /> : <Sparkles size={12} color={colors.teal} />}
                       <Text style={[styles.bubbleSender, { color: isAgent ? colors.orange : colors.teal }]}>
-                        {isAgent ? "Менеджер YAVOY" : "AI YAVOY"}
+                        {t(isAgent ? "support.manager" : "support.ai")}
                       </Text>
                     </View>
                   ) : null}
@@ -96,7 +98,7 @@ export default function SupportScreen() {
         <View style={[styles.inputBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}> 
           <TextInput
             style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-            placeholder={escalated ? "Сообщение менеджеру" : "Опишите, какой тур ищете"}
+            placeholder={t(escalated ? "support.placeholderManager" : "support.placeholderAi")}
             placeholderTextColor={colors.textMuted}
             value={text}
             onChangeText={setText}

@@ -8,6 +8,7 @@
 ```
 apps/backend/        Бэкенд: Fastify 5 + Zod + Drizzle + PostgreSQL (основная разработка)
 packages/contracts/  Общие zod-схемы API (бэкенд + клиенты)
+packages/i18n/       Переводы ru/en/uz, плюрализация, форматы денег и дат (бэкенд + клиенты)
 apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
 apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + бэкофис
                      (нативные ios/ и android/ — в ветке archive/native-apps)
@@ -57,6 +58,9 @@ EXPO_PUBLIC_API_URL=http://localhost:3002/v1 npx expo start --web --port 8081
 - **Миграции**: правка `src/db/schema.ts` → `pnpm db:generate` → `pnpm db:migrate`.
   Сид-данные: `src/db/seed-data.json` (снапшот бывших моков), заливка `pnpm db:seed`.
 - **Почта**: без `SMTP_URL` письма идут в лог. Прод-переменные: `SMTP_URL`, `MAIL_FROM`, `ADMIN_EMAIL`.
+  Язык писем — `MAIL_LOCALE` (ru/en/uz), один на установку.
+- **Языки клиентов**: `GET /v1/config` отдаёт `default_locale` и `supported_locales`
+  из `DEFAULT_LOCALE` / `SUPPORTED_LOCALES`. Меняются на стенде без пересборки приложений.
 - **JWT**: dev — эфемерные ключи; прод требует `JWT_PRIVATE_KEY_PEM`/`JWT_PUBLIC_KEY_PEM`
   (генерация: `npx tsx scripts/gen-keys.ts`).
 
@@ -68,7 +72,24 @@ pnpm test        # из корня; нужен Postgres на 5434
 
 Интеграционные, на живой БД: каждый тест-файл создаёт себе временную базу.
 Покрыто: auth-флоу с ротацией refresh, каталог с пагинацией, бронирования
-(конкуренция за места, RBAC, машина состояний), избранное, отзывы с модерацией.
+(конкуренция за места, RBAC, машина состояний), избранное, отзывы с модерацией,
+публичный конфиг и язык писем.
+
+### Переводы
+
+```bash
+pnpm i18n:check   # из корня
+```
+
+Проверяет три вещи: ключи из кода есть в каталоге, в каталоге нет осиротевших ключей,
+в UI-коде клиентов не осталось русских строк вне `packages/i18n`. Файлы, где русский —
+это контент (демо-данные, юридические тексты, промпт AI), перечислены в allowlist'е
+`packages/i18n/scripts/check.ts` с указанием причины.
+
+Добавление строки: ключ в `catalog/ru.ts` (задаёт структуру), затем `en.ts` и `uz.ts` —
+без них не пройдёт `tsc`, потому что оба каталога типизированы как `Catalog = typeof ru`.
+Клиенты подключают пакет алиасом на исходники: `apps/web/vite.config.ts` и
+`apps/expo/metro.config.js` — npm-зависимости между менеджерами пакетов нет.
 
 ### Роли и операции бэкофиса
 
@@ -103,7 +124,9 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
   публикация, даты с местами), партнёры (назначение — admin-only, verified-галочка).
   Partner: «Мои туры» (создаёт и правит только свои; всё сохраняется черновиком,
   публикует менеджер) + «Профиль организации».
-- Оставшиеся моки web: только Reels (backlog).
+- Оставшиеся моки web: только Reels и демо-кабинет партнёра `/partner` (backlog).
+- Переключатель языка — в профиле (`components/LanguageSwitcher.tsx`); в Expo — там же
+  (`components/LanguageSelector.tsx`).
 
 ## CORS, заголовки и прочие уроки локального теста
 
@@ -136,3 +159,9 @@ ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.y
 каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
 Для прода (свой домен): поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
 `.env` на сервере, пересобрать веб-образ (URL API зашивается при сборке).
+
+Язык стенда меняется без пересборки: `DEFAULT_LOCALE` / `SUPPORTED_LOCALES` /
+`MAIL_LOCALE` в `.env` на сервере + `docker compose … up -d backend`. Клиенты берут
+дефолт из `GET /v1/config`, поэтому ни веб-образ, ни APK трогать не нужно.
+`SUPPORTED_LOCALES` позволяет временно убрать язык из переключателя — например,
+пока узбекский не вычитан носителем.

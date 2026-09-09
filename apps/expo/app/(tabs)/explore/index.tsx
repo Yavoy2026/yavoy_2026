@@ -10,12 +10,14 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { MapPin, TrendingUp, Star, ChevronRight } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useI18n } from "@/providers/I18nProvider";
 import { useCatalog } from "@/services/catalog";
 import CategoryGrid from "@/components/CategoryGrid";
 
 export default function ExploreScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   const { tours, cities, cityNameMap } = useCatalog();
   const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
   const [selectedInterest, setSelectedInterest] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function ExploreScreen() {
       <View style={styles.citiesSection}>
         <View style={styles.sectionHeader}>
           <MapPin size={18} color={colors.teal} />
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Популярные города"}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("explore.popularCities")}</Text>
         </View>
         <View style={styles.citiesGrid}>
           {cities.map((city) => (
@@ -68,7 +70,7 @@ export default function ExploreScreen() {
                 <Text style={styles.cityName}>{city.name}</Text>
                 <Text style={styles.cityDesc} numberOfLines={1}>{city.description}</Text>
                 <View style={styles.cityTourCount}>
-                  <Text style={styles.cityTourCountText}>{`${city.tourCount} туров`}</Text>
+                  <Text style={styles.cityTourCountText}>{t("units.tours", { count: city.tourCount })}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -80,27 +82,27 @@ export default function ExploreScreen() {
         type="duration"
         selected={selectedDuration}
         onSelect={setSelectedDuration}
-        title="По длительности"
+        title={t("explore.byDuration")}
       />
 
       <CategoryGrid
         type="transport"
         selected={selectedTransport}
         onSelect={setSelectedTransport}
-        title="По транспорту"
+        title={t("explore.byTransport")}
       />
 
       <CategoryGrid
         type="interest"
         selected={selectedInterest}
         onSelect={setSelectedInterest}
-        title="По интересам"
+        title={t("explore.byInterest")}
       />
 
       {(selectedTransport || selectedInterest || selectedDuration) ? (
         <View style={[styles.filteredSection, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
           <View style={styles.filteredHeader}>
-            <Text style={[styles.filteredTitle, { color: colors.text }]}>{"Подходящие экскурсии"}</Text>
+            <Text style={[styles.filteredTitle, { color: colors.text }]}>{t("explore.matchingTours")}</Text>
             <Text style={[styles.filteredCount, { color: colors.teal, backgroundColor: colors.tealSoft }]}>{String(filteredTours.length)}</Text>
           </View>
           {filteredTours.slice(0, 5).map((tour) => (
@@ -118,7 +120,7 @@ export default function ExploreScreen() {
                   <Text style={[styles.tourRowCity, { color: colors.textMuted }]}>{cityNameMap[tour.city] || tour.city}</Text>
                   <Text style={[styles.tourRowDuration, { color: colors.textMuted }]}>{`\u00B7 ${tour.durationText}`}</Text>
                 </View>
-                <Text style={[styles.tourRowPrice, { color: colors.teal }]}>{`от ${tour.price.toLocaleString()}${tour.currency}`}</Text>
+                <Text style={[styles.tourRowPrice, { color: colors.teal }]}>{`${t("common.from")} ${formatNumber(tour.price)}${tour.currency}`}</Text>
               </View>
               <ChevronRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -129,7 +131,7 @@ export default function ExploreScreen() {
       <View style={[styles.topRatedSection, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
         <View style={styles.sectionHeader}>
           <TrendingUp size={18} color={colors.gold} />
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Лучшие по рейтингу"}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("explore.topRated")}</Text>
         </View>
         {topRatedTours.map((tour, index) => (
           <TouchableOpacity
@@ -147,9 +149,9 @@ export default function ExploreScreen() {
               <View style={styles.ratedMeta}>
                 <Star size={12} color={colors.gold} fill={colors.gold} />
                 <Text style={[styles.ratedRating, { color: colors.text }]}>{String(tour.organizer.rating)}</Text>
-                <Text style={[styles.ratedReviews, { color: colors.textMuted }]}>{`(${tour.organizer.reviewCount} отзывов)`}</Text>
+                <Text style={[styles.ratedReviews, { color: colors.textMuted }]}>{`(${t("units.reviews", { count: tour.organizer.reviewCount })})`}</Text>
               </View>
-              <Text style={[styles.ratedPrice, { color: colors.teal }]}>{`от ${tour.price.toLocaleString()}${tour.currency}`}</Text>
+              <Text style={[styles.ratedPrice, { color: colors.teal }]}>{`${t("common.from")} ${formatNumber(tour.price)}${tour.currency}`}</Text>
             </View>
             <ChevronRight size={16} color={colors.textMuted} />
           </TouchableOpacity>

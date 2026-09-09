@@ -2,18 +2,20 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Heart, MapPin, ChevronUp, ChevronDown, Play, Pause } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useT } from "@/i18n/I18nProvider";
 
 export default function Reels() {
   const navigate = useNavigate();
   const { publishedReels, toggleReelLike } = useApp();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
+  const t = useT();
 
   if (publishedReels.length === 0) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-black text-white">
-        <p>Нет доступных Reels</p>
-        <button onClick={() => navigate(-1)} className="mt-4 rounded-xl bg-white/10 px-5 py-2">Назад</button>
+        <p>{t("reels.emptyWeb")}</p>
+        <button onClick={() => navigate(-1)} className="mt-4 rounded-xl bg-white/10 px-5 py-2">{t("common.back")}</button>
       </div>
     );
   }

@@ -68,7 +68,8 @@ yavoy_2026/
 │       │   └── db/{schema,migrations}/
 │       └── Dockerfile
 ├── packages/
-│   └── contracts/      # zod-схемы + типы, импортируются бэкендом (клиенты — через адаптеры)
+│   ├── contracts/      # zod-схемы + типы, импортируются бэкендом (клиенты — через адаптеры)
+│   └── i18n/           # каталоги ru/en/uz, плюрализация, форматтеры; общий для бэкенда и клиентов
 ├── docker-compose.yml  # dev: postgres
 ├── deploy/             # прод: compose + Caddy
 └── pnpm-workspace.yaml # workspace: apps/backend + packages/*
@@ -86,11 +87,16 @@ yavoy_2026/
   { "error": { "code": "booking_sold_out", "message": "Мест не осталось", "details": {} } }
   ```
   `code` — машиночитаемый, стабильный (клиент матчится по нему, не по тексту).
+  `message` — **дев-фолбэк**: в UI попадает перевод по коду из `packages/i18n`
+  (`errors.<code>`), а не текст с сервера. Новый код ошибки → новый ключ в каталоге.
 - **Пагинация:** cursor-based везде: `?cursor=<opaque>&limit=20` → `{ items: [], next_cursor: string|null }`.
 - **Датавремя:** ISO 8601 UTC. **Деньги:** integer в копейках + `currency: "RUB"` (никаких float).
 - **Идентификаторы:** UUID v7.
 - **Идемпотентность:** мутации с деньгами (`POST /bookings`, оплата) принимают заголовок `Idempotency-Key`; повтор с тем же ключом возвращает исходный результат.
 - **Rate limiting:** глобально 100 rps/IP; auth-эндпоинты — 5/мин/IP.
+- **Языки:** интерфейс клиентов — ru/en/uz (YAV-25). Язык по умолчанию отдаёт сервер
+  (`GET /v1/config`), исходящие письма — на одном языке `MAIL_LOCALE`. Контент каталога
+  (названия, описания) не локализован и хранится в одном языке.
 - **RBAC-роли:** `user` | `manager` | `admin`. «Партнёр» — не роль, а наличие одобренного `partner_profile` у пользователя (закрывает старый рассинхрон `manager`/`moderator`).
 
 ---
@@ -248,6 +254,15 @@ POST   /users/me/photo         presigned-flow → {photo_url}    (ждёт S3 �
 GET    /users/me/notifications-prefs | PATCH ...               (backlog)
 POST   /users/me/devices       {expo_push_token, platform}     (backlog)
 ```
+
+### 5.2а Конфигурация клиентов (реализовано; YAV-25)
+```
+GET    /config                                  → { default_locale, supported_locales[] }
+```
+Публичный, без авторизации: клиент запрашивает его до каталога, потому что экран входа
+рисуется раньше. Источник — `DEFAULT_LOCALE` / `SUPPORTED_LOCALES` в env бэкенда, поэтому
+язык по умолчанию меняется без пересборки приложений. Выбор пользователя хранится на
+клиенте и перекрывает дефолт.
 
 ### 5.3 Каталог (Фаза 2, публичный, кэшируемый)
 ```

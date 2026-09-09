@@ -4,10 +4,12 @@ import React from "react";
 import { Platform } from "react-native";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useScrollToTop } from "@/providers/ScrollToTopProvider";
+import { useT } from "@/providers/I18nProvider";
 
 export default function TabLayout() {
   const { colors } = useTheme();
   const { trigger } = useScrollToTop();
+  const t = useT();
   console.log("[TabLayout] Rendering tabs");
   return (
     <Tabs
@@ -36,7 +38,7 @@ export default function TabLayout() {
           },
         }}
         options={{
-          title: "Экскурсии",
+          title: t("nav.tours"),
           tabBarIcon: ({ color, size }) => (
             <Compass size={size ?? 24} color={color} />
           ),
@@ -45,7 +47,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Направления",
+          title: t("nav.explore"),
           tabBarIcon: ({ color, size }) => (
             <Map size={size ?? 24} color={color} />
           ),
@@ -54,7 +56,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="favorites"
         options={{
-          title: "Избранное",
+          title: t("nav.favorites"),
           tabBarIcon: ({ color, size }) => (
             <Heart size={size ?? 24} color={color} />
           ),
@@ -63,7 +65,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Профиль",
+          title: t("nav.profile"),
           tabBarIcon: ({ color, size }) => (
             <User size={size ?? 24} color={color} />
           ),

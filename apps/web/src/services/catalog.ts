@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { City, Tour, TourDateOption, TourReview } from "@/types";
-import { apiFetch } from "@/services/api";
+import { apiFetch, ApiError } from "@/services/api";
 
 /**
  * Каталог целиком с GET /v1/catalog (bootstrap-эндпоинт, как в мобильном приложении).
@@ -151,7 +151,7 @@ function adaptCity(c: ApiCity): City {
 
 async function fetchCatalog(): Promise<{ cities: City[]; tours: Tour[] }> {
   const res = await apiFetch("/catalog");
-  if (!res.ok) throw new Error(`Каталог недоступен (${res.status})`);
+  if (!res.ok) throw new ApiError(res.status, "catalogUnavailable", `catalog ${res.status}`);
   const body = (await res.json()) as { cities: ApiCity[]; tours: ApiTour[] };
   return { cities: body.cities.map(adaptCity), tours: body.tours.map(adaptTour) };
 }

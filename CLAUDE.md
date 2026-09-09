@@ -10,6 +10,7 @@ YaVoy — агрегатор туристических экскурсий по 
 ```
 apps/backend/        Fastify 5 + Zod + Drizzle + PostgreSQL 16 (pnpm workspace)
 packages/contracts/  Общие zod-схемы API — единственный источник типов запросов/ответов
+packages/i18n/       Переводы ru/en/uz + плюрализация и форматтеры; общий для всех трёх приложений
 apps/expo/           Мобильное приложение (Expo SDK 54, React Query) — npm, НЕ pnpm
 apps/web/            Веб-клиент (Vite + React + shadcn) + бэкофис /backoffice — npm, НЕ pnpm
 deploy/              Stage/prod: docker-compose.prod.yml, Caddyfile, .env.example
@@ -29,6 +30,7 @@ pnpm dev                             # tsx watch; локально исполь�
 pnpm test                            # vitest, нужен Postgres на 5434; каждый файл создаёт себе БД
 pnpm --filter @yavoy/backend exec vitest run test/auth.test.ts   # один тест-файл
 pnpm typecheck                       # tsc по всем workspace-пакетам
+pnpm i18n:check                      # переводы: нет дырок, нет осиротевших ключей, нет русского в UI
 pnpm db:generate                     # drizzle-kit: миграция из изменений src/db/schema.ts
 DATABASE_URL=postgres://yavoy:yavoy@localhost:5434/yavoy pnpm db:migrate
 DATABASE_URL=postgres://yavoy:yavoy@localhost:5434/yavoy pnpm db:seed   # демо-каталог; СТИРАЕТ каталог и брони
@@ -96,6 +98,24 @@ write-путях (модерация отзывов, правка партнёр
 OTP-флоу через хелперы `loginViaOtp`/`signupWithRole` из `test/helpers.ts`.
 Rate-limit-плагин в NODE_ENV=test не регистрируется; кулдаун OTP сбрасывают UPDATE'ом.
 
+**Переводы (YAV-25).** Интерфейс на трёх языках: ru / en / uz (латиница). Каталог —
+`packages/i18n`, один набор ключей на оба клиента; своё крошечное ядро вместо i18next
+(плюрализация зашита правилами CLDR, чтобы не зависеть от урезанного Intl в Hermes).
+Клиенты подключают пакет **алиасом на исходники** (`vite.config.ts`, `metro.config.js`),
+а не npm-зависимостью: expo и web живут на npm, бэкенд на pnpm. Ключ проверяется
+компилятором — тип `TKey` не даст опечататься.
+
+- **Язык устройства не читаем.** Дефолт приходит с сервера: `GET /v1/config` →
+  `{default_locale, supported_locales}` из `DEFAULT_LOCALE`/`SUPPORTED_LOCALES`.
+  Меняется без пересборки клиентов; выбор пользователя в профиле перекрывает его навсегда.
+- **Ошибки переводятся по коду**, а не по тексту: `errors.<AppError.code>`, затем
+  `api.<код фолбэка сервиса>`. Русский `message` с бэкенда — дев-фолбэк, в UI не попадает.
+- **Письма** — один язык на установку (`MAIL_LOCALE`), переводы всех трёх лежат в каталоге.
+- **Контент из БД не переводится** (названия туров, города, отзывы) — осознанное решение.
+  Демо-данные, юридические тексты и системный промпт AI тоже остаются русскими; они
+  перечислены в allowlist'е `packages/i18n/scripts/check.ts` — список не должен расти молча.
+- `tours.languages` хранит **коды** (`ru`/`en`/`uz`/`de`/`fr`/`zh`/`tt`), подписи — из каталога.
+
 ## Правила паритета платформ (требование владельца)
 
 - **Паритет фич приложение ↔ веб поддерживаем всегда, когда осуществимо**; отход
@@ -121,3 +141,6 @@ Rate-limit-плагин в NODE_ENV=test не регистрируется; ку
   (`git reset -q -- resume` перед `git add -A`).
 - `apps/expo/android|ios` — сгенерированы `expo prebuild`, в .gitignore; APK собирается
   gradle'ом с `EXPO_PUBLIC_API_URL`, зашиваемым в бандл на этапе сборки.
+- Новую строку интерфейса добавлять только через `packages/i18n`: сначала ключ в `ru.ts`
+  (структура каталога), затем `en.ts`/`uz.ts` — иначе не соберётся. Узбекский черновой,
+  до релиза нужна вычитка носителем.

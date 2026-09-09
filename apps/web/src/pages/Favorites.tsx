@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import { TourCard } from "@/components/TourCard";
 import { useApp } from "@/context/AppContext";
 import { useCatalog } from "@/services/catalog";
+import { useT } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 type Tab = "tours" | "cities";
@@ -14,13 +15,14 @@ export default function Favorites() {
   const { favorites, favoriteCities, toggleFavoriteCity } = useApp();
   const { tours, cities } = useCatalog();
   const [tab, setTab] = useState<Tab>("tours");
+  const t = useT();
 
   const favTours = useMemo(() => tours.filter((t) => favorites.includes(t.id)), [tours, favorites]);
   const favCities = useMemo(() => cities.filter((c) => favoriteCities.includes(c.id)), [cities, favoriteCities]);
 
   return (
     <Layout>
-      <h1 className="mb-5 text-3xl font-extrabold">Избранное</h1>
+      <h1 className="mb-5 text-3xl font-extrabold">{t("favorites.title")}</h1>
 
       <div className="mb-6 flex gap-2">
         <button
@@ -30,7 +32,7 @@ export default function Favorites() {
             tab === "tours" ? "bg-teal text-white" : "bg-secondary text-muted-foreground",
           )}
         >
-          <Heart size={15} /> Экскурсии {favTours.length > 0 && `(${favTours.length})`}
+          <Heart size={15} /> {t("favorites.tabTours")} {favTours.length > 0 && `(${favTours.length})`}
         </button>
         <button
           onClick={() => setTab("cities")}
@@ -39,20 +41,20 @@ export default function Favorites() {
             tab === "cities" ? "bg-teal text-white" : "bg-secondary text-muted-foreground",
           )}
         >
-          <MapPin size={15} /> Города {favCities.length > 0 && `(${favCities.length})`}
+          <MapPin size={15} /> {t("favorites.tabCities")} {favCities.length > 0 && `(${favCities.length})`}
         </button>
       </div>
 
       {tab === "tours" ? (
         favTours.length === 0 ? (
-          <Empty title="Нет избранных экскурсий" text="Нажмите на сердечко на карточке, чтобы добавить её сюда" />
+          <Empty title={t("favorites.emptyToursTitle")} text={t("favorites.emptyToursText")} />
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {favTours.map((t) => <TourCard key={t.id} tour={t} />)}
+            {favTours.map((tour) => <TourCard key={tour.id} tour={tour} />)}
           </div>
         )
       ) : favCities.length === 0 ? (
-        <Empty title="Нет избранных городов" text="Отметьте города как избранные, чтобы они появились здесь" />
+        <Empty title={t("favorites.emptyCitiesTitle")} text={t("favorites.emptyCitiesText")} />
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {favCities.map((city) => (
@@ -75,7 +77,7 @@ export default function Favorites() {
               <div className="absolute bottom-3 left-3 right-3">
                 <div className="text-xl">{city.emoji}</div>
                 <div className="text-base font-bold text-white">{city.name}</div>
-                <div className="mt-1 inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{city.tourCount} туров</div>
+                <div className="mt-1 inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{t("units.tours", { count: city.tourCount })}</div>
               </div>
             </button>
           ))}

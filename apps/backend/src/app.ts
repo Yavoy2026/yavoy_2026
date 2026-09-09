@@ -21,6 +21,7 @@ import { adminToursRoutes } from "./modules/admin/tours/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { bookingsRoutes } from "./modules/bookings/routes.ts";
 import { catalogRoutes } from "./modules/catalog/routes.ts";
+import { configRoutes } from "./modules/config/routes.ts";
 import { favoritesRoutes } from "./modules/favorites/routes.ts";
 import { reviewsRoutes } from "./modules/reviews/routes.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
@@ -92,6 +93,7 @@ export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
   await app.register(
     async (v1) => {
       await v1.register(healthRoutes);
+      await v1.register(configRoutes);
       await v1.register(catalogRoutes);
       await v1.register(bookingsRoutes);
       await v1.register(favoritesRoutes);

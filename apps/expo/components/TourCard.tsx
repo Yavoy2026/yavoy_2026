@@ -17,14 +17,8 @@ import { Tour } from "@/types/tour";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useViewedTours } from "@/providers/ViewedToursProvider";
 import { useCatalog } from "@/services/catalog";
-
-const transportLabels: Record<string, string> = {
-  auto: "Авто",
-  water: "Водная",
-  sea: "Морская",
-  bike: "Вело",
-  air: "Авиа",
-};
+import { useI18n } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
 interface TourCardProps {
   tour: Tour;
@@ -34,6 +28,7 @@ interface TourCardProps {
 
 export default React.memo(function TourCard({ tour, onPress, compact = false }: TourCardProps) {
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   const { cityNameMap } = useCatalog();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isViewed } = useViewedTours();
@@ -64,12 +59,12 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `${tour.title} — от ${tour.price.toLocaleString()}${tour.currency}\n\nОрганизатор: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYaVoy Travel Group`,
+        message: `${tour.title} — ${t("common.from")} ${formatNumber(tour.price)}${tour.currency}\n\n${t("tour.organizer")}: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYaVoy Travel Group`,
       });
     } catch (e) {
       console.log("Share error:", e);
     }
-  }, [tour]);
+  }, [tour, t, formatNumber]);
 
   const hasDiscount = tour.originalPrice && tour.originalPrice > tour.price;
   const discountPercent = hasDiscount
@@ -93,7 +88,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
             {tour.isBestseller ? (
               <View style={styles.bestsellerBadge}>
                 <Flame size={11} color="#FFFFFF" />
-                <Text style={styles.bestsellerText}>{"Хит продаж"}</Text>
+                <Text style={styles.bestsellerText}>{t("tourCard.bestseller")}</Text>
               </View>
             ) : null}
             {hasDiscount ? (
@@ -105,7 +100,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
 
           <View style={styles.topRightBadges}>
             <View style={[styles.transportBadge, { backgroundColor: colors.teal }]}>
-              <Text style={styles.transportText}>{transportLabels[tour.transport] || tour.transport}</Text>
+              <Text style={styles.transportText}>{t(`enums.transportAdjective.${tour.transport}` as TKey)}</Text>
             </View>
             <View style={styles.durationBadge}>
               <Clock size={11} color="#FFFFFF" />
@@ -115,13 +110,13 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
 
           {tour.bookingsToday > 5 ? (
             <View style={styles.bookingsBadge}>
-              <Text style={styles.bookingsText}>{`🔥 ${tour.bookingsToday} бронирований сегодня`}</Text>
+              <Text style={styles.bookingsText}>{`🔥 ${t("units.bookingsToday", { count: tour.bookingsToday })}`}</Text>
             </View>
           ) : null}
           {viewed ? (
             <View style={[styles.viewedBadge, { backgroundColor: colors.overlay }]}>
               <Eye size={10} color="#FFFFFF" />
-              <Text style={styles.viewedText}>{"Просмотрено"}</Text>
+              <Text style={styles.viewedText}>{t("tourCard.viewed")}</Text>
             </View>
           ) : null}
         </View>
@@ -142,19 +137,19 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
             {tour.isInstantConfirmation ? (
               <View style={[styles.featureBadge, { backgroundColor: colors.tealSoft }]}>
                 <Zap size={11} color={colors.teal} />
-                <Text style={[styles.featureBadgeText, { color: colors.teal }]}>{"Мгновенно"}</Text>
+                <Text style={[styles.featureBadgeText, { color: colors.teal }]}>{t("tourCard.instant")}</Text>
               </View>
             ) : null}
             {tour.isFreeCancellation ? (
               <View style={[styles.featureBadge, { backgroundColor: colors.greenLight }]}>
                 <RotateCcw size={11} color={colors.green} />
-                <Text style={[styles.featureBadgeText, { color: colors.green }]}>{"Бесплатная отмена"}</Text>
+                <Text style={[styles.featureBadgeText, { color: colors.green }]}>{t("tourCard.freeCancellation")}</Text>
               </View>
             ) : null}
             {tour.organizer.verified ? (
               <View style={[styles.featureBadge, { backgroundColor: colors.tealSoft }]}>
                 <ShieldCheck size={11} color={colors.teal} />
-                <Text style={[styles.featureBadgeText, { color: colors.teal }]}>{"Проверен"}</Text>
+                <Text style={[styles.featureBadgeText, { color: colors.teal }]}>{t("tourCard.verified")}</Text>
               </View>
             ) : null}
           </View>
@@ -168,11 +163,11 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
               </View>
             </View>
             <View style={styles.priceContainer}>
-              <Text style={[styles.priceLabel, { color: colors.textMuted }]}>от</Text>
+              <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t("common.from")}</Text>
               {hasDiscount ? (
-                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{`${tour.originalPrice!.toLocaleString()}₽`}</Text>
+                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{`${formatNumber(tour.originalPrice!)}₽`}</Text>
               ) : null}
-              <Text style={[styles.price, { color: colors.teal }]}>{`${tour.price.toLocaleString()}${tour.currency}`}</Text>
+              <Text style={[styles.price, { color: colors.teal }]}>{`${formatNumber(tour.price)}${tour.currency}`}</Text>
             </View>
           </View>
         </View>

@@ -11,6 +11,7 @@ import {
 import { Image } from "expo-image";
 import { Star, Flame, Clock } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 import { Tour } from "@/types/tour";
 
 const CARD_WIDTH = Dimensions.get("window").width * 0.65;
@@ -29,6 +30,7 @@ const PopularTourItem = React.memo(function PopularTourItem({
   onPress: () => void;
 }) {
   const { colors } = useTheme();
+  const t = useT();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
@@ -54,12 +56,12 @@ const PopularTourItem = React.memo(function PopularTourItem({
           {tour.isBestseller ? (
             <View style={styles.bestsellerBadge}>
               <Flame size={11} color="#FFFFFF" />
-              <Text style={styles.bestsellerText}>{"Хит"}</Text>
+              <Text style={styles.bestsellerText}>{t("tourCard.bestsellerShort")}</Text>
             </View>
           ) : null}
           {tour.isLikelyToSellOut ? (
             <View style={styles.sellOutBadge}>
-              <Text style={styles.sellOutText}>{"Раскупают"}</Text>
+              <Text style={styles.sellOutText}>{t("tourCard.sellingOut")}</Text>
             </View>
           ) : null}
         </View>
@@ -80,7 +82,7 @@ const PopularTourItem = React.memo(function PopularTourItem({
             {tour.originalPrice ? (
               <Text style={styles.originalPrice}>{`${tour.originalPrice.toLocaleString()}\u20BD`}</Text>
             ) : null}
-            <Text style={[styles.price, { color: colors.tealLight }]}>{`от ${tour.price.toLocaleString()}\u20BD`}</Text>
+            <Text style={[styles.price, { color: colors.tealLight }]}>{`${t("common.from")} ${tour.price.toLocaleString()}\u20BD`}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -90,13 +92,14 @@ const PopularTourItem = React.memo(function PopularTourItem({
 
 export default React.memo(function PopularToursCarousel({ tours, onPress }: PopularToursCarouselProps) {
   const { colors } = useTheme();
+  const t = useT();
   console.log("[PopularToursCarousel] Rendering with", tours.length, "tours");
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Flame size={18} color={colors.coral} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{"Популярные экскурсии"}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t("home.popularTours")}</Text>
         </View>
       </View>
       <ScrollView

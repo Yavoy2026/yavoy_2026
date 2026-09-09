@@ -18,6 +18,7 @@ import { ReelsProvider } from "@/providers/ReelsProvider";
 import { SupportProvider } from "@/providers/SupportProvider";
 import { PartnersProvider } from "@/providers/PartnersProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { I18nProvider, useI18n, useT } from "@/providers/I18nProvider";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -30,10 +31,11 @@ function ThemedStatusBar() {
 
 function RootLayoutNav() {
   const { colors } = useTheme();
+  const t = useT();
   return (
     <Stack
       screenOptions={{
-        headerBackTitle: "Назад",
+        headerBackTitle: t("common.back"),
         contentStyle: { backgroundColor: colors.background },
       }}
     >
@@ -64,15 +66,26 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+/**
+ * Сплэш держим до ответа GET /v1/config: язык приходит с сервера, и без этого
+ * первый кадр мигал бы фолбэком (YAV-25).
+ */
+function SplashGate({ children }: { children: React.ReactNode }) {
+  const { ready } = useI18n();
   useEffect(() => {
-    console.log("[RootLayout] App mounted, hiding splash screen");
+    if (!ready) return;
+    console.log("[RootLayout] i18n ready, hiding splash screen");
     void SplashScreen.hideAsync();
-  }, []);
+  }, [ready]);
+  return <>{children}</>;
+}
 
+export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <I18nProvider>
+        <SplashGate>
         <ThemeProvider>
           <AuthProvider>
             <FavoritesProvider>
@@ -103,6 +116,8 @@ export default function RootLayout() {
             </FavoritesProvider>
           </AuthProvider>
         </ThemeProvider>
+        </SplashGate>
+        </I18nProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
   );

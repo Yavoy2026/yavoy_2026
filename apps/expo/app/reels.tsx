@@ -19,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { TravelReel } from "@/types/tour";
 import { useReels } from "@/providers/ReelsProvider";
+import { useT } from "@/providers/I18nProvider";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -29,6 +30,7 @@ interface ReelItemProps {
 }
 
 function ReelItem({ reel, active, onToggleLike }: ReelItemProps) {
+  const t = useT();
   const [paused, setPaused] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
@@ -78,7 +80,7 @@ function ReelItem({ reel, active, onToggleLike }: ReelItemProps) {
   useEffect(() => {
     if (!reel.videoUri || !isReady) return;
     let cancelled = false;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (cancelled || !mountedRef.current) return;
       try {
         if (active && !paused) {
@@ -92,7 +94,7 @@ function ReelItem({ reel, active, onToggleLike }: ReelItemProps) {
     }, 50);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
       try {
         player.pause();
       } catch (e) {
@@ -168,12 +170,12 @@ function ReelItem({ reel, active, onToggleLike }: ReelItemProps) {
         <View style={styles.stats}>
           <View style={styles.stat}>
             <Eye size={11} color="#FFFFFF" />
-            <Text style={styles.statText}>{`${reel.views} просмотров`}</Text>
+            <Text style={styles.statText}>{`${reel.views} ${t("reels.viewsLabel")}`}</Text>
           </View>
           <View style={styles.statDot} />
           <View style={styles.stat}>
             <Heart size={11} color="#FFFFFF" />
-            <Text style={styles.statText}>{`${reel.likes} лайков`}</Text>
+            <Text style={styles.statText}>{`${reel.likes} ${t("reels.likesLabel")}`}</Text>
           </View>
         </View>
       </View>
@@ -183,6 +185,7 @@ function ReelItem({ reel, active, onToggleLike }: ReelItemProps) {
 
 export default function ReelsScreen() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ index?: string }>();
   const initialIndex = useMemo(() => {
     const n = parseInt(params.index ?? "0", 10);
@@ -228,9 +231,9 @@ export default function ReelsScreen() {
     return (
       <View style={[styles.root, styles.emptyWrap]}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.emptyText}>Reels пока нет</Text>
+        <Text style={styles.emptyText}>{t("reels.empty")}</Text>
         <TouchableOpacity onPress={handleClose} style={styles.emptyBtn}>
-          <Text style={styles.emptyBtnText}>Закрыть</Text>
+          <Text style={styles.emptyBtnText}>{t("common.close")}</Text>
         </TouchableOpacity>
       </View>
     );

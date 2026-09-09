@@ -56,14 +56,15 @@ export class ApiError extends Error {
   }
 }
 
-async function throwApiError(res: Response, fallback: string): Promise<never> {
+/** fallbackCode — ключ каталога `api.*`; UI переводит ошибку по коду, а не по тексту */
+async function throwApiError(res: Response, fallbackCode: string): Promise<never> {
   const body = (await res.json().catch(() => null)) as {
     error?: { code?: string; message?: string; details?: Record<string, unknown> };
   } | null;
   throw new ApiError(
     res.status,
-    body?.error?.code ?? "unknown",
-    body?.error?.message ?? fallback,
+    body?.error?.code ?? fallbackCode,
+    body?.error?.message ?? fallbackCode,
     body?.error?.details,
   );
 }
@@ -153,7 +154,7 @@ export async function requestOtp(email: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ email }),
   });
-  if (!res.ok) await throwApiError(res, "Не удалось отправить код");
+  if (!res.ok) await throwApiError(res, "codeSendFailed");
 }
 
 /** Шаг 2: обменять код на токены; is_new_user — спросить имя */
@@ -162,7 +163,7 @@ export async function verifyOtp(email: string, code: string): Promise<OtpVerifyR
     method: "POST",
     body: JSON.stringify({ email, code }),
   });
-  if (!res.ok) await throwApiError(res, "Неверный код");
+  if (!res.ok) await throwApiError(res, "codeInvalid");
   const body = (await res.json()) as AuthResponse & { is_new_user: boolean };
   saveTokens(body.tokens);
   return { user: body.user, is_new_user: body.is_new_user };
@@ -170,7 +171,7 @@ export async function verifyOtp(email: string, code: string): Promise<OtpVerifyR
 
 export async function whoami(): Promise<UserProfile> {
   const res = await authFetch("/auth/whoami");
-  if (!res.ok) await throwApiError(res, "Не авторизован");
+  if (!res.ok) await throwApiError(res, "unauthorized");
   return res.json() as Promise<UserProfile>;
 }
 
@@ -196,20 +197,20 @@ export async function updateProfile(
   payload: UpdateProfilePayload,
 ): Promise<UserProfile> {
   const res = await authFetch("/users/me", { method: "PATCH", body: JSON.stringify(payload) });
-  if (!res.ok) await throwApiError(res, "Ошибка обновления профиля");
+  if (!res.ok) await throwApiError(res, "profileUpdateFailed");
   return res.json() as Promise<UserProfile>;
 }
 
 /** Загрузка фото профиля появится вместе с S3-хранилищем (backlog) */
 export async function uploadPhoto(_userId: string, _file: File): Promise<UserProfile> {
-  throw new ApiError(501, "not_implemented", "Загрузка фото профиля появится в следующей версии");
+  throw new ApiError(501, "photoNotImplemented", "photoNotImplemented");
 }
 
 // ─── Admin endpoints ─────────────────────────────────────────
 
 export async function listUsers(q?: string): Promise<UserProfile[]> {
   const res = await authFetch(`/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`);
-  if (!res.ok) await throwApiError(res, "Не удалось загрузить пользователей");
+  if (!res.ok) await throwApiError(res, "usersLoadFailed");
   const body = (await res.json()) as { items: UserProfile[] };
   return body.items;
 }
@@ -222,7 +223,7 @@ async function patchUser(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  if (!res.ok) await throwApiError(res, "Не удалось обновить пользователя");
+  if (!res.ok) await throwApiError(res, "userUpdateFailed");
   return res.json() as Promise<UserProfile>;
 }
 

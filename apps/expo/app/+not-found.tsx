@@ -2,19 +2,21 @@ import { Link, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { Compass } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 
 export default function NotFoundScreen() {
   const { colors } = useTheme();
+  const t = useT();
   console.log("[NotFoundScreen] Page not found");
   return (
     <>
-      <Stack.Screen options={{ title: "Не найдено" }} />
+      <Stack.Screen options={{ title: t("notFound.screenTitle") }} />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Compass size={48} color={colors.teal} />
-        <Text style={[styles.title, { color: colors.text }]}>{"Страница не найдена"}</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{"Похоже, вы заблудились. Давайте вернёмся к экскурсиям!"}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("notFound.title")}</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t("notFound.subtitle")}</Text>
         <Link href="/" style={[styles.link, { backgroundColor: colors.teal }]}>
-          <Text style={styles.linkText}>{"На главную"}</Text>
+          <Text style={styles.linkText}>{t("common.home")}</Text>
         </Link>
       </View>
     </>

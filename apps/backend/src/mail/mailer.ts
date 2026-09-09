@@ -1,3 +1,4 @@
+import { CATALOGS, createTranslator, formatMoneyKopeks } from "@yavoy/i18n";
 import type { FastifyBaseLogger } from "fastify";
 import { env } from "../env.ts";
 
@@ -10,6 +11,13 @@ export interface MailMessage {
 export interface Mailer {
   send(msg: MailMessage): Promise<void>;
 }
+
+/**
+ * Язык писем — один на установку (MAIL_LOCALE), а не по пользователю:
+ * переключатель языка живёт в приложении и до сервера не доезжает (решение по YAV-25).
+ */
+const t = createTranslator(CATALOGS, env.MAIL_LOCALE);
+const money = (kopeks: number) => formatMoneyKopeks(kopeks, env.MAIL_LOCALE);
 
 /**
  * SMTP задаётся через SMTP_URL (smtp://user:pass@host:port).
@@ -44,14 +52,8 @@ const isEmail = (contact: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.t
 export function otpMail({ to, code }: { to: string; code: string }): MailMessage {
   return {
     to,
-    subject: "Код входа в YaVoy",
-    text: [
-      `Ваш код для входа:`,
-      ``,
-      code,
-      ``,
-      `Код действует 10 минут. Если вы не запрашивали вход — просто проигнорируйте письмо.`,
-    ].join("\n"),
+    subject: t("mail.otpSubject"),
+    text: [t("mail.otpIntro"), "", code, "", t("mail.otpHint")].join("\n"),
   };
 }
 
@@ -68,16 +70,16 @@ export function bookingRequestedAdminMail(booking: {
   if (!env.ADMIN_EMAIL) return null;
   return {
     to: env.ADMIN_EMAIL,
-    subject: `Новая заявка ${booking.confirmation_code}: ${booking.tour_title}`,
+    subject: t("mail.bookingAdminSubject", { code: booking.confirmation_code, tour: booking.tour_title }),
     text: [
-      `Тур: ${booking.tour_title}`,
-      `Дата: ${booking.tour_date}`,
-      `Билетов: ${booking.tickets_count}`,
-      `Сумма: ${(booking.amount_kopeks / 100).toLocaleString("ru-RU")} ₽`,
-      `Гость: ${booking.first_name} ${booking.last_name}`,
-      `Контакт: ${booking.contact}`,
+      t("mail.bookingAdminTour", { tour: booking.tour_title }),
+      t("mail.bookingAdminDate", { date: booking.tour_date }),
+      t("mail.bookingAdminTickets", { tickets: booking.tickets_count }),
+      t("mail.bookingAdminAmount", { amount: money(booking.amount_kopeks) }),
+      t("mail.bookingAdminGuest", { name: `${booking.first_name} ${booking.last_name}` }),
+      t("mail.bookingAdminContact", { contact: booking.contact }),
       ``,
-      `Подтвердить: POST /v1/bookings/{id}/confirm (Swagger /docs)`,
+      t("mail.bookingAdminAction"),
     ].join("\n"),
   };
 }
@@ -94,17 +96,19 @@ export function bookingConfirmedClientMail(booking: {
   if (!isEmail(booking.contact)) return null; // телефоном займётся менеджер
   return {
     to: booking.contact.trim(),
-    subject: `Бронирование подтверждено — ${booking.tour_title}`,
+    subject: t("mail.bookingConfirmedSubject", { tour: booking.tour_title }),
     text: [
-      `Ваша бронь подтверждена!`,
+      t("mail.bookingConfirmedIntro"),
       ``,
-      `Тур: ${booking.tour_title}`,
-      `Дата: ${booking.tour_date}${booking.start_time ? `, ${booking.start_time}` : ""}`,
-      booking.meeting_point ? `Место встречи: ${booking.meeting_point}` : "",
-      `Билетов: ${booking.tickets_count}`,
+      t("mail.bookingConfirmedTour", { tour: booking.tour_title }),
+      t("mail.bookingConfirmedDate", {
+        date: booking.start_time ? `${booking.tour_date}, ${booking.start_time}` : booking.tour_date,
+      }),
+      booking.meeting_point ? t("mail.bookingConfirmedMeeting", { point: booking.meeting_point }) : "",
+      t("mail.bookingConfirmedTickets", { tickets: booking.tickets_count }),
       ``,
-      `Код подтверждения: ${booking.confirmation_code}`,
-      `Покажите его организатору в начале экскурсии.`,
+      t("mail.bookingConfirmedCode", { code: booking.confirmation_code }),
+      t("mail.bookingConfirmedHint"),
     ]
       .filter(Boolean)
       .join("\n"),

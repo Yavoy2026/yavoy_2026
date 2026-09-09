@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Gift, X, User, CreditCard } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useI18n } from "@/providers/I18nProvider";
 import { useCertificates } from "@/providers/CertificatesProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { GiftCertificate } from "@/types/tour";
@@ -26,23 +27,24 @@ const nominals = [1000, 2000, 3000, 5000, 10000, 15000];
 
 export default function CertificateModal({ visible, onClose }: CertificateModalProps) {
   const { colors } = useTheme();
+  const { t, formatMoney } = useI18n();
   const { purchaseCertificate } = useCertificates();
   const { addPointsFromPurchase } = useLoyalty();
   const [nominal, setNominal] = useState<number>(3000);
   const [toName, setToName] = useState<string>("");
-  const [fromName, setFromName] = useState<string>("Иван Петров");
+  const [fromName, setFromName] = useState<string>("");
   const [purchasedCert, setPurchasedCert] = useState<GiftCertificate | null>(null);
 
   const handlePurchase = useCallback(() => {
     if (!toName.trim()) {
-      Alert.alert("Ошибка", "Укажите имя получателя");
+      Alert.alert(t("common.error"), t("certificate.noRecipient"));
       return;
     }
-    const cert = purchaseCertificate(nominal, fromName.trim() || "Аноним", toName.trim());
+    const cert = purchaseCertificate(nominal, fromName.trim() || t("certificate.anonymous"), toName.trim());
     addPointsFromPurchase(nominal);
     setPurchasedCert(cert);
     console.log("[CertificateModal] Purchased:", cert.code);
-  }, [nominal, toName, fromName, purchaseCertificate, addPointsFromPurchase]);
+  }, [nominal, toName, fromName, purchaseCertificate, addPointsFromPurchase, t]);
 
   const handleClose = useCallback(() => {
     setPurchasedCert(null);
@@ -62,7 +64,7 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
 
               <View style={styles.header}>
                 <Text style={[styles.title, { color: colors.text }]}>
-                  {purchasedCert ? "Ваш сертификат" : "Подарочный сертификат"}
+                  {t(purchasedCert ? "certificate.modalTitleDone" : "certificate.modalTitleNew")}
                 </Text>
                 <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                   <X size={22} color={colors.textMuted} />
@@ -76,31 +78,31 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                       <Text style={styles.voucherBrand}>{"YAVOY"}</Text>
                       <Gift size={24} color={colors.gold} />
                     </View>
-                    <Text style={styles.voucherLabel}>{"ПОДАРОЧНЫЙ СЕРТИФИКАТ"}</Text>
-                    <Text style={styles.voucherNominal}>{`${purchasedCert.nominal.toLocaleString()} ${purchasedCert.currency}`}</Text>
+                    <Text style={styles.voucherLabel}>{t("certificate.type")}</Text>
+                    <Text style={styles.voucherNominal}>{formatMoney(purchasedCert.nominal, purchasedCert.currency)}</Text>
                     <View style={styles.voucherDivider} />
                     <View style={styles.voucherRow}>
-                      <Text style={styles.voucherFieldLabel}>{"Кому:"}</Text>
+                      <Text style={styles.voucherFieldLabel}>{t("certificate.to")}</Text>
                       <Text style={styles.voucherFieldValue}>{purchasedCert.toName}</Text>
                     </View>
                     <View style={styles.voucherRow}>
-                      <Text style={styles.voucherFieldLabel}>{"От:"}</Text>
+                      <Text style={styles.voucherFieldLabel}>{t("certificate.from")}</Text>
                       <Text style={styles.voucherFieldValue}>{purchasedCert.fromName}</Text>
                     </View>
                     <View style={styles.voucherRow}>
-                      <Text style={styles.voucherFieldLabel}>{"Код:"}</Text>
+                      <Text style={styles.voucherFieldLabel}>{t("certificate.code")}</Text>
                       <Text style={[styles.voucherFieldValue, styles.voucherCode]}>{purchasedCert.code}</Text>
                     </View>
                     <View style={styles.qrPlaceholder}>
                       <Text style={styles.qrText}>{"QR"}</Text>
                       <Text style={styles.qrSubtext}>{purchasedCert.code}</Text>
                     </View>
-                    <Text style={styles.voucherFooter}>{`Дата: ${purchasedCert.purchasedAt}`}</Text>
+                    <Text style={styles.voucherFooter}>{t("certificate.dateLabel", { date: purchasedCert.purchasedAt })}</Text>
                   </View>
                 </ScrollView>
               ) : (
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  <Text style={[styles.sectionLabel, { color: colors.text }]}>{"Номинал"}</Text>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>{t("certificate.nominal")}</Text>
                   <View style={styles.nominalsGrid}>
                     {nominals.map((n) => (
                       <TouchableOpacity
@@ -117,29 +119,29 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                           styles.nominalText,
                           { color: colors.textSecondary },
                           nominal === n && { color: "#FFFFFF" },
-                        ]}>{`${n.toLocaleString()} ₽`}</Text>
+                        ]}>{formatMoney(n)}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  <Text style={[styles.sectionLabel, { color: colors.text }]}>{"Кому"}</Text>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>{t("certificate.recipient")}</Text>
                   <View style={[styles.inputWrap, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
                     <User size={16} color={colors.textMuted} />
                     <TextInput
                       style={[styles.input, { color: colors.text }]}
-                      placeholder="Имя получателя"
+                      placeholder={t("certificate.recipientPlaceholder")}
                       placeholderTextColor={colors.textMuted}
                       value={toName}
                       onChangeText={setToName}
                     />
                   </View>
 
-                  <Text style={[styles.sectionLabel, { color: colors.text }]}>{"От кого"}</Text>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>{t("certificate.sender")}</Text>
                   <View style={[styles.inputWrap, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
                     <User size={16} color={colors.textMuted} />
                     <TextInput
                       style={[styles.input, { color: colors.text }]}
-                      placeholder="Ваше имя"
+                      placeholder={t("certificate.senderPlaceholder")}
                       placeholderTextColor={colors.textMuted}
                       value={fromName}
                       onChangeText={setFromName}
@@ -152,7 +154,7 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                     activeOpacity={0.8}
                   >
                     <CreditCard size={18} color="#FFFFFF" />
-                    <Text style={styles.buyBtnText}>{`Купить за ${nominal.toLocaleString()} ₽`}</Text>
+                    <Text style={styles.buyBtnText}>{t("certificate.buyFor", { amount: formatMoney(nominal) })}</Text>
                   </TouchableOpacity>
                 </ScrollView>
               )}

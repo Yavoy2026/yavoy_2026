@@ -21,53 +21,56 @@ import CertificateModal from "@/components/CertificateModal";
 import ReelsSection from "@/components/ReelsSection";
 import { useScrollToTop } from "@/providers/ScrollToTopProvider";
 import { useReels } from "@/providers/ReelsProvider";
+import { useI18n } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
-const durationOptions: { key: DurationType; label: string; icon: string }[] = [
-  { key: "one_day", label: "Однодневные", icon: "sun" },
-  { key: "multi_day", label: "Многодневные", icon: "moon" },
-];
-
-const seasonOptions: { key: SeasonType; label: string; icon: string }[] = [
-  { key: "winter", label: "Зима", icon: "moon" },
-  { key: "spring", label: "Весна", icon: "tree" },
-  { key: "summer", label: "Лето", icon: "sun" },
-  { key: "autumn", label: "Осень", icon: "tree" },
-  { key: "all_year", label: "Круглый год", icon: "sun" },
-];
-const transportOptions: { key: TransportType; label: string; icon: string }[] = [
-  { key: "auto", label: "Авто", icon: "car" },
-  { key: "water", label: "Водные", icon: "waves" },
-  { key: "sea", label: "Морские", icon: "ship" },
-  { key: "bike", label: "Вело", icon: "bike" },
-  { key: "air", label: "Авиа", icon: "plane" },
-];
-const interestOptions: { key: string; label: string; icon: string }[] = [
-  { key: "city", label: "Городские", icon: "building" },
-  { key: "educational", label: "Познавательные", icon: "book" },
-  { key: "nature", label: "Природные", icon: "tree" },
-  { key: "pilgrimage", label: "Паломничество", icon: "church" },
-  { key: "agro", label: "Агротуры", icon: "tree" },
-  { key: "photo", label: "Фототуры", icon: "sun" },
-  { key: "ethno", label: "Этнотуры", icon: "church" },
-  { key: "parents", label: "Для родителей", icon: "book" },
-  { key: "glamping", label: "Глэмпинг", icon: "tree" },
-  { key: "animals", label: "С животными", icon: "tree" },
-  { key: "mystic", label: "Мистические", icon: "moon" },
-  { key: "wild_animals", label: "К диким животным", icon: "tree" },
-  { key: "wine", label: "Винный тур", icon: "sun" },
-  { key: "gastro", label: "Гастротур", icon: "sun" },
+const durationOptions: { key: DurationType; label: TKey; icon: string }[] = [
+  { key: "one_day", label: "enums.duration.one_day", icon: "sun" },
+  { key: "multi_day", label: "enums.duration.multi_day", icon: "moon" },
 ];
 
-const sortOptions: { key: SortType; label: string }[] = [
-  { key: "popularity", label: "Популярные" },
-  { key: "newest", label: "Новинки" },
-  { key: "price_asc", label: "Дешевле" },
-  { key: "price_desc", label: "Дороже" },
+const seasonOptions: { key: SeasonType; label: TKey; icon: string }[] = [
+  { key: "winter", label: "enums.season.winter", icon: "moon" },
+  { key: "spring", label: "enums.season.spring", icon: "tree" },
+  { key: "summer", label: "enums.season.summer", icon: "sun" },
+  { key: "autumn", label: "enums.season.autumn", icon: "tree" },
+  { key: "all_year", label: "enums.season.all_year", icon: "sun" },
+];
+const transportOptions: { key: TransportType; label: TKey; icon: string }[] = [
+  { key: "auto", label: "enums.transport.auto", icon: "car" },
+  { key: "water", label: "enums.transport.water", icon: "waves" },
+  { key: "sea", label: "enums.transport.sea", icon: "ship" },
+  { key: "bike", label: "enums.transport.bike", icon: "bike" },
+  { key: "air", label: "enums.transport.air", icon: "plane" },
+];
+const interestOptions: { key: string; label: TKey; icon: string }[] = [
+  { key: "city", label: "enums.interest.city", icon: "building" },
+  { key: "educational", label: "enums.interest.educational", icon: "book" },
+  { key: "nature", label: "enums.interest.nature", icon: "tree" },
+  { key: "pilgrimage", label: "enums.interest.pilgrimage", icon: "church" },
+  { key: "agro", label: "enums.category.agro", icon: "tree" },
+  { key: "photo", label: "enums.category.photo", icon: "sun" },
+  { key: "ethno", label: "enums.category.ethno", icon: "church" },
+  { key: "parents", label: "enums.category.parents", icon: "book" },
+  { key: "glamping", label: "enums.category.glamping", icon: "tree" },
+  { key: "animals", label: "enums.category.animals", icon: "tree" },
+  { key: "mystic", label: "enums.category.mystic", icon: "moon" },
+  { key: "wild_animals", label: "enums.category.wild_animals", icon: "tree" },
+  { key: "wine", label: "enums.category.wine", icon: "sun" },
+  { key: "gastro", label: "enums.category.gastro", icon: "sun" },
+];
+
+const sortOptions: { key: SortType; label: TKey }[] = [
+  { key: "popularity", label: "enums.sort.popularity" },
+  { key: "newest", label: "enums.sort.newest" },
+  { key: "price_asc", label: "enums.sort.price_asc" },
+  { key: "price_desc", label: "enums.sort.price_desc" },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const { scrollToken } = useScrollToTop();
@@ -195,8 +198,8 @@ export default function HomeScreen() {
     void dismissLocationPrompt();
   }, [dismissLocationPrompt]);
 
-  const headerTitle = selectedCity ? (cityNameMap[selectedCity] || selectedCity) : "Все направления";
-  const tourCountText = getTourCountText(filteredTours.length);
+  const headerTitle = selectedCity ? (cityNameMap[selectedCity] || selectedCity) : t("home.allDestinations");
+  const tourCountText = t("units.excursions", { count: filteredTours.length });
 
   const renderHeader = useCallback(() => (
     <View>
@@ -209,8 +212,8 @@ export default function HomeScreen() {
               <Navigation size={18} color={colors.teal} />
             </View>
             <View style={styles.geoBannerText}>
-              <Text style={[styles.geoBannerTitle, { color: colors.text }]}>{"Определить ваш город?"}</Text>
-              <Text style={[styles.geoBannerSubtitle, { color: colors.textSecondary }]}>{"Покажем туры рядом с вами"}</Text>
+              <Text style={[styles.geoBannerTitle, { color: colors.text }]}>{t("home.geoTitle")}</Text>
+              <Text style={[styles.geoBannerSubtitle, { color: colors.textSecondary }]}>{t("home.geoSubtitle")}</Text>
             </View>
             <TouchableOpacity onPress={handleDismissGeo} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <X size={18} color={colors.textMuted} />
@@ -228,7 +231,7 @@ export default function HomeScreen() {
               ) : (
                 <>
                   <MapPin size={14} color="#FFFFFF" />
-                  <Text style={styles.geoButtonText}>{"Определить"}</Text>
+                  <Text style={styles.geoButtonText}>{t("home.geoDetect")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -237,7 +240,7 @@ export default function HomeScreen() {
               onPress={handleDismissGeo}
               activeOpacity={0.7}
             >
-              <Text style={[styles.geoButtonSecondaryText, { color: colors.textSecondary }]}>{"Не сейчас"}</Text>
+              <Text style={[styles.geoButtonSecondaryText, { color: colors.textSecondary }]}>{t("home.geoLater")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -251,7 +254,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Куда поедем?"}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("home.whereTo")}</Text>
       </View>
       <CitySelector cities={cities} selectedCity={selectedCity} onSelectCity={setSelectedCity} />
 
@@ -269,17 +272,17 @@ export default function HomeScreen() {
 
       <View style={styles.filtersSection}>
         <View style={styles.filtersRow}>
-          <FilterDropdown label="Дни" options={durationOptions} selected={selectedDuration} onSelect={setSelectedDuration} />
-          <FilterDropdown label="Транспорт" options={transportOptions} selected={selectedTransport} onSelect={setSelectedTransport} />
-          <FilterDropdown label="Интересы" options={interestOptions} selected={selectedInterest} onSelect={setSelectedInterest as (key: string | null) => void} />
-          <FilterDropdown label="Сезон" options={seasonOptions} selected={selectedSeason} onSelect={setSelectedSeason} />
+          <FilterDropdown label="home.filterDays" options={durationOptions} selected={selectedDuration} onSelect={setSelectedDuration} />
+          <FilterDropdown label="home.filterTransport" options={transportOptions} selected={selectedTransport} onSelect={setSelectedTransport} />
+          <FilterDropdown label="home.filterInterests" options={interestOptions} selected={selectedInterest} onSelect={setSelectedInterest as (key: string | null) => void} />
+          <FilterDropdown label="home.filterSeason" options={seasonOptions} selected={selectedSeason} onSelect={setSelectedSeason} />
         </View>
       </View>
 
       <View style={styles.sortSection}>
         <View style={styles.sortRow}>
           <ArrowDownNarrowWide size={14} color={colors.textMuted} />
-          <Text style={[styles.sortLabel, { color: colors.textMuted }]}>{"Сортировка:"}</Text>
+          <Text style={[styles.sortLabel, { color: colors.textMuted }]}>{t("home.sortLabel")}</Text>
         </View>
         <View style={styles.sortChips}>
           {sortOptions.map((opt) => {
@@ -294,7 +297,7 @@ export default function HomeScreen() {
                 onPress={() => setSelectedSort(opt.key)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.sortChipText, { color: isActive ? "#FFFFFF" : colors.textSecondary }]}>{opt.label}</Text>
+                <Text style={[styles.sortChipText, { color: isActive ? "#FFFFFF" : colors.textSecondary }]}>{t(opt.label)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -304,7 +307,7 @@ export default function HomeScreen() {
       <View style={styles.feedHeader}>
         <View>
           <Text style={[styles.feedTitle, { color: colors.text }]}>{headerTitle}</Text>
-          <Text style={[styles.feedCount, { color: colors.textMuted }]}>{`${filteredTours.length} ${tourCountText}`}</Text>
+          <Text style={[styles.feedCount, { color: colors.textMuted }]}>{tourCountText}</Text>
         </View>
         {hasActiveFilters ? (
           <Text
@@ -320,19 +323,19 @@ export default function HomeScreen() {
               setSelectedDate(null);
             }}
           >
-            {"Сбросить"}
+            {t("common.reset")}
           </Text>
         ) : null}
       </View>
     </View>
-  ), [selectedCity, selectedDuration, selectedTransport, selectedInterest, selectedSeason, selectedCategory, searchQuery, selectedDate, selectedSort, headerTitle, filteredTours.length, tourCountText, hasActiveFilters, publishedReels, handlePopularTourPress, handleCategoryPress, handleCertificatePress, colors, isDark, locationAsked, isDetecting, handleDetectLocation, handleDismissGeo]);
+  ), [selectedCity, selectedDuration, selectedTransport, selectedInterest, selectedSeason, selectedCategory, searchQuery, selectedDate, selectedSort, headerTitle, filteredTours.length, tourCountText, hasActiveFilters, publishedReels, handlePopularTourPress, handleCategoryPress, handleCertificatePress, colors, isDark, locationAsked, isDetecting, handleDetectLocation, handleDismissGeo, t]);
 
   const renderEmpty = useCallback(() => {
     if (catalogLoading) {
       return (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={colors.teal} />
-          <Text style={[styles.emptyText, { color: colors.textMuted, marginTop: 12 }]}>{"Загружаем экскурсии…"}</Text>
+          <Text style={[styles.emptyText, { color: colors.textMuted, marginTop: 12 }]}>{t("common.loading")}</Text>
         </View>
       );
     }
@@ -340,19 +343,19 @@ export default function HomeScreen() {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>{"📡"}</Text>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>{"Не удалось загрузить каталог"}</Text>
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>{"Проверьте подключение и потяните вниз, чтобы обновить"}</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("home.catalogErrorTitle")}</Text>
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t("home.catalogErrorText")}</Text>
         </View>
       );
     }
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyIcon}>{"🧭"}</Text>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>{"Экскурсии не найдены"}</Text>
-        <Text style={[styles.emptyText, { color: colors.textMuted }]}>{"Попробуйте изменить фильтры или выбрать другой город"}</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("home.emptyTitle")}</Text>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t("home.emptyText")}</Text>
       </View>
     );
-  }, [colors, catalogLoading, catalogError]);
+  }, [colors, catalogLoading, catalogError, t]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -379,15 +382,6 @@ export default function HomeScreen() {
       <CertificateModal visible={certModalVisible} onClose={() => setCertModalVisible(false)} />
     </View>
   );
-}
-
-function getTourCountText(count: number): string {
-  const lastTwo = count % 100;
-  const lastOne = count % 10;
-  if (lastTwo >= 11 && lastTwo <= 19) return "экскурсий";
-  if (lastOne === 1) return "экскурсия";
-  if (lastOne >= 2 && lastOne <= 4) return "экскурсии";
-  return "экскурсий";
 }
 
 const styles = StyleSheet.create({

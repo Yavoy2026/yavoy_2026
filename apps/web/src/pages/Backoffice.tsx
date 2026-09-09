@@ -18,6 +18,9 @@ import { TourEditor } from "@/components/backoffice/TourEditor";
 import { PartnerProfileTab } from "@/components/backoffice/PartnerProfileTab";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useI18n } from "@/i18n/I18nProvider";
+import { translateError } from "@/i18n/errors";
+import type { TKey } from "@/i18n/keys";
 
 type Tab = "bookings" | "reviews" | "users" | "tours" | "partners" | "org";
 
@@ -25,6 +28,7 @@ export default function Backoffice() {
   const navigate = useNavigate();
   const { user, role, isLoading: authLoading, updateUserRole, activateUserById, deactivateUserById } = useAuth();
   const queryClient = useQueryClient();
+  const { t, formatNumber } = useI18n();
 
   const isPartner = role === "partner";
   const isStaff = role === "admin" || role === "manager";
@@ -55,46 +59,46 @@ export default function Backoffice() {
       vars.action === "confirm" ? confirmBooking(vars.id) : vars.action === "complete" ? completeBooking(vars.id) : cancelBookingAdmin(vars.id),
     onSuccess: (_, vars) => {
       invalidateBookings();
-      toast.success(vars.action === "confirm" ? "Бронь подтверждена, клиенту отправлено письмо" : vars.action === "complete" ? "Поездка завершена" : "Бронь отменена");
+      toast.success(t(vars.action === "confirm" ? "backoffice.bookingConfirmed" : vars.action === "complete" ? "backoffice.bookingCompleted" : "backoffice.bookingCancelled"));
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+    onError: (e: unknown) => toast.error(translateError(e, t)),
   });
   const reviewAction = useMutation({
     mutationFn: (vars: { id: string; approve: boolean }) => (vars.approve ? approveReview(vars.id) : rejectReview(vars.id)),
     onSuccess: (_, vars) => {
       void queryClient.invalidateQueries({ queryKey: ["admin-reviews"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-      toast.success(vars.approve ? "Отзыв опубликован, рейтинг тура пересчитан" : "Отзыв отклонён");
+      toast.success(t(vars.approve ? "backoffice.reviewApproved" : "backoffice.reviewRejected"));
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+    onError: (e: unknown) => toast.error(translateError(e, t)),
   });
   const tourStatusAction = useMutation({
     mutationFn: (vars: { id: string; status: "draft" | "published" }) => setTourStatus(vars.id, vars.status),
     onSuccess: (_, vars) => {
       void queryClient.invalidateQueries({ queryKey: ["admin-tours"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-      toast.success(vars.status === "published" ? "Тур опубликован — виден в каталоге" : "Тур снят с публикации");
+      toast.success(t(vars.status === "published" ? "backoffice.tourPublished" : "backoffice.tourUnpublished"));
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка"),
+    onError: (e: unknown) => toast.error(translateError(e, t)),
   });
 
-  const tabs: { k: Tab; l: string; icon: React.ComponentType<{ size: number; className?: string }>; n?: number }[] = isPartner
+  const tabs: { k: Tab; l: TKey; icon: React.ComponentType<{ size: number; className?: string }>; n?: number }[] = isPartner
     ? [
-        { k: "tours", l: "Мои туры", icon: Map, n: toursQuery.data?.length },
-        { k: "org", l: "Профиль организации", icon: Building2 },
+        { k: "tours", l: "backoffice.tabMyTours", icon: Map, n: toursQuery.data?.length },
+        { k: "org", l: "backoffice.tabOrg", icon: Building2 },
       ]
     : [
-        { k: "bookings", l: "Брони", icon: Check, n: bookingsQuery.data?.length },
-        { k: "reviews", l: "Отзывы", icon: MessageSquare, n: reviewsQuery.data?.length },
-        { k: "users", l: "Пользователи", icon: Users },
-        { k: "tours", l: "Туры", icon: Map, n: toursQuery.data?.length },
-        { k: "partners", l: "Партнёры", icon: Building2, n: partnersQuery.data?.length },
+        { k: "bookings", l: "backoffice.tabBookings", icon: Check, n: bookingsQuery.data?.length },
+        { k: "reviews", l: "backoffice.tabReviews", icon: MessageSquare, n: reviewsQuery.data?.length },
+        { k: "users", l: "backoffice.tabUsers", icon: Users },
+        { k: "tours", l: "backoffice.tabTours", icon: Map, n: toursQuery.data?.length },
+        { k: "partners", l: "backoffice.tabPartners", icon: Building2, n: partnersQuery.data?.length },
       ];
 
   return (
     <Layout>
       <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={18} /> Назад
+        <ArrowLeft size={18} /> {t("common.back")}
       </button>
 
       {authLoading ? (
@@ -105,8 +109,8 @@ export default function Backoffice() {
       ) : !hasAccess ? (
         <div className="rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
           <ShieldCheck size={48} className="mx-auto mb-4 text-muted-foreground" />
-          <h2 className="mb-2 text-xl font-extrabold">Доступ запрещён</h2>
-          <p className="text-sm text-muted-foreground">Бэкофис доступен партнёрам, менеджерам и администраторам.</p>
+          <h2 className="mb-2 text-xl font-extrabold">{t("backoffice.deniedTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("backoffice.deniedText")}</p>
         </div>
       ) : (
       <>
@@ -114,16 +118,16 @@ export default function Backoffice() {
       <div className="mb-6 flex items-center gap-3 rounded-3xl bg-navy p-6 text-white">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20"><ShieldCheck size={26} className="text-gold" /></div>
         <div>
-          <h1 className="text-xl font-extrabold">{isPartner ? "Кабинет партнёра" : "Бэкофис YaVoy"}</h1>
-          <p className="text-sm text-white/60">{isPartner ? "Ваши туры и профиль организации" : "Модерация контента и управление платформой"}</p>
+          <h1 className="text-xl font-extrabold">{t(isPartner ? "backoffice.titlePartner" : "backoffice.title")}</h1>
+          <p className="text-sm text-white/60">{t(isPartner ? "backoffice.subtitlePartner" : "backoffice.subtitle")}</p>
         </div>
       </div>
 
       <div className="no-scrollbar mb-5 flex gap-2 overflow-x-auto">
-        {tabs.map((t) => (
-          <button key={t.k} onClick={() => setTab(t.k)} className={cn("flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors", tab === t.k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>
-            <t.icon size={15} /> {t.l}
-            {t.n ? <span className={cn("rounded-full px-1.5 text-[10px]", tab === t.k ? "bg-white/25" : "bg-coral text-white")}>{t.n}</span> : null}
+        {tabs.map((item) => (
+          <button key={item.k} onClick={() => setTab(item.k)} className={cn("flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors", tab === item.k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>
+            <item.icon size={15} /> {t(item.l)}
+            {item.n ? <span className={cn("rounded-full px-1.5 text-[10px]", tab === item.k ? "bg-white/25" : "bg-coral text-white")}>{item.n}</span> : null}
           </button>
         ))}
       </div>
@@ -132,53 +136,57 @@ export default function Backoffice() {
         <div className="space-y-3">
           {isPartner && (
             <div className="rounded-2xl bg-background p-3 text-sm text-muted-foreground ring-1 ring-border/60">
-              Новые туры и правки сохраняются черновиком — на витрину их выводит менеджер после проверки.
+              {t("backoffice.draftHint")}
             </div>
           )}
           <button
             onClick={() => setTourEditor({ open: true, tour: null })}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal/40 py-3 font-semibold text-teal hover:bg-teal/5"
           >
-            <Plus size={18} /> Создать тур
+            <Plus size={18} /> {t("backoffice.createTour")}
           </button>
           {toursQuery.isLoading ? (
             <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-teal" /></div>
           ) : (
-            <Queue empty="Туров пока нет — создайте первый" items={toursQuery.data ?? []}>
-              {(t) => (
-                <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                  <img src={t.image_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
+            <Queue empty={t("backoffice.noTours")} items={toursQuery.data ?? []}>
+              {(tour) => (
+                <div key={tour.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+                  <img src={tour.image_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate font-semibold">{t.title}</span>
+                      <span className="truncate font-semibold">{tour.title}</span>
                       <span className={cn(
                         "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
-                        t.status === "published" ? "bg-mint/15 text-mint" : "bg-gold/15 text-gold",
+                        tour.status === "published" ? "bg-mint/15 text-mint" : "bg-gold/15 text-gold",
                       )}>
-                        {t.status === "published" ? "Опубликован" : isPartner ? "Черновик — публикует менеджер" : "Черновик"}
+                        {tour.status === "published"
+                          ? t("enums.tourStatus.published")
+                          : isPartner
+                            ? t("backoffice.draftByManager")
+                            : t("enums.tourStatus.draft")}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {t.city_name} · {Math.round(t.price_kopeks / 100).toLocaleString("ru-RU")}₽ · {t.organizer.name}
+                      {tour.city_name} · {formatNumber(Math.round(tour.price_kopeks / 100))}₽ · {tour.organizer.name}
                     </div>
                   </div>
                   <button
-                    onClick={() => setTourEditor({ open: true, tour: t })}
+                    onClick={() => setTourEditor({ open: true, tour })}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground"
-                    title="Редактировать"
+                    title={t("common.edit")}
                   >
                     <Pencil size={15} />
                   </button>
                   {isStaff && (
                     <button
-                      onClick={() => tourStatusAction.mutate({ id: t.id, status: t.status === "published" ? "draft" : "published" })}
+                      onClick={() => tourStatusAction.mutate({ id: tour.id, status: tour.status === "published" ? "draft" : "published" })}
                       disabled={tourStatusAction.isPending}
                       className={cn(
                         "rounded-xl px-3 py-2 text-xs font-bold",
-                        t.status === "published" ? "bg-secondary text-muted-foreground" : "bg-teal text-white",
+                        tour.status === "published" ? "bg-secondary text-muted-foreground" : "bg-teal text-white",
                       )}
                     >
-                      {t.status === "published" ? "Снять" : "Опубликовать"}
+                      {t(tour.status === "published" ? "backoffice.unpublish" : "backoffice.publish")}
                     </button>
                   )}
                 </div>
@@ -209,14 +217,14 @@ export default function Backoffice() {
       {tab === "bookings" && isStaff && (
         <div className="space-y-5">
           <div>
-            <h3 className="mb-2 font-bold">Новые заявки</h3>
-            <Queue empty="Нет заявок, ожидающих подтверждения" items={bookingsQuery.data ?? []}>
+            <h3 className="mb-2 font-bold">{t("backoffice.newRequests")}</h3>
+            <Queue empty={t("backoffice.noRequests")} items={bookingsQuery.data ?? []}>
               {(b) => (
                 <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
                   <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{b.tourTitle}</div>
-                    <div className="text-xs text-muted-foreground">{b.tourDate} · {b.tickets} чел. · {b.amount.toLocaleString("ru-RU")}₽ · {b.code}</div>
+                    <div className="text-xs text-muted-foreground">{b.tourDate} · {t("units.people", { count: b.tickets })} · {formatNumber(b.amount)}₽ · {b.code}</div>
                     <div className="text-xs text-muted-foreground">{b.guest} · {b.contact}</div>
                   </div>
                   <Actions
@@ -228,8 +236,8 @@ export default function Backoffice() {
             </Queue>
           </div>
           <div>
-            <h3 className="mb-2 font-bold">Подтверждённые (завершить после поездки)</h3>
-            <Queue empty="Нет подтверждённых броней" items={confirmedQuery.data ?? []}>
+            <h3 className="mb-2 font-bold">{t("backoffice.confirmedBookings")}</h3>
+            <Queue empty={t("backoffice.noConfirmed")} items={confirmedQuery.data ?? []}>
               {(b) => (
                 <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
                   <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
@@ -237,7 +245,7 @@ export default function Backoffice() {
                     <div className="truncate font-semibold">{b.tourTitle}</div>
                     <div className="text-xs text-muted-foreground">{b.tourDate} · {b.guest} · {b.code}</div>
                   </div>
-                  <button onClick={() => bookingAction.mutate({ id: b.id, action: "complete" })} className="rounded-xl bg-teal px-3 py-2 text-xs font-bold text-white">Завершить</button>
+                  <button onClick={() => bookingAction.mutate({ id: b.id, action: "complete" })} className="rounded-xl bg-teal px-3 py-2 text-xs font-bold text-white">{t("backoffice.complete")}</button>
                 </div>
               )}
             </Queue>
@@ -246,7 +254,7 @@ export default function Backoffice() {
       )}
 
       {tab === "reviews" && isStaff && (
-        <Queue empty="Нет отзывов на модерации" items={reviewsQuery.data ?? []}>
+        <Queue empty={t("backoffice.noReviews")} items={reviewsQuery.data ?? []}>
           {(r) => (
             <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
               <div className="mb-1 flex items-center gap-2">
@@ -269,15 +277,14 @@ export default function Backoffice() {
           <div className="mb-3 rounded-2xl bg-background p-3 ring-1 ring-border/60">
             <p className="text-sm text-muted-foreground">
               <Shield size={14} className="mr-1 inline text-gold" />
-              Реальные пользователи платформы. Роли меняет только админ; менять себя нельзя.
-              Роль «Партнёр» назначается на вкладке «Партнёры» (вместе с профилем организации).
+              {t("backoffice.usersHint")} {t("backoffice.partnerRoleHint")}
             </p>
           </div>
           {(usersQuery.data ?? []).map((u) => (
             <div key={u.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{(u.first_name?.[0] ?? "?").toUpperCase()}</div>
               <div className="min-w-0 flex-1">
-                <div className="font-semibold">{u.first_name || u.email.split("@")[0]}{u.last_name ? ` ${u.last_name}` : ""}{!u.is_active && <span className="ml-2 rounded-full bg-coral/15 px-2 py-0.5 text-[10px] font-semibold text-coral">Деактивирован</span>}</div>
+                <div className="font-semibold">{u.first_name || u.email.split("@")[0]}{u.last_name ? ` ${u.last_name}` : ""}{!u.is_active && <span className="ml-2 rounded-full bg-coral/15 px-2 py-0.5 text-[10px] font-semibold text-coral">{t("backoffice.deactivated")}</span>}</div>
                 <div className="text-xs text-muted-foreground">{u.email}</div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -289,9 +296,9 @@ export default function Backoffice() {
                       setActionLoading((p) => ({ ...p, [u.id]: true }));
                       await updateUserRole(u.id, newRole);
                       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-                      toast.success("Роль изменена");
+                      toast.success(t("backoffice.roleChanged"));
                     } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Ошибка при изменении роли");
+                      toast.error(translateError(err, t, "backoffice.roleChangeFailed"));
                     } finally {
                       setActionLoading((p) => ({ ...p, [u.id]: false }));
                     }
@@ -299,10 +306,10 @@ export default function Backoffice() {
                   disabled={actionLoading[u.id] || u.id === user?.id}
                   className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-teal disabled:opacity-50"
                 >
-                  <option value="user">Пользователь</option>
-                  <option value="partner">Партнёр</option>
-                  <option value="manager">Менеджер</option>
-                  <option value="admin">Админ</option>
+                  <option value="user">{t("enums.role.user")}</option>
+                  <option value="partner">{t("enums.role.partner")}</option>
+                  <option value="manager">{t("enums.role.manager")}</option>
+                  <option value="admin">{t("enums.role.admin")}</option>
                 </select>
                 {actionLoading[u.id] && <Loader2 size={14} className="animate-spin text-teal" />}
               </div>
@@ -313,16 +320,16 @@ export default function Backoffice() {
                       setActionLoading((p) => ({ ...p, [`act-${u.id}`]: true }));
                       await activateUserById(u.id);
                       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-                      toast.success("Пользователь активирован");
+                      toast.success(t("backoffice.userActivated"));
                     } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Ошибка активации");
+                      toast.error(translateError(err, t, "backoffice.activateFailed"));
                     } finally {
                       setActionLoading((p) => ({ ...p, [`act-${u.id}`]: false }));
                     }
                   }}
                   disabled={u.id === user?.id}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-mint/10 text-mint transition-colors hover:bg-mint/20 disabled:opacity-40"
-                  title="Активировать"
+                  title={t("backoffice.activate")}
                 >
                   {actionLoading[`act-${u.id}`] ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
                 </button>
@@ -332,16 +339,16 @@ export default function Backoffice() {
                       setActionLoading((p) => ({ ...p, [`deact-${u.id}`]: true }));
                       await deactivateUserById(u.id);
                       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-                      toast.success("Пользователь деактивирован");
+                      toast.success(t("backoffice.userDeactivated"));
                     } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Ошибка деактивации");
+                      toast.error(translateError(err, t, "backoffice.deactivateFailed"));
                     } finally {
                       setActionLoading((p) => ({ ...p, [`deact-${u.id}`]: false }));
                     }
                   }}
                   disabled={u.id === user?.id}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 text-coral transition-colors hover:bg-coral/20 disabled:opacity-40"
-                  title="Деактивировать"
+                  title={t("backoffice.deactivate")}
                 >
                   {actionLoading[`deact-${u.id}`] ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />}
                 </button>
@@ -368,6 +375,7 @@ function PartnersTab({
   users: UserProfile[];
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [showAssign, setShowAssign] = useState(false);
   const [assignUserId, setAssignUserId] = useState("");
   const [assignOrg, setAssignOrg] = useState("");
@@ -378,7 +386,7 @@ function PartnersTab({
     void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
   };
-  const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка");
+  const onError = (e: unknown) => toast.error(translateError(e, t));
 
   const assign = useMutation({
     mutationFn: () => createPartner({ user_id: assignUserId, org_name: assignOrg, inn: assignInn }),
@@ -386,7 +394,7 @@ function PartnersTab({
       invalidate();
       setShowAssign(false);
       setAssignUserId(""); setAssignOrg(""); setAssignInn("");
-      toast.success("Партнёр назначен — при следующем входе увидит кабинет партнёра");
+      toast.success(t("backoffice.partnerAssigned"));
     },
     onError,
   });
@@ -394,7 +402,7 @@ function PartnersTab({
     mutationFn: (vars: { id: string; verified: boolean }) => updatePartner(vars.id, { verified: vars.verified }),
     onSuccess: (_, vars) => {
       invalidate();
-      toast.success(vars.verified ? "Партнёр отмечен проверенным (галочка в карточках туров)" : "Отметка проверки снята");
+      toast.success(t(vars.verified ? "backoffice.partnerVerified" : "backoffice.partnerUnverified"));
     },
     onError,
   });
@@ -409,24 +417,24 @@ function PartnersTab({
           onClick={() => setShowAssign((v) => !v)}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal/40 py-3 font-semibold text-teal hover:bg-teal/5"
         >
-          <Plus size={18} /> Назначить партнёра
+          <Plus size={18} /> {t("backoffice.assignPartner")}
         </button>
       )}
       {showAssign && (
         <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
-          <label className="block text-xs font-semibold text-muted-foreground">Пользователь (сначала он должен зарегистрироваться сам)
+          <label className="block text-xs font-semibold text-muted-foreground">{t("backoffice.assignUserLabel")}
             <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className="input-base mt-1">
-              <option value="">— выбрать —</option>
+              <option value="">{t("backoffice.selectPlaceholder")}</option>
               {candidates.map((u) => (
                 <option key={u.id} value={u.id}>{u.email}{u.first_name ? ` (${u.first_name})` : ""}</option>
               ))}
             </select>
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <label className="block text-xs font-semibold text-muted-foreground">Название организации
+            <label className="block text-xs font-semibold text-muted-foreground">{t("backoffice.orgName")}
               <input value={assignOrg} onChange={(e) => setAssignOrg(e.target.value)} className="input-base mt-1" />
             </label>
-            <label className="block text-xs font-semibold text-muted-foreground">ИНН (проверяется вручную)
+            <label className="block text-xs font-semibold text-muted-foreground">{t("backoffice.orgInnManual")}
               <input value={assignInn} onChange={(e) => setAssignInn(e.target.value)} className="input-base mt-1" />
             </label>
           </div>
@@ -435,7 +443,7 @@ function PartnersTab({
             disabled={!assignUserId || !assignOrg.trim() || assign.isPending}
             className="flex items-center gap-2 rounded-2xl bg-teal px-5 py-2.5 font-bold text-white disabled:opacity-60"
           >
-            {assign.isPending && <Loader2 size={16} className="animate-spin" />} Назначить
+            {assign.isPending && <Loader2 size={16} className="animate-spin" />} {t("backoffice.assign")}
           </button>
         </div>
       )}
@@ -443,7 +451,7 @@ function PartnersTab({
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-teal" /></div>
       ) : (
-        <Queue empty="Партнёров пока нет" items={partners}>
+        <Queue empty={t("backoffice.noPartners")} items={partners}>
           {(p) => (
             <div key={p.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={20} className="text-teal" /></div>
@@ -453,7 +461,7 @@ function PartnersTab({
                   {p.verified && <BadgeCheck size={15} className="text-mint" />}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {p.user_name || p.user_email} · {p.user_email}{p.inn ? ` · ИНН ${p.inn}` : ""}{p.phone ? ` · ${p.phone}` : ""}
+                  {p.user_name || p.user_email} · {p.user_email}{p.inn ? ` · ${t("backoffice.orgInn")} ${p.inn}` : ""}{p.phone ? ` · ${p.phone}` : ""}
                 </div>
               </div>
               <button
@@ -464,7 +472,7 @@ function PartnersTab({
                   p.verified ? "bg-secondary text-muted-foreground" : "bg-mint/15 text-mint",
                 )}
               >
-                {p.verified ? "Снять проверку" : "Подтвердить"}
+                {t(p.verified ? "backoffice.unverify" : "backoffice.confirm")}
               </button>
             </div>
           )}

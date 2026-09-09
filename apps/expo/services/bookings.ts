@@ -53,29 +53,29 @@ function adaptBooking(b: ApiBooking): BookedTour {
   };
 }
 
-async function parseOrThrow(res: Response, fallback: string): Promise<ApiBooking> {
+async function parseOrThrow(res: Response, fallbackCode: string): Promise<ApiBooking> {
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as {
       error?: { code?: string; message?: string };
     } | null;
-    throw new ApiError(res.status, body?.error?.code ?? "unknown", body?.error?.message ?? fallback);
+    throw new ApiError(res.status, body?.error?.code ?? fallbackCode, body?.error?.message ?? fallbackCode);
   }
   return res.json() as Promise<ApiBooking>;
 }
 
 export async function createBooking(payload: CreateBookingPayload): Promise<BookedTour> {
   const res = await authFetch("/bookings", { method: "POST", body: JSON.stringify(payload) });
-  return adaptBooking(await parseOrThrow(res, "Не удалось создать бронирование"));
+  return adaptBooking(await parseOrThrow(res, "bookingCreateFailed"));
 }
 
 export async function fetchMyBookings(): Promise<BookedTour[]> {
   const res = await authFetch("/me/bookings");
-  if (!res.ok) throw new Error("Не удалось загрузить бронирования");
+  if (!res.ok) throw new ApiError(res.status, "bookingsLoadFailed", "bookingsLoadFailed");
   const body = (await res.json()) as { items: ApiBooking[] };
   return body.items.filter((b) => b.status !== "cancelled").map(adaptBooking);
 }
 
 export async function cancelBooking(id: string): Promise<BookedTour> {
   const res = await authFetch(`/bookings/${id}/cancel`, { method: "POST" });
-  return adaptBooking(await parseOrThrow(res, "Не удалось отменить бронирование"));
+  return adaptBooking(await parseOrThrow(res, "bookingCancelFailed"));
 }

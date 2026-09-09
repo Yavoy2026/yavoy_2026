@@ -1,3 +1,4 @@
+import { normalizeTourLanguage } from "@yavoy/i18n";
 import type {
   AdminTour,
   AdminTourDate,
@@ -115,7 +116,8 @@ function payloadToPatch(p: UpdateTourPayload): TourPatch {
   if (p.includes !== undefined) patch.includes = p.includes;
   if (p.excludes !== undefined) patch.excludes = p.excludes;
   if (p.what_to_bring !== undefined) patch.whatToBring = p.what_to_bring;
-  if (p.languages !== undefined) patch.languages = p.languages;
+  // языки экскурсии хранятся кодами; свободные строки из старых форм нормализуем на записи (YAV-25)
+  if (p.languages !== undefined) patch.languages = p.languages.map(normalizeTourLanguage);
   if (p.schedule !== undefined) patch.schedule = p.schedule;
   if (p.group_size !== undefined) patch.groupSize = p.group_size;
   if (p.meeting_point !== undefined) patch.meetingPoint = p.meeting_point;

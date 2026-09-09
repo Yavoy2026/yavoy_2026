@@ -2,53 +2,26 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Shield, Headphones, CreditCard, Globe, Award, Zap } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
-const advantages = [
-  {
-    icon: Shield,
-    title: "Проверенные организаторы",
-    desc: "Все партнёры проходят верификацию и имеют лицензии",
-    color: "#3B82F6",
-  },
-  {
-    icon: Zap,
-    title: "Мгновенное подтверждение",
-    desc: "Бронируйте и получайте билеты за секунды",
-    color: "#F59E0B",
-  },
-  {
-    icon: CreditCard,
-    title: "Безопасная оплата",
-    desc: "Гарантия возврата средств и защита транзакций",
-    color: "#10B981",
-  },
-  {
-    icon: Headphones,
-    title: "Поддержка 24/7",
-    desc: "Круглосуточная помощь на маршруте и при бронировании",
-    color: "#8B5CF6",
-  },
-  {
-    icon: Globe,
-    title: "1000+ экскурсий",
-    desc: "По всей России от проверенных гидов",
-    color: "#0FA3B1",
-  },
-  {
-    icon: Award,
-    title: "Лучшие цены",
-    desc: "Гарантия лучшей цены или вернём разницу",
-    color: "#EC4899",
-  },
+const advantages: { icon: typeof Shield; title: TKey; desc: TKey; color: string }[] = [
+  { icon: Shield, title: "advantages.verifiedTitle", desc: "advantages.verifiedText", color: "#3B82F6" },
+  { icon: Zap, title: "advantages.instantTitle", desc: "advantages.instantText", color: "#F59E0B" },
+  { icon: CreditCard, title: "advantages.paymentTitle", desc: "advantages.paymentText", color: "#10B981" },
+  { icon: Headphones, title: "advantages.supportTitle", desc: "advantages.supportText", color: "#8B5CF6" },
+  { icon: Globe, title: "advantages.catalogTitle", desc: "advantages.catalogText", color: "#0FA3B1" },
+  { icon: Award, title: "advantages.priceTitle", desc: "advantages.priceText", color: "#EC4899" },
 ];
 
 export default React.memo(function AdvantagesBlock() {
   const { colors, isDark } = useTheme();
+  const t = useT();
   return (
     <View style={[styles.container, { backgroundColor: isDark ? colors.surfaceSecondary : colors.headerBg }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{"Почему YaVoy?"}</Text>
-        <Text style={[styles.subtitle, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{"Мы объединяем лучших организаторов туров по России"}</Text>
+        <Text style={styles.title}>{t("advantages.title")}</Text>
+        <Text style={[styles.subtitle, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{t("advantages.subtitle")}</Text>
       </View>
       <View style={styles.grid}>
         {advantages.map((item, index) => {
@@ -58,8 +31,8 @@ export default React.memo(function AdvantagesBlock() {
               <View style={[styles.iconContainer, { backgroundColor: item.color + "20" }]}>
                 <IconComp size={22} color={item.color} />
               </View>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={[styles.cardDesc, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{item.desc}</Text>
+              <Text style={styles.cardTitle}>{t(item.title)}</Text>
+              <Text style={[styles.cardDesc, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{t(item.desc)}</Text>
             </View>
           );
         })}

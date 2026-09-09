@@ -1,11 +1,12 @@
 import type { BookedTour } from "@/types";
-import { authFetch, type UserProfile } from "@/services/api";
+import { ApiError, authFetch, type UserProfile } from "@/services/api";
 import type { MyReview } from "@/services/social";
 
-async function ensureOk<T>(res: Response, fallback: string): Promise<T> {
+/** fallbackCode — ключ каталога `api.*`; UI переводит ошибку по коду, а не по тексту */
+async function ensureOk<T>(res: Response, fallbackCode: string): Promise<T> {
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-    throw new Error(body?.error?.message ?? fallback);
+    const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+    throw new ApiError(res.status, body?.error?.code ?? fallbackCode, body?.error?.message ?? fallbackCode);
   }
   return res.json() as Promise<T>;
 }
@@ -56,27 +57,27 @@ function adaptAdminBooking(b: ApiBooking): AdminBooking {
 
 export async function fetchAdminBookings(status: "requested" | "confirmed"): Promise<AdminBooking[]> {
   const res = await authFetch(`/admin/bookings?status=${status}`);
-  const body = await ensureOk<{ items: ApiBooking[] }>(res, "Не удалось загрузить заявки");
+  const body = await ensureOk<{ items: ApiBooking[] }>(res, "requestsLoadFailed");
   return body.items.map(adaptAdminBooking);
 }
 
 export async function confirmBooking(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/bookings/${id}/confirm`, { method: "POST" }), "Не удалось подтвердить");
+  await ensureOk(await authFetch(`/bookings/${id}/confirm`, { method: "POST" }), "bookingConfirmFailed");
 }
 
 export async function completeBooking(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/bookings/${id}/complete`, { method: "POST" }), "Не удалось завершить");
+  await ensureOk(await authFetch(`/bookings/${id}/complete`, { method: "POST" }), "bookingCompleteFailed");
 }
 
 export async function cancelBookingAdmin(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/bookings/${id}/cancel`, { method: "POST" }), "Не удалось отменить");
+  await ensureOk(await authFetch(`/bookings/${id}/cancel`, { method: "POST" }), "bookingCancelActionFailed");
 }
 
 // ─── Модерация отзывов ───────────────────────────────────────
 
 export async function fetchPendingReviews(): Promise<MyReview[]> {
   const res = await authFetch("/admin/reviews");
-  const body = await ensureOk<{ items: unknown[] }>(res, "Не удалось загрузить отзывы");
+  const body = await ensureOk<{ items: unknown[] }>(res, "reviewsLoadFailed");
   // формат совпадает с MyReview API — переиспользуем адаптацию через social нельзя (приватная), поля ниже
   return (body.items as {
     id: string; booking_id: string; tour_title: string; tour_image_url: string;
@@ -96,13 +97,13 @@ export async function fetchPendingReviews(): Promise<MyReview[]> {
 }
 
 export async function approveReview(id: string): Promise<void> {
-  await ensureOk(await authFetch(`/admin/reviews/${id}/approve`, { method: "POST" }), "Не удалось опубликовать");
+  await ensureOk(await authFetch(`/admin/reviews/${id}/approve`, { method: "POST" }), "reviewApproveFailed");
 }
 
 export async function rejectReview(id: string): Promise<void> {
   await ensureOk(
     await authFetch(`/admin/reviews/${id}/reject`, { method: "POST", body: JSON.stringify({}) }),
-    "Не удалось отклонить",
+    "reviewRejectFailed",
   );
 }
 
@@ -184,28 +185,28 @@ export async function fetchAdminTours(q?: { status?: AdminTourStatus; q?: string
   if (q?.q) params.set("q", q.q);
   const qs = params.toString();
   const res = await authFetch(`/admin/tours${qs ? `?${qs}` : ""}`);
-  const body = await ensureOk<{ items: AdminTour[] }>(res, "Не удалось загрузить туры");
+  const body = await ensureOk<{ items: AdminTour[] }>(res, "toursLoadFailed");
   return body.items;
 }
 
 export async function createTour(payload: TourWritePayload): Promise<AdminTour> {
   const res = await authFetch("/admin/tours", { method: "POST", body: JSON.stringify(payload) });
-  return ensureOk<AdminTour>(res, "Не удалось создать тур");
+  return ensureOk<AdminTour>(res, "tourCreateFailed");
 }
 
 export async function updateTour(id: string, payload: TourWritePayload): Promise<AdminTour> {
   const res = await authFetch(`/admin/tours/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
-  return ensureOk<AdminTour>(res, "Не удалось сохранить тур");
+  return ensureOk<AdminTour>(res, "tourSaveFailed");
 }
 
 export async function setTourStatus(id: string, status: "draft" | "published"): Promise<AdminTour> {
   const res = await authFetch(`/admin/tours/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
-  return ensureOk<AdminTour>(res, "Не удалось изменить статус");
+  return ensureOk<AdminTour>(res, "tourStatusFailed");
 }
 
 export async function fetchTourDates(tourId: string): Promise<AdminTourDate[]> {
   const res = await authFetch(`/admin/tours/${tourId}/dates`);
-  const body = await ensureOk<{ items: AdminTourDate[] }>(res, "Не удалось загрузить даты");
+  const body = await ensureOk<{ items: AdminTourDate[] }>(res, "datesLoadFailed");
   return body.items;
 }
 
@@ -214,7 +215,7 @@ export async function addTourDate(
   payload: { starts_on: string; seats_total: number; price_override_kopeks?: number | null },
 ): Promise<AdminTourDate> {
   const res = await authFetch(`/admin/tours/${tourId}/dates`, { method: "POST", body: JSON.stringify(payload) });
-  return ensureOk<AdminTourDate>(res, "Не удалось добавить дату");
+  return ensureOk<AdminTourDate>(res, "dateAddFailed");
 }
 
 export async function updateTourDate(
@@ -226,11 +227,11 @@ export async function updateTourDate(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  return ensureOk<AdminTourDate>(res, "Не удалось изменить дату");
+  return ensureOk<AdminTourDate>(res, "dateUpdateFailed");
 }
 
 export async function deleteTourDate(tourId: string, dateId: string): Promise<void> {
-  await ensureOk(await authFetch(`/admin/tours/${tourId}/dates/${dateId}`, { method: "DELETE" }), "Не удалось удалить дату");
+  await ensureOk(await authFetch(`/admin/tours/${tourId}/dates/${dateId}`, { method: "DELETE" }), "dateDeleteFailed");
 }
 
 // ─── Партнёры (бэкофис) ──────────────────────────────────────
@@ -250,7 +251,7 @@ export interface PartnerProfile {
 
 export async function fetchPartners(): Promise<PartnerProfile[]> {
   const res = await authFetch("/admin/partners");
-  const body = await ensureOk<{ items: PartnerProfile[] }>(res, "Не удалось загрузить партнёров");
+  const body = await ensureOk<{ items: PartnerProfile[] }>(res, "partnersLoadFailed");
   return body.items;
 }
 
@@ -263,7 +264,7 @@ export async function createPartner(payload: {
   inn?: string;
 }): Promise<PartnerProfile> {
   const res = await authFetch("/admin/partners", { method: "POST", body: JSON.stringify(payload) });
-  return ensureOk<PartnerProfile>(res, "Не удалось назначить партнёра");
+  return ensureOk<PartnerProfile>(res, "partnerAssignFailed");
 }
 
 export async function updatePartner(
@@ -271,12 +272,12 @@ export async function updatePartner(
   payload: { org_name?: string; description?: string; phone?: string; inn?: string; verified?: boolean },
 ): Promise<PartnerProfile> {
   const res = await authFetch(`/admin/partners/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
-  return ensureOk<PartnerProfile>(res, "Не удалось сохранить партнёра");
+  return ensureOk<PartnerProfile>(res, "partnerSaveFailed");
 }
 
 export async function fetchMyPartnerProfile(): Promise<PartnerProfile> {
   const res = await authFetch("/admin/partners/me");
-  return ensureOk<PartnerProfile>(res, "Не удалось загрузить профиль организации");
+  return ensureOk<PartnerProfile>(res, "orgProfileLoadFailed");
 }
 
 export async function updateMyPartnerProfile(payload: {
@@ -286,5 +287,5 @@ export async function updateMyPartnerProfile(payload: {
   inn?: string;
 }): Promise<PartnerProfile> {
   const res = await authFetch("/admin/partners/me", { method: "PATCH", body: JSON.stringify(payload) });
-  return ensureOk<PartnerProfile>(res, "Не удалось сохранить профиль");
+  return ensureOk<PartnerProfile>(res, "orgProfileSaveFailed");
 }

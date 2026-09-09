@@ -14,6 +14,8 @@ import { Mail, KeyRound, User, ArrowLeft, ArrowRight } from "lucide-react-native
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { ApiError } from "@/services/api";
+import { useT } from "@/providers/I18nProvider";
+import { translateError } from "@/i18n/errors";
 
 type Step = "email" | "code" | "name";
 
@@ -23,6 +25,7 @@ export default function LoginScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const auth = useAuth();
+  const t = useT();
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState<string>("");
@@ -43,7 +46,7 @@ export default function LoginScreen() {
     setError("");
     const trimmed = email.trim();
     if (!trimmed || !trimmed.includes("@")) {
-      setError("Введите корректный email");
+      setError(t("auth.invalidEmail"));
       return;
     }
     setLoading(true);
@@ -60,7 +63,7 @@ export default function LoginScreen() {
         setStep("code");
         setResendIn(retry);
       } else {
-        setError(e instanceof Error ? e.message : "Не удалось отправить код");
+        setError(translateError(e, t, "api.codeSendFailed"));
       }
     } finally {
       setLoading(false);
@@ -70,7 +73,7 @@ export default function LoginScreen() {
   const submitCode = useCallback(async () => {
     setError("");
     if (code.length !== 6) {
-      setError("Код состоит из 6 цифр");
+      setError(t("auth.codeSixDigits"));
       return;
     }
     setLoading(true);
@@ -83,14 +86,14 @@ export default function LoginScreen() {
       }
     } catch (e: unknown) {
       if (e instanceof ApiError && e.code === "otp_wrong_code") {
-        setError("Неверный код, попробуйте ещё раз");
+        setError(t("auth.codeWrong"));
       } else if (e instanceof ApiError && e.code === "otp_invalid_or_expired") {
-        setError("Код истёк или использован. Запросите новый.");
+        setError(t("auth.codeExpired"));
         setStep("email");
       } else if (e instanceof ApiError && e.code === "user_deactivated") {
-        setError("Аккаунт деактивирован. Обратитесь к администратору.");
+        setError(t("auth.accountDisabled"));
       } else {
-        setError(e instanceof Error ? e.message : "Ошибка входа");
+        setError(translateError(e, t, "auth.loginFailed"));
       }
     } finally {
       setLoading(false);
@@ -101,7 +104,7 @@ export default function LoginScreen() {
     setError("");
     const trimmed = firstName.trim();
     if (!trimmed) {
-      setError("Как к вам обращаться?");
+      setError(t("auth.askName"));
       return;
     }
     setLoading(true);
@@ -109,7 +112,7 @@ export default function LoginScreen() {
       await auth.updateMyProfile({ first_name: trimmed });
       router.replace("/");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Не удалось сохранить имя");
+      setError(translateError(e, t, "auth.nameFailed"));
     } finally {
       setLoading(false);
     }
@@ -139,23 +142,20 @@ export default function LoginScreen() {
           </View>
           {step === "email" ? (
             <>
-              <Text style={[styles.title, { color: colors.text }]}>Вход без пароля</Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                Введите email — пришлём код для входа.{"\n"}Регистрация не нужна.
-              </Text>
+              <Text style={[styles.title, { color: colors.text }]}>{t("auth.titleEmail")}</Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t("auth.subtitleEmail")}</Text>
             </>
           ) : step === "code" ? (
             <>
-              <Text style={[styles.title, { color: colors.text }]}>Код из письма</Text>
+              <Text style={[styles.title, { color: colors.text }]}>{t("auth.titleCode")}</Text>
               <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                Отправили 6 цифр на{"\n"}
-                <Text style={{ fontWeight: "600", color: colors.text }}>{email.trim()}</Text>
+                {t("auth.subtitleCode", { email: email.trim() })}
               </Text>
             </>
           ) : (
             <>
-              <Text style={[styles.title, { color: colors.text }]}>Приятно познакомиться!</Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>Как вас зовут?</Text>
+              <Text style={[styles.title, { color: colors.text }]}>{t("auth.titleName")}</Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t("auth.subtitleName")}</Text>
             </>
           )}
         </View>
@@ -196,7 +196,7 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <>
-                    <Text style={styles.submitText}>Получить код</Text>
+                    <Text style={styles.submitText}>{t("auth.getCode")}</Text>
                     <ArrowRight size={18} color="#FFFFFF" />
                   </>
                 )}
@@ -230,7 +230,7 @@ export default function LoginScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.submitText}>Войти</Text>
+                  <Text style={styles.submitText}>{t("common.login")}</Text>
                 )}
               </TouchableOpacity>
 
@@ -242,9 +242,9 @@ export default function LoginScreen() {
               >
                 <Text style={[styles.switchText, { color: colors.textMuted }]}>
                   {resendIn > 0 ? (
-                    `Отправить код ещё раз через ${resendIn} с`
+                    t("auth.resendIn", { seconds: resendIn })
                   ) : (
-                    <Text style={{ color: colors.teal, fontWeight: "600" }}>Отправить код ещё раз</Text>
+                    <Text style={{ color: colors.teal, fontWeight: "600" }}>{t("auth.resend")}</Text>
                   )}
                 </Text>
               </TouchableOpacity>
@@ -255,7 +255,7 @@ export default function LoginScreen() {
                 <User size={18} color={colors.textMuted} />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
-                  placeholder="Имя"
+                  placeholder={t("booking.firstName")}
                   placeholderTextColor={colors.textMuted}
                   value={firstName}
                   onChangeText={setFirstName}
@@ -274,7 +274,7 @@ export default function LoginScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.submitText}>Готово</Text>
+                  <Text style={styles.submitText}>{t("common.done")}</Text>
                 )}
               </TouchableOpacity>
             </>

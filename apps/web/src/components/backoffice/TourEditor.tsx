@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/i18n/I18nProvider";
+import { translateError } from "@/i18n/errors";
+import type { TKey } from "@/i18n/keys";
 import {
   addTourDate,
   createTour,
@@ -14,22 +17,22 @@ import {
 } from "@/services/admin";
 
 const DURATIONS = [
-  { v: "one_day", l: "Однодневный" },
-  { v: "multi_day", l: "Многодневный" },
-] as const;
+  { v: "one_day", l: "enums.durationSingular.one_day" },
+  { v: "multi_day", l: "enums.durationSingular.multi_day" },
+] as const satisfies readonly { v: string; l: TKey }[];
 const TRANSPORTS = [
-  { v: "auto", l: "Авто" },
-  { v: "water", l: "Вода" },
-  { v: "sea", l: "Море" },
-  { v: "bike", l: "Вело" },
-  { v: "air", l: "Авиа" },
-] as const;
+  { v: "auto", l: "enums.transport.auto" },
+  { v: "water", l: "enums.transport.water" },
+  { v: "sea", l: "enums.transport.sea" },
+  { v: "bike", l: "enums.transport.bike" },
+  { v: "air", l: "enums.transport.air" },
+] as const satisfies readonly { v: string; l: TKey }[];
 const INTERESTS = [
-  { v: "city", l: "Город" },
-  { v: "educational", l: "Познавательный" },
-  { v: "nature", l: "Природа" },
-  { v: "pilgrimage", l: "Паломничество" },
-] as const;
+  { v: "city", l: "enums.interest.city" },
+  { v: "educational", l: "enums.interest.educational" },
+  { v: "nature", l: "enums.interest.nature" },
+  { v: "pilgrimage", l: "enums.interest.pilgrimage" },
+] as const satisfies readonly { v: string; l: TKey }[];
 const CATEGORIES = [
   "agro", "photo", "ethno", "parents", "glamping",
   "animals", "mystic", "wild_animals", "wine", "gastro",
@@ -96,7 +99,8 @@ function initialForm(tour: AdminTour | null, defaultCity: string): FormState {
     includes: joinLines(tour?.includes ?? []),
     excludes: joinLines(tour?.excludes ?? []),
     what_to_bring: joinLines(tour?.what_to_bring ?? []),
-    languages: joinLines(tour?.languages ?? ["Русский"]),
+    // языки экскурсии хранятся кодами (enums.tourLanguage), см. YAV-25
+    languages: joinLines(tour?.languages ?? ["ru"]),
     schedule: tour?.schedule ?? "",
     group_size: tour?.group_size ?? "",
     meeting_point: tour?.meeting_point ?? "",
@@ -168,11 +172,12 @@ export function TourEditor({
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(() => initialForm(tour, cities[0]?.id ?? ""));
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const t = useT();
 
   const save = useMutation({
     mutationFn: () => {
       if (!form.title.trim() || !form.image_url.trim() || !form.price_rub || !form.city_id) {
-        throw new Error("Заполните обязательные поля: город, название, картинка, цена");
+        throw new Error(t("tourEditor.requiredFields"));
       }
       const payload = toPayload(form, tour);
       return tour ? updateTour(tour.id, payload) : createTour(payload);
@@ -180,100 +185,100 @@ export function TourEditor({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin-tours"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-      toast.success(tour ? "Тур сохранён" : "Тур создан (черновик — опубликуйте из списка)");
+      toast.success(t(tour ? "tourEditor.tourSaved" : "tourEditor.tourCreated"));
       onClose();
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка сохранения"),
+    onError: (e: unknown) => toast.error(translateError(e, t, "backoffice.saveFailed")),
   });
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
       <div className="my-4 w-full max-w-2xl rounded-3xl bg-card p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold">{tour ? "Редактирование тура" : "Новый тур"}</h2>
+          <h2 className="text-lg font-extrabold">{t(tour ? "tourEditor.titleEdit" : "tourEditor.titleNew")}</h2>
           <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary"><X size={18} /></button>
         </div>
 
         <div className="space-y-5">
-          <Section title="Основное">
-            <label className="block text-xs font-semibold text-muted-foreground">Город *
+          <Section title={t("tourEditor.sectionMain")}>
+            <label className="block text-xs font-semibold text-muted-foreground">{t("tourEditor.city")}
               <select value={form.city_id} onChange={(e) => set("city_id", e.target.value)} className="input-base mt-1">
                 {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
-            <Input label="Название *" value={form.title} onChange={(v) => set("title", v)} />
-            <TextArea label="Описание" value={form.description} onChange={(v) => set("description", v)} rows={4} />
-            <Input label="Картинка (URL) *" value={form.image_url} onChange={(v) => set("image_url", v)} />
-            <TextArea label="Галерея (URL, по одному на строку)" value={form.gallery} onChange={(v) => set("gallery", v)} rows={3} />
+            <Input label={t("tourEditor.name")} value={form.title} onChange={(v) => set("title", v)} />
+            <TextArea label={t("tourEditor.description")} value={form.description} onChange={(v) => set("description", v)} rows={4} />
+            <Input label={t("tourEditor.image")} value={form.image_url} onChange={(v) => set("image_url", v)} />
+            <TextArea label={t("tourEditor.gallery")} value={form.gallery} onChange={(v) => set("gallery", v)} rows={3} />
           </Section>
 
-          <Section title="Цена">
+          <Section title={t("tourEditor.sectionPrice")}>
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Цена, ₽ *" type="number" value={form.price_rub} onChange={(v) => set("price_rub", v)} />
-              <Input label="Цена до скидки, ₽" type="number" value={form.original_price_rub} onChange={(v) => set("original_price_rub", v)} />
+              <Input label={t("tourEditor.price")} type="number" value={form.price_rub} onChange={(v) => set("price_rub", v)} />
+              <Input label={t("tourEditor.originalPrice")} type="number" value={form.original_price_rub} onChange={(v) => set("original_price_rub", v)} />
             </div>
           </Section>
 
-          <Section title="Классификация">
+          <Section title={t("tourEditor.sectionClassification")}>
             <div className="grid grid-cols-2 gap-3">
-              <Select label="Длительность" value={form.duration_type} onChange={(v) => set("duration_type", v as FormState["duration_type"])} options={DURATIONS} />
-              <Input label="Текст длительности" value={form.duration_text} onChange={(v) => set("duration_text", v)} placeholder="8 часов" />
-              <Select label="Транспорт" value={form.transport} onChange={(v) => set("transport", v as FormState["transport"])} options={TRANSPORTS} />
-              <Select label="Интерес" value={form.interest} onChange={(v) => set("interest", v as FormState["interest"])} options={INTERESTS} />
-              <label className="block text-xs font-semibold text-muted-foreground">Категория
+              <Select label={t("tourEditor.duration")} value={form.duration_type} onChange={(v) => set("duration_type", v as FormState["duration_type"])} options={DURATIONS} />
+              <Input label={t("tourEditor.durationText")} value={form.duration_text} onChange={(v) => set("duration_text", v)} placeholder={t("tourEditor.durationPlaceholder")} />
+              <Select label={t("tourEditor.transport")} value={form.transport} onChange={(v) => set("transport", v as FormState["transport"])} options={TRANSPORTS} />
+              <Select label={t("tourEditor.interest")} value={form.interest} onChange={(v) => set("interest", v as FormState["interest"])} options={INTERESTS} />
+              <label className="block text-xs font-semibold text-muted-foreground">{t("tourEditor.category")}
                 <select value={form.category} onChange={(e) => set("category", e.target.value)} className="input-base mt-1">
-                  <option value="">—</option>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">{t("common.notSet")}</option>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{t(`enums.category.${c}` as TKey)}</option>)}
                 </select>
               </label>
-              <label className="block text-xs font-semibold text-muted-foreground">Сезон
+              <label className="block text-xs font-semibold text-muted-foreground">{t("tourEditor.season")}
                 <select value={form.season} onChange={(e) => set("season", e.target.value)} className="input-base mt-1">
-                  <option value="">—</option>
-                  {SEASONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <option value="">{t("common.notSet")}</option>
+                  {SEASONS.map((x) => <option key={x} value={x}>{t(`enums.season.${x}` as TKey)}</option>)}
                 </select>
               </label>
             </div>
           </Section>
 
-          <Section title="Организатор">
+          <Section title={t("tourEditor.sectionOrganizer")}>
             <div className="grid grid-cols-2 items-end gap-3">
-              <Input label="Название организатора" value={form.organizer_name} onChange={(v) => set("organizer_name", v)} />
-              <Checkbox label="Проверенный (галочка)" checked={form.organizer_verified} onChange={(v) => set("organizer_verified", v)} />
+              <Input label={t("tourEditor.organizerName")} value={form.organizer_name} onChange={(v) => set("organizer_name", v)} />
+              <Checkbox label={t("tourEditor.organizerVerified")} checked={form.organizer_verified} onChange={(v) => set("organizer_verified", v)} />
             </div>
           </Section>
 
-          <Section title="Программа и условия (по пункту на строку)">
-            <TextArea label="Хайлайты" value={form.highlights} onChange={(v) => set("highlights", v)} rows={3} />
-            <TextArea label="Включено" value={form.includes} onChange={(v) => set("includes", v)} rows={3} />
-            <TextArea label="Не включено" value={form.excludes} onChange={(v) => set("excludes", v)} rows={2} />
-            <TextArea label="Взять с собой" value={form.what_to_bring} onChange={(v) => set("what_to_bring", v)} rows={2} />
-            <TextArea label="Языки" value={form.languages} onChange={(v) => set("languages", v)} rows={1} />
+          <Section title={t("tourEditor.sectionProgram")}>
+            <TextArea label={t("tourEditor.highlights")} value={form.highlights} onChange={(v) => set("highlights", v)} rows={3} />
+            <TextArea label={t("tourEditor.includes")} value={form.includes} onChange={(v) => set("includes", v)} rows={3} />
+            <TextArea label={t("tourEditor.excludes")} value={form.excludes} onChange={(v) => set("excludes", v)} rows={2} />
+            <TextArea label={t("tourEditor.whatToBring")} value={form.what_to_bring} onChange={(v) => set("what_to_bring", v)} rows={2} />
+            <TextArea label={t("tourEditor.languages")} value={form.languages} onChange={(v) => set("languages", v)} rows={1} />
           </Section>
 
-          <Section title="Логистика">
-            <TextArea label="Расписание" value={form.schedule} onChange={(v) => set("schedule", v)} rows={3} />
+          <Section title={t("tourEditor.sectionLogistics")}>
+            <TextArea label={t("tourEditor.schedule")} value={form.schedule} onChange={(v) => set("schedule", v)} rows={3} />
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Размер группы" value={form.group_size} onChange={(v) => set("group_size", v)} placeholder="до 15 человек" />
-              <Input label="Время старта" value={form.start_time} onChange={(v) => set("start_time", v)} placeholder="09:00" />
+              <Input label={t("tourEditor.groupSize")} value={form.group_size} onChange={(v) => set("group_size", v)} placeholder={t("tourEditor.groupSizePlaceholder")} />
+              <Input label={t("tourEditor.startTime")} value={form.start_time} onChange={(v) => set("start_time", v)} placeholder="09:00" />
             </div>
-            <Input label="Место встречи" value={form.meeting_point} onChange={(v) => set("meeting_point", v)} />
+            <Input label={t("tourEditor.meetingPoint")} value={form.meeting_point} onChange={(v) => set("meeting_point", v)} />
           </Section>
 
-          <Section title="Условия бронирования">
-            <TextArea label="Условия брони" value={form.booking_conditions} onChange={(v) => set("booking_conditions", v)} rows={2} />
+          <Section title={t("tourEditor.sectionBookingTerms")}>
+            <TextArea label={t("tourEditor.bookingConditions")} value={form.booking_conditions} onChange={(v) => set("booking_conditions", v)} rows={2} />
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Предоплата" value={form.prepayment} onChange={(v) => set("prepayment", v)} />
-              <Input label="Политика отмены" value={form.cancellation_policy} onChange={(v) => set("cancellation_policy", v)} />
+              <Input label={t("tourEditor.prepayment")} value={form.prepayment} onChange={(v) => set("prepayment", v)} />
+              <Input label={t("tourEditor.cancellationPolicy")} value={form.cancellation_policy} onChange={(v) => set("cancellation_policy", v)} />
             </div>
-            <TextArea label="Условия присоединения к группе" value={form.group_joining_conditions} onChange={(v) => set("group_joining_conditions", v)} rows={2} />
+            <TextArea label={t("tourEditor.groupJoining")} value={form.group_joining_conditions} onChange={(v) => set("group_joining_conditions", v)} rows={2} />
           </Section>
 
-          <Section title="Витрина">
+          <Section title={t("tourEditor.sectionShowcase")}>
             <div className="grid grid-cols-2 gap-2">
-              <Checkbox label="Моментальное подтверждение" checked={form.is_instant_confirmation} onChange={(v) => set("is_instant_confirmation", v)} />
-              <Checkbox label="Бесплатная отмена" checked={form.is_free_cancellation} onChange={(v) => set("is_free_cancellation", v)} />
-              <Checkbox label="Бестселлер" checked={form.is_bestseller} onChange={(v) => set("is_bestseller", v)} />
-              <Checkbox label="Скоро распродажа" checked={form.is_likely_to_sell_out} onChange={(v) => set("is_likely_to_sell_out", v)} />
+              <Checkbox label={t("tourEditor.instantConfirmation")} checked={form.is_instant_confirmation} onChange={(v) => set("is_instant_confirmation", v)} />
+              <Checkbox label={t("tourEditor.freeCancellation")} checked={form.is_free_cancellation} onChange={(v) => set("is_free_cancellation", v)} />
+              <Checkbox label={t("tourEditor.bestseller")} checked={form.is_bestseller} onChange={(v) => set("is_bestseller", v)} />
+              <Checkbox label={t("tourEditor.sellingOut")} checked={form.is_likely_to_sell_out} onChange={(v) => set("is_likely_to_sell_out", v)} />
             </div>
           </Section>
 
@@ -287,9 +292,9 @@ export function TourEditor({
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-teal py-3 font-bold text-white disabled:opacity-60"
           >
             {save.isPending && <Loader2 size={16} className="animate-spin" />}
-            {tour ? "Сохранить" : "Создать черновик"}
+            {t(tour ? "common.save" : "tourEditor.createDraft")}
           </button>
-          <button onClick={onClose} className="rounded-2xl bg-secondary px-5 py-3 font-semibold">Отмена</button>
+          <button onClick={onClose} className="rounded-2xl bg-secondary px-5 py-3 font-semibold">{t("common.cancel")}</button>
         </div>
       </div>
     </div>
@@ -301,32 +306,33 @@ function DatesPanel({ tourId }: { tourId: string }) {
   const dates = useQuery({ queryKey: ["admin-tour-dates", tourId], queryFn: () => fetchTourDates(tourId) });
   const [newDate, setNewDate] = useState("");
   const [newSeats, setNewSeats] = useState("12");
+  const t = useT();
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-tour-dates", tourId] });
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
   };
-  const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "Ошибка");
+  const onError = (e: unknown) => toast.error(translateError(e, t));
 
   const add = useMutation({
     mutationFn: () => addTourDate(tourId, { starts_on: newDate, seats_total: Number(newSeats) }),
-    onSuccess: () => { invalidate(); setNewDate(""); toast.success("Дата добавлена"); },
+    onSuccess: () => { invalidate(); setNewDate(""); toast.success(t("tourEditor.dateAdded")); },
     onError,
   });
   const changeSeats = useMutation({
     mutationFn: (vars: { dateId: string; seats: number }) =>
       updateTourDate(tourId, vars.dateId, { seats_total: vars.seats }),
-    onSuccess: () => { invalidate(); toast.success("Вместимость изменена"); },
+    onSuccess: () => { invalidate(); toast.success(t("tourEditor.capacityChanged")); },
     onError,
   });
   const remove = useMutation({
     mutationFn: (dateId: string) => deleteTourDate(tourId, dateId),
-    onSuccess: () => { invalidate(); toast.success("Дата удалена"); },
+    onSuccess: () => { invalidate(); toast.success(t("tourEditor.dateRemoved")); },
     onError,
   });
 
   return (
-    <Section title="Даты выездов">
+    <Section title={t("tourEditor.sectionDates")}>
       {dates.isLoading ? (
         <Loader2 size={18} className="animate-spin text-teal" />
       ) : (
@@ -336,7 +342,7 @@ function DatesPanel({ tourId }: { tourId: string }) {
             return (
               <div key={d.id} className="flex items-center gap-3 rounded-xl bg-background px-3 py-2 ring-1 ring-border/60">
                 <div className="flex-1 text-sm font-semibold">{d.starts_on}</div>
-                <div className="text-xs text-muted-foreground">занято {booked}</div>
+                <div className="text-xs text-muted-foreground">{t("units.seatsTaken", { count: booked })}</div>
                 <input
                   type="number"
                   defaultValue={d.seats_total}
@@ -346,12 +352,12 @@ function DatesPanel({ tourId }: { tourId: string }) {
                     if (v !== d.seats_total && v >= 1) changeSeats.mutate({ dateId: d.id, seats: v });
                   }}
                   className="w-16 rounded-lg border border-border bg-card px-2 py-1 text-center text-sm outline-none focus:border-teal"
-                  title="Всего мест (сохранение по потере фокуса)"
+                  title={t("tourEditor.seatsTotal")}
                 />
                 <button
                   onClick={() => remove.mutate(d.id)}
                   disabled={d.bookings_count > 0}
-                  title={d.bookings_count > 0 ? "Есть брони — удалить нельзя" : "Удалить дату"}
+                  title={t(d.bookings_count > 0 ? "tourEditor.dateHasBookings" : "tourEditor.deleteDate")}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 text-coral disabled:opacity-30"
                 >
                   <Trash2 size={14} />
@@ -361,7 +367,7 @@ function DatesPanel({ tourId }: { tourId: string }) {
           })}
           <div className="flex items-center gap-2">
             <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="input-base flex-1" />
-            <input type="number" value={newSeats} min={1} onChange={(e) => setNewSeats(e.target.value)} className="input-base w-20 text-center" title="Мест" />
+            <input type="number" value={newSeats} min={1} onChange={(e) => setNewSeats(e.target.value)} className="input-base w-20 text-center" title={t("tourEditor.seatsLabel")} />
             <button
               onClick={() => add.mutate()}
               disabled={!newDate || add.isPending}
@@ -406,12 +412,13 @@ function TextArea({ label, value, onChange, rows }: {
 }
 
 function Select<T extends string>({ label, value, onChange, options }: {
-  label: string; value: T; onChange: (v: string) => void; options: readonly { v: T; l: string }[];
+  label: string; value: T; onChange: (v: string) => void; options: readonly { v: T; l: TKey }[];
 }) {
+  const t = useT();
   return (
     <label className="block text-xs font-semibold text-muted-foreground">{label}
       <select value={value} onChange={(e) => onChange(e.target.value)} className="input-base mt-1">
-        {options.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+        {options.map((o) => <option key={o.v} value={o.v}>{t(o.l)}</option>)}
       </select>
     </label>
   );

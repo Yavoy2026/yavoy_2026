@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import createContextHook from "@nkzw/create-context-hook";
+import { useT } from "@/providers/I18nProvider";
 import { TravelReel } from "@/types/tour";
 import { initialReels } from "@/mocks/reels";
 
@@ -40,31 +41,32 @@ function hydrate(reel: TravelReel): TravelReel {
 }
 
 export const [ReelsProvider, useReels] = createContextHook(() => {
+  const t = useT();
   const [reels, setReels] = useState<TravelReel[]>(() => initialReels.map(hydrate));
 
   const submitReel = useCallback((params: { title: string; tourTitle: string; city: string; videoUri?: string; coverImage?: string }) => {
     const newReel: TravelReel = hydrate({
       id: `user-reel-${Date.now()}`,
-      title: params.title.trim() || "Мой reels из поездки",
-      city: params.city.trim() || "Россия",
-      tourTitle: params.tourTitle.trim() || "Экскурсия YAVOY",
+      title: params.title.trim() || t("profile.reelDefaultTitle"),
+      city: params.city.trim(),
+      tourTitle: params.tourTitle.trim() || t("profile.reelDefaultTour"),
       coverImage: params.coverImage || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=600&h=900&fit=crop",
       videoUri: params.videoUri,
-      author: "Иван Петров",
-      duration: "на модерации",
+      author: t("profile.reelAuthorSelf"),
+      duration: t("profile.reelOnModeration"),
       views: "0",
       likes: "0",
       viewsCount: 0,
       likesCount: 0,
       likedByMe: false,
-      story: "Видео пользователя ожидает проверки администратором. После модерации оно может появиться в ленте reels на главном экране.",
+      story: t("profile.reelPendingStory"),
       status: "moderation",
       createdAt: new Date().toISOString().slice(0, 10),
     });
     setReels((prev) => [newReel, ...prev]);
     console.log("[ReelsProvider] User reel submitted for moderation", newReel.id);
     return { reel: newReel, reward: REEL_REWARD_POINTS };
-  }, []);
+  }, [t]);
 
   const toggleLike = useCallback((reelId: string) => {
     setReels((prev) =>

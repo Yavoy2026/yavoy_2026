@@ -10,16 +10,19 @@ import {
 } from "react-native";
 import { Sun, Moon, Smartphone, ChevronDown, Check } from "lucide-react-native";
 import { useTheme, ThemeMode } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
-const themeOptions: { key: ThemeMode; label: string; icon: React.ComponentType<{ size: number; color: string }> }[] = [
-  { key: "system", label: "Системная", icon: Smartphone },
-  { key: "light", label: "Светлая", icon: Sun },
-  { key: "dark", label: "Тёмная", icon: Moon },
+const themeOptions: { key: ThemeMode; label: TKey; icon: React.ComponentType<{ size: number; color: string }> }[] = [
+  { key: "system", label: "enums.theme.system", icon: Smartphone },
+  { key: "light", label: "enums.theme.light", icon: Sun },
+  { key: "dark", label: "enums.theme.dark", icon: Moon },
 ];
 
 export default React.memo(function ThemeSelector() {
   const { themeMode, setTheme, colors } = useTheme();
   const [open, setOpen] = useState<boolean>(false);
+  const t = useT();
 
   const current = themeOptions.find((o) => o.key === themeMode) || themeOptions[0];
   const CurrentIcon = current.icon;
@@ -59,7 +62,7 @@ export default React.memo(function ThemeSelector() {
               web: { shadowColor: colors.navy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24 },
             })]}>
               <View style={[styles.dropdownHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.dropdownTitle, { color: colors.text }]}>{"Тема оформления"}</Text>
+                <Text style={[styles.dropdownTitle, { color: colors.text }]}>{t("profile.theme")}</Text>
               </View>
               {themeOptions.map((option) => {
                 const isActive = themeMode === option.key;
@@ -77,7 +80,7 @@ export default React.memo(function ThemeSelector() {
                         <OptionIcon size={16} color={isActive ? "#FFFFFF" : colors.textMuted} />
                       </View>
                       <Text style={[styles.optionText, isActive ? { color: colors.text, fontWeight: "700" as const } : { color: colors.textSecondary }]}>
-                        {option.label}
+                        {t(option.label)}
                       </Text>
                     </View>
                     {isActive && <Check size={18} color={colors.teal} />}

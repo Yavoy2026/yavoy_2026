@@ -10,6 +10,7 @@ import {
 import { Image } from "expo-image";
 import { Heart } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useT } from "@/providers/I18nProvider";
 import { useFavoriteCities } from "@/providers/FavoriteCitiesProvider";
 import { City } from "@/types/tour";
 
@@ -25,6 +26,7 @@ export default React.memo(function CitySelector({
   onSelectCity,
 }: CitySelectorProps) {
   const { colors } = useTheme();
+  const t = useT();
   const { isCityFavorite, toggleFavoriteCity } = useFavoriteCities();
 
   const handlePress = useCallback(
@@ -78,7 +80,7 @@ export default React.memo(function CitySelector({
                 <View style={styles.cityInfo}>
                   <Text style={styles.cityEmoji}>{city.emoji}</Text>
                   <Text style={styles.cityName}>{city.name}</Text>
-                  <Text style={styles.cityCount}>{`${city.tourCount} туров`}</Text>
+                  <Text style={styles.cityCount}>{t("units.tours", { count: city.tourCount })}</Text>
                 </View>
               </TouchableOpacity>
 

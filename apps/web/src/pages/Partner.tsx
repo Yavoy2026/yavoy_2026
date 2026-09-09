@@ -9,10 +9,13 @@ import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { PartnerTourSubmission, PartnerGuest, PartnerTransaction } from "@/types";
+import { useI18n, useT } from "@/i18n/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 
 type Stage = "register" | "contacts" | "pending" | "cabinet";
 type Tab = "tours" | "guests" | "transactions" | "reviews";
 
+// демо-данные кабинета: контент, не интерфейс — переводу не подлежат (YAV-25)
 const initialSubmissions: PartnerTourSubmission[] = [
   { id: "ps1", title: "Гастротур по рынкам Москвы", city: "Москва", price: 3500, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop", status: "published", submittedAt: "2026-05-10" },
   { id: "ps2", title: "Ночной джаз-квартал", city: "Санкт-Петербург", price: 2800, image: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&h=300&fit=crop", status: "pending", submittedAt: "2026-06-01" },
@@ -50,27 +53,28 @@ export default function Partner() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTour, setNewTour] = useState({ title: "", city: "", price: "" });
   const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
+  const { t, formatNumber } = useI18n();
 
   const allAgreed = agree.terms && agree.privacy && agree.offer;
   const innValid = /^\d{10}$|^\d{12}$/.test(inn);
 
   const checkFns = () => {
-    if (!innValid) { toast.error("Введите корректный ИНН (10 или 12 цифр)"); return; }
-    if (!allAgreed) { toast.error("Примите все соглашения"); return; }
+    if (!innValid) { toast.error(t("partner.innInvalid")); return; }
+    if (!allAgreed) { toast.error(t("partner.agreementsRequired")); return; }
     setChecking(true);
-    setTimeout(() => { setChecking(false); setStage("contacts"); toast.success("Данные подтверждены через ФНС"); }, 1400);
+    setTimeout(() => { setChecking(false); setStage("contacts"); toast.success(t("partner.fnsConfirmed")); }, 1400);
   };
 
   const submitContacts = () => {
     if (!contacts.email.trim() || !contacts.phone.trim() || !contacts.telegram.trim()) {
-      toast.error("Заполните все контактные поля"); return;
+      toast.error(t("partner.contactsRequired")); return;
     }
     setStage("pending");
-    toast.success("Профиль отправлен администратору на подтверждение");
+    toast.success(t("partner.profileSent"));
   };
 
   const addTour = () => {
-    if (!newTour.title.trim() || !newTour.city.trim() || !newTour.price.trim()) { toast.error("Заполните поля экскурсии"); return; }
+    if (!newTour.title.trim() || !newTour.city.trim() || !newTour.price.trim()) { toast.error(t("partner.tourFieldsRequired")); return; }
     const sub: PartnerTourSubmission = {
       id: `ps-${Date.now()}`, title: newTour.title, city: newTour.city, price: Number(newTour.price) || 0,
       image: "https://images.unsplash.com/photo-1513326738677-b964603b136d?w=400&h=300&fit=crop", status: "pending", submittedAt: new Date().toISOString().slice(0, 10),
@@ -78,7 +82,7 @@ export default function Partner() {
     setSubmissions((p) => [sub, ...p]);
     setNewTour({ title: "", city: "", price: "" });
     setShowAddForm(false);
-    toast.success("Экскурсия отправлена администратору на модерацию");
+    toast.success(t("partner.tourSentWeb"));
   };
 
   const revenue = useMemo(() => partnerTransactions.filter((t) => t.status === "completed").reduce((s, t) => s + t.amount, 0), []);
@@ -87,7 +91,7 @@ export default function Partner() {
   return (
     <Layout>
       <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={18} /> Назад
+        <ArrowLeft size={18} /> {t("common.back")}
       </button>
 
       {authLoading ? (
@@ -95,9 +99,9 @@ export default function Partner() {
       ) : !isAuthenticated ? (
         <div className="mx-auto max-w-xl rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
           <Building2 size={48} className="mx-auto mb-4 text-muted-foreground" />
-          <h2 className="mb-2 text-xl font-extrabold">Требуется авторизация</h2>
-          <p className="mb-4 text-sm text-muted-foreground">Войдите в аккаунт, чтобы получить доступ к партнёрскому кабинету.</p>
-          <button onClick={() => navigate("/auth")} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">Войти / Регистрация</button>
+          <h2 className="mb-2 text-xl font-extrabold">{t("partner.authRequired")}</h2>
+          <p className="mb-4 text-sm text-muted-foreground">{t("partner.authRequiredText")}</p>
+          <button onClick={() => navigate("/auth")} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">{t("common.loginOrRegister")}</button>
         </div>
       ) : (
         <>
@@ -106,7 +110,7 @@ export default function Partner() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{user.first_name?.[0] ?? "?"}</div>
               <div className="flex-1">
                 <div className="font-semibold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</div>
-                <div className="text-xs text-muted-foreground">{user.email} · {user.role === "admin" ? "Админ" : user.role === "manager" ? "Модератор" : "Пользователь"}</div>
+                <div className="text-xs text-muted-foreground">{user.email} · {t(`enums.role.${user.role}` as TKey)}</div>
               </div>
               <button onClick={async () => { await logout(); navigate("/"); }} className="rounded-lg bg-coral/10 p-2 text-coral transition-colors hover:bg-coral/20"><LogOut size={16} /></button>
             </div>
@@ -116,25 +120,25 @@ export default function Partner() {
         <div className="mx-auto max-w-xl">
           <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-8 text-white">
             <Building2 size={36} className="mb-3 text-teal-light" />
-            <h1 className="mb-2 text-2xl font-extrabold">Станьте партнёром YaVoy</h1>
-            <p className="text-sm text-white/70">Добавляйте свои экскурсии, управляйте бронированиями и зарабатывайте с крупнейшим агрегатором туров России.</p>
+            <h1 className="mb-2 text-2xl font-extrabold">{t("partner.heroTitle")}</h1>
+            <p className="text-sm text-white/70">{t("partner.heroSubtitle")}</p>
           </div>
 
           <div className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="mb-1 font-bold">Регистрация партнёра</h2>
-            <p className="mb-4 text-sm text-muted-foreground">Введите ИНН или ОГРН для проверки через Федеральную налоговую службу</p>
+            <h2 className="mb-1 font-bold">{t("partner.registration")}</h2>
+            <p className="mb-4 text-sm text-muted-foreground">{t("partner.registrationHint")}</p>
             <input
               value={inn}
               onChange={(e) => setInn(e.target.value.replace(/\D/g, ""))}
-              placeholder="ИНН (10 или 12 цифр)"
+              placeholder={t("partner.innPlaceholder")}
               inputMode="numeric"
               className="mb-4 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal"
             />
             <div className="mb-4 space-y-2">
               {([
-                { k: "terms", l: "Принимаю пользовательское соглашение" },
-                { k: "privacy", l: "Согласен на обработку персональных данных (152-ФЗ)" },
-                { k: "offer", l: "Соглашаюсь с договором-офертой" },
+                { k: "terms", l: "partner.agreeTerms" },
+                { k: "privacy", l: "partner.agreePrivacy" },
+                { k: "offer", l: "partner.agreeOffer" },
               ] as const).map((c) => (
                 <label key={c.k} className="flex cursor-pointer items-start gap-2.5 text-sm">
                   <input
@@ -143,7 +147,7 @@ export default function Partner() {
                     onChange={(e) => setAgree((p) => ({ ...p, [c.k]: e.target.checked }))}
                     className="mt-0.5 h-4 w-4 accent-teal"
                   />
-                  <span className="text-muted-foreground">{c.l}</span>
+                  <span className="text-muted-foreground">{t(c.l)}</span>
                 </label>
               ))}
             </div>
@@ -152,7 +156,7 @@ export default function Partner() {
               disabled={checking || !innValid || !allAgreed}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform enabled:hover:scale-[1.02] disabled:opacity-50"
             >
-              {checking ? <><Loader2 size={18} className="animate-spin" /> Проверка через ФНС…</> : "Проверить и продолжить"}
+              {checking ? <><Loader2 size={18} className="animate-spin" /> {t("partner.checkingFns")}</> : t("partner.checkAndContinue")}
             </button>
           </div>
         </div>
@@ -161,17 +165,17 @@ export default function Partner() {
       {stage === "contacts" && (
         <div className="mx-auto max-w-xl">
           <div className="mb-4 flex items-center gap-2 rounded-2xl bg-mint/10 p-4 text-sm font-semibold text-mint">
-            <CheckCircle2 size={18} /> ООО «Ваша компания» подтверждена через ФНС
+            <CheckCircle2 size={18} /> {t("partner.fnsCompanyConfirmed")}
           </div>
           <div className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="mb-1 font-bold">Контактные данные</h2>
-            <p className="mb-4 text-sm text-muted-foreground">Заполните обязательные контакты для связи</p>
+            <h2 className="mb-1 font-bold">{t("partner.contactsTitle")}</h2>
+            <p className="mb-4 text-sm text-muted-foreground">{t("partner.contactsHint")}</p>
             <div className="space-y-3">
               <input value={contacts.email} onChange={(e) => setContacts((p) => ({ ...p, email: e.target.value }))} placeholder="Email" type="email" className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
-              <input value={contacts.phone} onChange={(e) => setContacts((p) => ({ ...p, phone: e.target.value }))} placeholder="Телефон (+7…)" className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
-              <input value={contacts.telegram} onChange={(e) => setContacts((p) => ({ ...p, telegram: e.target.value }))} placeholder="Telegram @никнейм" className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
+              <input value={contacts.phone} onChange={(e) => setContacts((p) => ({ ...p, phone: e.target.value }))} placeholder={t("partner.phonePlaceholder")} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
+              <input value={contacts.telegram} onChange={(e) => setContacts((p) => ({ ...p, telegram: e.target.value }))} placeholder={t("partner.telegramPlaceholder")} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
             </div>
-            <button onClick={submitContacts} className="mt-4 w-full rounded-2xl bg-teal py-3.5 font-bold text-white">Отправить на подтверждение</button>
+            <button onClick={submitContacts} className="mt-4 w-full rounded-2xl bg-teal py-3.5 font-bold text-white">{t("partner.submitForApproval")}</button>
           </div>
         </div>
       )}
@@ -179,10 +183,10 @@ export default function Partner() {
       {stage === "pending" && (
         <div className="mx-auto max-w-xl rounded-3xl bg-card p-8 text-center ring-1 ring-border/60">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gold/15"><ShieldCheck size={32} className="text-gold" /></div>
-          <h2 className="mb-2 text-xl font-extrabold">Профиль на подтверждении</h2>
-          <p className="mb-6 text-sm text-muted-foreground">Администратор проверяет ваши данные. Обычно это занимает до 24 часов. Вы получите уведомление на email.</p>
-          <button onClick={() => { setStage("cabinet"); toast.success("Демо: профиль подтверждён администратором"); }} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">
-            Перейти в кабинет (демо)
+          <h2 className="mb-2 text-xl font-extrabold">{t("partner.pendingTitle")}</h2>
+          <p className="mb-6 text-sm text-muted-foreground">{t("partner.pendingText")}</p>
+          <button onClick={() => { setStage("cabinet"); toast.success(t("partner.demoApproved")); }} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">
+            {t("partner.demoEnterCabinet")}
           </button>
         </div>
       )}
@@ -194,31 +198,31 @@ export default function Partner() {
         <div>
           {/* Stats */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard icon={TrendingUp} label="Доход" value={`${revenue.toLocaleString("ru-RU")}₽`} />
-            <StatCard icon={Receipt} label="Транзакций" value={String(partnerTransactions.length)} />
-            <StatCard icon={Users} label="Гостей" value={String(guests.reduce((s, g) => s + g.ticketCount, 0))} />
-            <StatCard icon={Star} label="Рейтинг" value={avgRating.toFixed(1)} accent />
+            <StatCard icon={TrendingUp} label={t("partner.kpiIncome")} value={`${formatNumber(revenue)}₽`} />
+            <StatCard icon={Receipt} label={t("partner.kpiTransactions")} value={String(partnerTransactions.length)} />
+            <StatCard icon={Users} label={t("partner.kpiGuestsShort")} value={String(guests.reduce((sum, g) => sum + g.ticketCount, 0))} />
+            <StatCard icon={Star} label={t("partner.kpiRating")} value={avgRating.toFixed(1)} accent />
           </div>
 
           {/* Tabs */}
           <div className="no-scrollbar mb-5 flex gap-2 overflow-x-auto">
-            {([["tours", "Туры"], ["guests", "Клиенты"], ["transactions", "Транзакции"], ["reviews", "Отзывы"]] as const).map(([k, l]) => (
-              <button key={k} onClick={() => setTab(k)} className={cn("shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors", tab === k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>{l}</button>
+            {([["tours", "partner.tabTours"], ["guests", "partner.tabGuests"], ["transactions", "partner.tabTransactions"], ["reviews", "partner.tabReviews"]] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setTab(k)} className={cn("shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors", tab === k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>{t(l)}</button>
             ))}
           </div>
 
           {tab === "tours" && (
             <div className="space-y-3">
               <button onClick={() => setShowAddForm((s) => !s)} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-teal/50 bg-teal/5 py-3 font-semibold text-teal">
-                <Plus size={18} /> Добавить экскурсию
+                <Plus size={18} /> {t("partner.addTour")}
               </button>
               {showAddForm && (
                 <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
-                  <input value={newTour.title} onChange={(e) => setNewTour((p) => ({ ...p, title: e.target.value }))} placeholder="Название экскурсии" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <input value={newTour.city} onChange={(e) => setNewTour((p) => ({ ...p, city: e.target.value }))} placeholder="Город" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder="Цена, ₽" inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <p className="text-xs text-muted-foreground">Добавьте фото/видео в мобильном приложении. После отправки экскурсия уходит администратору на модерацию.</p>
-                  <button onClick={addTour} className="w-full rounded-xl bg-teal py-2.5 font-bold text-white">Отправить на модерацию</button>
+                  <input value={newTour.title} onChange={(e) => setNewTour((p) => ({ ...p, title: e.target.value }))} placeholder={t("partner.fieldTitlePlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                  <input value={newTour.city} onChange={(e) => setNewTour((p) => ({ ...p, city: e.target.value }))} placeholder={t("partner.fieldCity")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder={t("partner.fieldPrice")} inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                  <p className="text-xs text-muted-foreground">{t("partner.mediaWebHint")}</p>
+                  <button onClick={addTour} className="w-full rounded-xl bg-teal py-2.5 font-bold text-white">{t("partner.submitTour")}</button>
                 </div>
               )}
               {submissions.map((s) => (
@@ -226,7 +230,7 @@ export default function Partner() {
                   <img src={s.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{s.title}</div>
-                    <div className="text-xs text-muted-foreground">{s.city} · {s.price.toLocaleString("ru-RU")}₽ · {s.submittedAt}</div>
+                    <div className="text-xs text-muted-foreground">{s.city} · {formatNumber(s.price)}₽ · {s.submittedAt}</div>
                   </div>
                   <StatusBadge status={s.status} />
                 </div>
@@ -253,24 +257,24 @@ export default function Partner() {
           {tab === "transactions" && (
             <div>
               <div className="no-scrollbar mb-4 flex gap-2 overflow-x-auto">
-                {([["week", "Неделя"], ["month", "Месяц"], ["halfYear", "Полгода"], ["year", "Год"]] as const).map(([k, l]) => (
-                  <button key={k} onClick={() => setPeriod(k)} className={cn("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", period === k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>{l}</button>
+                {([["week", "partner.periodWeek"], ["month", "partner.periodMonth"], ["halfYear", "partner.periodHalfYear"], ["year", "partner.periodYear"]] as const).map(([k, l]) => (
+                  <button key={k} onClick={() => setPeriod(k)} className={cn("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", period === k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>{t(l)}</button>
                 ))}
               </div>
               <div className="mb-4 rounded-2xl bg-teal/10 p-4 text-center">
-                <div className="text-xs text-muted-foreground">Доход за период</div>
-                <div className="text-2xl font-extrabold text-teal">{revenue.toLocaleString("ru-RU")}₽</div>
+                <div className="text-xs text-muted-foreground">{t("partner.revenueForPeriodWeb")}</div>
+                <div className="text-2xl font-extrabold text-teal">{formatNumber(revenue)}₽</div>
               </div>
               <div className="space-y-2.5">
-                {partnerTransactions.map((t) => (
-                  <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
+                {partnerTransactions.map((tx) => (
+                  <div key={tx.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold">{t.tourTitle}</div>
-                      <div className="text-xs text-muted-foreground">{t.guestName} · {t.date}</div>
+                      <div className="truncate font-semibold">{tx.tourTitle}</div>
+                      <div className="text-xs text-muted-foreground">{tx.guestName} · {tx.date}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-teal">+{t.amount.toLocaleString("ru-RU")}{t.currency}</div>
-                      <StatusBadge status={t.status === "completed" ? "published" : "pending"} small />
+                      <div className="font-bold text-teal">+{formatNumber(tx.amount)}{tx.currency}</div>
+                      <StatusBadge status={tx.status === "completed" ? "published" : "pending"} small />
                     </div>
                   </div>
                 ))}
@@ -283,7 +287,7 @@ export default function Partner() {
               <div className="rounded-2xl bg-card p-4 text-center ring-1 ring-border/60">
                 <div className="text-3xl font-extrabold text-gold">{avgRating.toFixed(1)}</div>
                 <div className="flex justify-center">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={16} className={i < Math.round(avgRating) ? "text-gold" : "text-muted-foreground/30"} fill={i < Math.round(avgRating) ? "#E8B931" : "transparent"} />)}</div>
-                <div className="text-xs text-muted-foreground">Рейтинг партнёра · {reviews.length} отзывов</div>
+                <div className="text-xs text-muted-foreground">{t("partner.ratingWithCount", { reviews: t("units.reviews", { count: reviews.length }) })}</div>
               </div>
               {reviews.map((r) => (
                 <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
@@ -295,7 +299,7 @@ export default function Partner() {
                   <p className="text-sm text-muted-foreground">{r.text}</p>
                   {r.reply ? (
                     <div className="mt-2 rounded-xl bg-teal/10 p-2.5 text-sm">
-                      <div className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold text-teal"><MessageSquare size={12} /> Ваш ответ</div>
+                      <div className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold text-teal"><MessageSquare size={12} /> {t("partner.yourReply")}</div>
                       {r.reply}
                     </div>
                   ) : (
@@ -303,10 +307,10 @@ export default function Partner() {
                       <input
                         value={replyDraft[r.id] ?? ""}
                         onChange={(e) => setReplyDraft((p) => ({ ...p, [r.id]: e.target.value }))}
-                        placeholder="Ответить на отзыв…"
+                        placeholder={t("partner.replyPlaceholder")}
                         className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-teal"
                       />
-                      <button onClick={() => { setReplyDraft((p) => ({ ...p, [r.id]: "" })); toast.success("Ответ отправлен на модерацию"); }} className="rounded-xl bg-teal px-4 text-sm font-semibold text-white">Отправить</button>
+                      <button onClick={() => { setReplyDraft((p) => ({ ...p, [r.id]: "" })); toast.success(t("partner.replySent")); }} className="rounded-xl bg-teal px-4 text-sm font-semibold text-white">{t("common.send")}</button>
                     </div>
                   )}
                 </div>
@@ -330,10 +334,11 @@ function StatCard({ icon: Icon, label, value, accent }: { icon: React.ComponentT
 }
 
 function StatusBadge({ status, small }: { status: "pending" | "published" | "rejected"; small?: boolean }) {
+  const t = useT();
   const cfg = {
-    published: { l: "Опубликован", c: "bg-mint/15 text-mint" },
-    pending: { l: "На модерации", c: "bg-orange-500/15 text-orange-500" },
-    rejected: { l: "Отклонён", c: "bg-coral/15 text-coral" },
-  }[status];
-  return <span className={cn("inline-block rounded-lg px-2.5 py-1 font-semibold", cfg.c, small ? "text-[10px]" : "text-xs")}>{cfg.l}</span>;
+    published: { l: "enums.tourStatus.published", c: "bg-mint/15 text-mint" },
+    pending: { l: "enums.tourStatus.pending", c: "bg-orange-500/15 text-orange-500" },
+    rejected: { l: "enums.tourStatus.rejected", c: "bg-coral/15 text-coral" },
+  }[status] as { l: TKey; c: string };
+  return <span className={cn("inline-block rounded-lg px-2.5 py-1 font-semibold", cfg.c, small ? "text-[10px]" : "text-xs")}>{t(cfg.l)}</span>;
 }

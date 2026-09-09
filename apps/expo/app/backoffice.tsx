@@ -34,16 +34,27 @@ import type { ThemeColors } from "@/constants/colors";
 import type { UserProfile, UserRole } from "@/services/api";
 import * as bo from "@/services/backoffice";
 import { TourEditorModal } from "@/components/backoffice/TourEditorModal";
+import { useT } from "@/providers/I18nProvider";
+import { translateError } from "@/i18n/errors";
+import type { TKey } from "@/i18n/keys";
 
 type Tab = "bookings" | "reviews" | "users" | "tours" | "partners" | "org";
 
-const showError = (msg: string) => Alert.alert("Ошибка", msg);
-const errText = (e: unknown) => (e instanceof Error ? e.message : "Ошибка");
+/** Алерты бэкофиса: заголовок и текст ошибки — из каталога, ошибка сервера по коду */
+function useBackofficeAlerts() {
+  const t = useT();
+  return {
+    t,
+    showError: (msg: string) => Alert.alert(t("common.error"), msg),
+    errText: (e: unknown) => translateError(e, t),
+  };
+}
 
 export default function BackofficeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const auth = useAuth();
+  const t = useT();
 
   const isPartner = auth.role === "partner";
   const isStaff = auth.role === "admin" || auth.role === "manager";
@@ -56,7 +67,7 @@ export default function BackofficeScreen() {
   }, [isPartner, tab]);
 
   const screenOptions = {
-    title: isPartner ? "Кабинет партнёра" : "Бэкофис",
+    title: t(isPartner ? "backoffice.titlePartner" : "backoffice.backofficeShort"),
     headerStyle: { backgroundColor: colors.headerBg },
     headerTintColor: "#FFFFFF",
   };
@@ -76,28 +87,28 @@ export default function BackofficeScreen() {
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Stack.Screen options={screenOptions} />
         <ShieldCheck size={44} color={colors.textMuted} />
-        <Text style={[styles.deniedTitle, { color: colors.text }]}>Доступ запрещён</Text>
+        <Text style={[styles.deniedTitle, { color: colors.text }]}>{t("backoffice.deniedTitle")}</Text>
         <Text style={[styles.deniedText, { color: colors.textMuted }]}>
-          Бэкофис доступен партнёрам, менеджерам и администраторам.
+          {t("backoffice.deniedText")}
         </Text>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.teal }]} onPress={() => router.back()}>
-          <Text style={styles.backBtnText}>Назад</Text>
+          <Text style={styles.backBtnText}>{t("common.back")}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const tabs: { k: Tab; l: string; icon: React.ComponentType<{ size: number; color: string }> }[] = isPartner
+  const tabs: { k: Tab; l: TKey; icon: React.ComponentType<{ size: number; color: string }> }[] = isPartner
     ? [
-        { k: "tours", l: "Мои туры", icon: MapIcon },
-        { k: "org", l: "Организация", icon: Building2 },
+        { k: "tours", l: "backoffice.tabMyTours", icon: MapIcon },
+        { k: "org", l: "backoffice.tabOrgShort", icon: Building2 },
       ]
     : [
-        { k: "bookings", l: "Брони", icon: ClipboardList },
-        { k: "reviews", l: "Отзывы", icon: MessageSquare },
-        { k: "users", l: "Пользователи", icon: UsersIcon },
-        { k: "tours", l: "Туры", icon: MapIcon },
-        { k: "partners", l: "Партнёры", icon: Building2 },
+        { k: "bookings", l: "backoffice.tabBookings", icon: ClipboardList },
+        { k: "reviews", l: "backoffice.tabReviews", icon: MessageSquare },
+        { k: "users", l: "backoffice.tabUsers", icon: UsersIcon },
+        { k: "tours", l: "backoffice.tabTours", icon: MapIcon },
+        { k: "partners", l: "backoffice.tabPartners", icon: Building2 },
       ];
 
   return (
@@ -106,16 +117,16 @@ export default function BackofficeScreen() {
 
       <View style={styles.tabBarWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
-          {tabs.map((t) => {
-            const active = tab === t.k;
+          {tabs.map((item) => {
+            const active = tab === item.k;
             return (
               <TouchableOpacity
-                key={t.k}
-                onPress={() => setTab(t.k)}
+                key={item.k}
+                onPress={() => setTab(item.k)}
                 style={[styles.tabChip, { backgroundColor: active ? colors.teal : colors.surface, borderColor: colors.border }]}
               >
-                <t.icon size={14} color={active ? "#FFF" : colors.textMuted} />
-                <Text style={[styles.tabChipText, { color: active ? "#FFF" : colors.text }]}>{t.l}</Text>
+                <item.icon size={14} color={active ? "#FFF" : colors.textMuted} />
+                <Text style={[styles.tabChipText, { color: active ? "#FFF" : colors.text }]}>{t(item.l)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -135,6 +146,7 @@ export default function BackofficeScreen() {
 // ─── Брони ───────────────────────────────────────────────────
 
 function BookingsTab({ colors }: { colors: ThemeColors }) {
+  const { t, showError, errText } = useBackofficeAlerts();
   const queryClient = useQueryClient();
   const requested = useQuery({ queryKey: ["bo-bookings", "requested"], queryFn: () => bo.fetchBackofficeBookings("requested") });
   const confirmed = useQuery({ queryKey: ["bo-bookings", "confirmed"], queryFn: () => bo.fetchBackofficeBookings("confirmed") });
@@ -159,8 +171,8 @@ function BookingsTab({ colors }: { colors: ThemeColors }) {
       contentContainerStyle={styles.listContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.teal} />}
     >
-      <Text style={[styles.groupTitle, { color: colors.text }]}>Новые заявки</Text>
-      {(requested.data ?? []).length === 0 && <Empty colors={colors} text="Нет заявок, ожидающих подтверждения" />}
+      <Text style={[styles.groupTitle, { color: colors.text }]}>{t("backoffice.newRequests")}</Text>
+      {(requested.data ?? []).length === 0 && <Empty colors={colors} text={t("backoffice.noRequests")} />}
       {(requested.data ?? []).map((b) => (
         <Card key={b.id} colors={colors}>
           <View style={styles.cardRow}>
@@ -168,7 +180,7 @@ function BookingsTab({ colors }: { colors: ThemeColors }) {
             <View style={styles.flex1}>
               <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{b.tourTitle}</Text>
               <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
-                {b.tourDate} · {b.tickets} чел. · {b.amountRub.toLocaleString("ru-RU")}₽ · {b.code}
+                {b.tourDate} · {t("units.people", { count: b.tickets })} · {b.amountRub.toLocaleString()}₽ · {b.code}
               </Text>
               <Text style={[styles.cardMeta, { color: colors.textMuted }]}>{b.guest} · {b.contact}</Text>
             </View>
@@ -182,8 +194,8 @@ function BookingsTab({ colors }: { colors: ThemeColors }) {
         </Card>
       ))}
 
-      <Text style={[styles.groupTitle, { color: colors.text, marginTop: 14 }]}>Подтверждённые</Text>
-      {(confirmed.data ?? []).length === 0 && <Empty colors={colors} text="Нет подтверждённых броней" />}
+      <Text style={[styles.groupTitle, { color: colors.text, marginTop: 14 }]}>{t("backoffice.confirmedShort")}</Text>
+      {(confirmed.data ?? []).length === 0 && <Empty colors={colors} text={t("backoffice.noConfirmed")} />}
       {(confirmed.data ?? []).map((b) => (
         <Card key={b.id} colors={colors}>
           <View style={styles.cardRow}>
@@ -192,7 +204,7 @@ function BookingsTab({ colors }: { colors: ThemeColors }) {
               <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{b.tourTitle}</Text>
               <Text style={[styles.cardMeta, { color: colors.textMuted }]}>{b.tourDate} · {b.guest} · {b.code}</Text>
             </View>
-            <SmallBtn colors={colors} label="Завершить" onPress={() => action.mutate({ id: b.id, action: "complete" })} />
+            <SmallBtn colors={colors} label={t("backoffice.complete")} onPress={() => action.mutate({ id: b.id, action: "complete" })} />
           </View>
         </Card>
       ))}
@@ -203,6 +215,7 @@ function BookingsTab({ colors }: { colors: ThemeColors }) {
 // ─── Отзывы ──────────────────────────────────────────────────
 
 function ReviewsTab({ colors }: { colors: ThemeColors }) {
+  const { t, showError, errText } = useBackofficeAlerts();
   const queryClient = useQueryClient();
   const reviews = useQuery({ queryKey: ["bo-reviews"], queryFn: bo.fetchPendingReviews });
 
@@ -222,7 +235,7 @@ function ReviewsTab({ colors }: { colors: ThemeColors }) {
       contentContainerStyle={styles.listContent}
       refreshControl={<RefreshControl refreshing={reviews.isRefetching} onRefresh={() => void reviews.refetch()} tintColor={colors.teal} />}
     >
-      {(reviews.data ?? []).length === 0 && <Empty colors={colors} text="Нет отзывов на модерации" />}
+      {(reviews.data ?? []).length === 0 && <Empty colors={colors} text={t("backoffice.noReviews")} />}
       {(reviews.data ?? []).map((r) => (
         <Card key={r.id} colors={colors}>
           <View style={styles.cardRow}>
@@ -252,14 +265,15 @@ function ReviewsTab({ colors }: { colors: ThemeColors }) {
 
 // ─── Пользователи ────────────────────────────────────────────
 
-const ROLE_LABELS: { v: UserRole; l: string }[] = [
-  { v: "user", l: "Пользователь" },
-  { v: "partner", l: "Партнёр" },
-  { v: "manager", l: "Менеджер" },
-  { v: "admin", l: "Админ" },
+const ROLE_LABELS: { v: UserRole; l: TKey }[] = [
+  { v: "user", l: "enums.role.user" },
+  { v: "partner", l: "enums.role.partner" },
+  { v: "manager", l: "enums.role.manager" },
+  { v: "admin", l: "enums.role.admin" },
 ];
 
 function UsersTab({ colors, isAdmin, myId }: { colors: ThemeColors; isAdmin: boolean; myId?: string }) {
+  const { t, showError, errText } = useBackofficeAlerts();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
   const users = useQuery({ queryKey: ["bo-users", q], queryFn: () => bo.listUsers(q || undefined) });
@@ -278,20 +292,20 @@ function UsersTab({ colors, isAdmin, myId }: { colors: ThemeColors; isAdmin: boo
 
   const pickRole = (u: UserProfile) => {
     if (!isAdmin) {
-      showError("Роли меняет только админ");
+      showError(t("backoffice.roleAdminOnly"));
       return;
     }
     Alert.alert(
-      "Роль пользователя",
+      t("backoffice.roleTitle"),
       u.email,
       [
         ...ROLE_LABELS.filter((r) => r.v !== "partner").map((r) => ({
-          text: r.l + (u.role === r.v ? " ✓" : ""),
+          text: t(r.l) + (u.role === r.v ? " ✓" : ""),
           onPress: () => {
             if (u.role !== r.v) roleAction.mutate({ id: u.id, role: r.v });
           },
         })),
-        { text: "Отмена", style: "cancel" as const },
+        { text: t("common.cancel"), style: "cancel" as const },
       ],
     );
   };
@@ -308,16 +322,17 @@ function UsersTab({ colors, isAdmin, myId }: { colors: ThemeColors; isAdmin: boo
         style={[styles.search, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
         value={q}
         onChangeText={setQ}
-        placeholder="Поиск по email или имени"
+        placeholder={t("backoffice.userSearchPlaceholder")}
         placeholderTextColor={colors.textMuted}
         autoCapitalize="none"
       />
       <Text style={[styles.hint, { color: colors.textMuted }]}>
-        Роль «Партнёр» назначается на вкладке «Партнёры» (вместе с профилем организации).
+        {t("backoffice.partnerRoleHint")}
       </Text>
       {(users.data ?? []).map((u) => {
         const self = u.id === myId;
-        const roleLabel = ROLE_LABELS.find((r) => r.v === u.role)?.l ?? u.role;
+        const roleKey = ROLE_LABELS.find((r) => r.v === u.role)?.l;
+    const roleLabel = roleKey ? t(roleKey) : u.role;
         return (
           <Card key={u.id} colors={colors}>
             <View style={styles.cardRow}>
@@ -329,14 +344,14 @@ function UsersTab({ colors, isAdmin, myId }: { colors: ThemeColors; isAdmin: boo
               <View style={styles.flex1}>
                 <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
                   {u.first_name || u.email.split("@")[0]}{u.last_name ? ` ${u.last_name}` : ""}
-                  {!u.is_active ? "  ·  деактивирован" : ""}
+                  {!u.is_active ? `  ·  ${t("backoffice.deactivatedInline")}` : ""}
                 </Text>
                 <Text style={[styles.cardMeta, { color: colors.textMuted }]} numberOfLines={1}>{u.email}</Text>
               </View>
               <SmallBtn colors={colors} label={roleLabel} muted disabled={self} onPress={() => pickRole(u)} />
               <SmallBtn
                 colors={colors}
-                label={u.is_active ? "Выкл" : "Вкл"}
+                label={t(u.is_active ? "common.off" : "common.on")}
                 muted={u.is_active}
                 disabled={self}
                 onPress={() => activeAction.mutate({ id: u.id, active: !u.is_active })}
@@ -352,6 +367,7 @@ function UsersTab({ colors, isAdmin, myId }: { colors: ThemeColors; isAdmin: boo
 // ─── Туры ────────────────────────────────────────────────────
 
 function ToursTab({ colors, isPartner, isStaff }: { colors: ThemeColors; isPartner: boolean; isStaff: boolean }) {
+  const { t, showError, errText } = useBackofficeAlerts();
   const queryClient = useQueryClient();
   const { cities } = useCatalog();
   const tours = useQuery({ queryKey: ["backoffice-tours"], queryFn: bo.fetchBackofficeTours });
@@ -376,7 +392,7 @@ function ToursTab({ colors, isPartner, isStaff }: { colors: ThemeColors; isPartn
       >
         {isPartner && (
           <Text style={[styles.hint, { color: colors.textMuted }]}>
-            Новые туры и правки сохраняются черновиком — на витрину их выводит менеджер.
+            {t("backoffice.draftHint")}
           </Text>
         )}
         <TouchableOpacity
@@ -384,34 +400,34 @@ function ToursTab({ colors, isPartner, isStaff }: { colors: ThemeColors; isPartn
           onPress={() => setEditor({ open: true, tour: null })}
         >
           <Plus size={17} color={colors.teal} />
-          <Text style={[styles.createBtnText, { color: colors.teal }]}>Создать тур</Text>
+          <Text style={[styles.createBtnText, { color: colors.teal }]}>{t("backoffice.createTour")}</Text>
         </TouchableOpacity>
 
-        {(tours.data ?? []).length === 0 && <Empty colors={colors} text="Туров пока нет — создайте первый" />}
-        {(tours.data ?? []).map((t) => {
-          const published = t.status === "published";
+        {(tours.data ?? []).length === 0 && <Empty colors={colors} text={t("backoffice.noTours")} />}
+        {(tours.data ?? []).map((tour) => {
+          const published = tour.status === "published";
           return (
-            <Card key={t.id} colors={colors}>
+            <Card key={tour.id} colors={colors}>
               <View style={styles.cardRow}>
-                <Image source={{ uri: t.image_url }} style={styles.thumb} contentFit="cover" />
+                <Image source={{ uri: tour.image_url }} style={styles.thumb} contentFit="cover" />
                 <View style={styles.flex1}>
-                  <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{t.title}</Text>
+                  <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{tour.title}</Text>
                   <Text style={[styles.cardMeta, { color: colors.textMuted }]} numberOfLines={1}>
-                    {t.city_name} · {Math.round(t.price_kopeks / 100).toLocaleString("ru-RU")}₽ · {t.organizer.name}
+                    {tour.city_name} · {Math.round(tour.price_kopeks / 100).toLocaleString()}₽ · {tour.organizer.name}
                   </Text>
                   <Text style={[styles.statusBadge, { color: published ? colors.mint : colors.gold }]}>
-                    {published ? "Опубликован" : isPartner ? "Черновик — публикует менеджер" : "Черновик"}
+                    {published ? t("enums.tourStatus.published") : isPartner ? t("backoffice.draftByManager") : t("enums.tourStatus.draft")}
                   </Text>
                 </View>
-                <IconBtn colors={colors} bg={colors.inputBg} onPress={() => setEditor({ open: true, tour: t })}>
+                <IconBtn colors={colors} bg={colors.inputBg} onPress={() => setEditor({ open: true, tour })}>
                   <Pencil size={15} color={colors.textMuted} />
                 </IconBtn>
                 {isStaff && (
                   <SmallBtn
                     colors={colors}
-                    label={published ? "Снять" : "Опубликовать"}
+                    label={t(published ? "backoffice.unpublish" : "backoffice.publish")}
                     muted={published}
-                    onPress={() => statusAction.mutate({ id: t.id, status: published ? "draft" : "published" })}
+                    onPress={() => statusAction.mutate({ id: tour.id, status: published ? "draft" : "published" })}
                   />
                 )}
               </View>
@@ -437,6 +453,7 @@ function ToursTab({ colors, isPartner, isStaff }: { colors: ThemeColors; isPartn
 // ─── Партнёры (staff) ────────────────────────────────────────
 
 function PartnersTab({ colors, isAdmin }: { colors: ThemeColors; isAdmin: boolean }) {
+  const { t, showError, errText } = useBackofficeAlerts();
   const queryClient = useQueryClient();
   const partners = useQuery({ queryKey: ["bo-partners"], queryFn: bo.fetchPartners });
   const users = useQuery({ queryKey: ["bo-users", ""], queryFn: () => bo.listUsers() });
@@ -477,14 +494,14 @@ function PartnersTab({ colors, isAdmin }: { colors: ThemeColors; isAdmin: boolea
       {isAdmin && (
         <TouchableOpacity style={[styles.createBtn, { borderColor: colors.teal }]} onPress={() => setShowAssign((v) => !v)}>
           <Plus size={17} color={colors.teal} />
-          <Text style={[styles.createBtnText, { color: colors.teal }]}>Назначить партнёра</Text>
+          <Text style={[styles.createBtnText, { color: colors.teal }]}>{t("backoffice.assignPartner")}</Text>
         </TouchableOpacity>
       )}
 
       {showAssign && (
         <Card colors={colors}>
           <Text style={[styles.hint, { color: colors.textMuted }]}>
-            Пользователь сначала регистрируется сам, затем выбирается здесь:
+            {t("backoffice.assignUserHint")}
           </Text>
           <View style={styles.chipWrap}>
             {candidates.map((u) => (
@@ -502,21 +519,21 @@ function PartnersTab({ colors, isAdmin }: { colors: ThemeColors; isAdmin: boolea
               </TouchableOpacity>
             ))}
             {candidates.length === 0 && (
-              <Text style={[styles.hint, { color: colors.textMuted }]}>Нет подходящих пользователей (роль user)</Text>
+              <Text style={[styles.hint, { color: colors.textMuted }]}>{t("backoffice.noEligibleUsers")}</Text>
             )}
           </View>
           <TextInput
             style={[styles.search, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
             value={assignOrg}
             onChangeText={setAssignOrg}
-            placeholder="Название организации"
+            placeholder={t("backoffice.orgName")}
             placeholderTextColor={colors.textMuted}
           />
           <TextInput
             style={[styles.search, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
             value={assignInn}
             onChangeText={setAssignInn}
-            placeholder="ИНН (проверяется вручную)"
+            placeholder={t("backoffice.orgInnManual")}
             placeholderTextColor={colors.textMuted}
             keyboardType="number-pad"
           />
@@ -525,12 +542,12 @@ function PartnersTab({ colors, isAdmin }: { colors: ThemeColors; isAdmin: boolea
             disabled={!assignUserId || !assignOrg.trim() || assign.isPending}
             onPress={() => assign.mutate()}
           >
-            {assign.isPending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.primaryBtnText}>Назначить</Text>}
+            {assign.isPending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.primaryBtnText}>{t("backoffice.assign")}</Text>}
           </TouchableOpacity>
         </Card>
       )}
 
-      {(partners.data ?? []).length === 0 && <Empty colors={colors} text="Партнёров пока нет" />}
+      {(partners.data ?? []).length === 0 && <Empty colors={colors} text={t("backoffice.noPartners")} />}
       {(partners.data ?? []).map((p) => (
         <Card key={p.id} colors={colors}>
           <View style={styles.cardRow}>
@@ -543,12 +560,12 @@ function PartnersTab({ colors, isAdmin }: { colors: ThemeColors; isAdmin: boolea
                 {p.verified && <BadgeCheck size={14} color={colors.mint} />}
               </View>
               <Text style={[styles.cardMeta, { color: colors.textMuted }]} numberOfLines={1}>
-                {p.user_email}{p.inn ? ` · ИНН ${p.inn}` : ""}
+                {p.user_email}{p.inn ? ` · ${t("backoffice.orgInn")} ${p.inn}` : ""}
               </Text>
             </View>
             <SmallBtn
               colors={colors}
-              label={p.verified ? "Снять проверку" : "Подтвердить"}
+              label={t(p.verified ? "backoffice.unverify" : "backoffice.confirm")}
               muted={p.verified}
               onPress={() => toggleVerified.mutate({ id: p.id, verified: !p.verified })}
             />
@@ -562,6 +579,7 @@ function PartnersTab({ colors, isAdmin }: { colors: ThemeColors; isAdmin: boolea
 // ─── Профиль организации (partner) ───────────────────────────
 
 function OrgTab({ colors }: { colors: ThemeColors }) {
+  const { t, showError, errText } = useBackofficeAlerts();
   const queryClient = useQueryClient();
   const profile = useQuery({ queryKey: ["bo-my-partner"], queryFn: bo.fetchMyPartnerProfile });
   const [form, setForm] = useState({ org_name: "", description: "", phone: "", inn: "" });
@@ -582,7 +600,7 @@ function OrgTab({ colors }: { colors: ThemeColors }) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["bo-my-partner"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-      Alert.alert("Готово", "Профиль сохранён — название попадёт в карточки ваших туров");
+      Alert.alert(t("common.done"), t("backoffice.orgSaved"));
     },
     onError: (e: unknown) => showError(errText(e)),
   });
@@ -591,7 +609,7 @@ function OrgTab({ colors }: { colors: ThemeColors }) {
   if (profile.isError) {
     return (
       <View style={styles.listContent}>
-        <Empty colors={colors} text="Профиль организации не найден — обратитесь к администратору" />
+        <Empty colors={colors} text={t("backoffice.orgNotFound")} />
       </View>
     );
   }
@@ -602,35 +620,35 @@ function OrgTab({ colors }: { colors: ThemeColors }) {
     <ScrollView contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
       <Card colors={colors}>
         <View style={styles.orgNameRow}>
-          <Text style={[styles.groupTitle, { color: colors.text }]}>Профиль организации</Text>
+          <Text style={[styles.groupTitle, { color: colors.text }]}>{t("backoffice.orgTitle")}</Text>
           {profile.data?.verified ? (
             <View style={styles.verifiedRow}>
               <BadgeCheck size={14} color={colors.mint} />
-              <Text style={[styles.verifiedText, { color: colors.mint }]}>Проверен</Text>
+              <Text style={[styles.verifiedText, { color: colors.mint }]}>{t("backoffice.verified")}</Text>
             </View>
           ) : (
-            <Text style={[styles.verifiedText, { color: colors.gold }]}>На проверке</Text>
+            <Text style={[styles.verifiedText, { color: colors.gold }]}>{t("backoffice.onReview")}</Text>
           )}
         </View>
-        <Text style={[styles.hint, { color: colors.textMuted }]}>Название организации</Text>
+        <Text style={[styles.hint, { color: colors.textMuted }]}>{t("backoffice.orgName")}</Text>
         <TextInput style={input} value={form.org_name} onChangeText={(v) => setForm((f) => ({ ...f, org_name: v }))} />
-        <Text style={[styles.hint, { color: colors.textMuted }]}>Описание</Text>
+        <Text style={[styles.hint, { color: colors.textMuted }]}>{t("backoffice.orgDescription")}</Text>
         <TextInput
           style={[...input, styles.orgDescription]}
           value={form.description}
           onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
           multiline
         />
-        <Text style={[styles.hint, { color: colors.textMuted }]}>Телефон</Text>
+        <Text style={[styles.hint, { color: colors.textMuted }]}>{t("backoffice.orgPhone")}</Text>
         <TextInput style={input} value={form.phone} onChangeText={(v) => setForm((f) => ({ ...f, phone: v }))} keyboardType="phone-pad" />
-        <Text style={[styles.hint, { color: colors.textMuted }]}>ИНН</Text>
+        <Text style={[styles.hint, { color: colors.textMuted }]}>{t("backoffice.orgInn")}</Text>
         <TextInput style={input} value={form.inn} onChangeText={(v) => setForm((f) => ({ ...f, inn: v }))} keyboardType="number-pad" />
         <TouchableOpacity
           style={[styles.primaryBtn, { backgroundColor: colors.teal, opacity: save.isPending || !form.org_name.trim() ? 0.6 : 1 }]}
           disabled={save.isPending || !form.org_name.trim()}
           onPress={() => save.mutate()}
         >
-          {save.isPending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.primaryBtnText}>Сохранить</Text>}
+          {save.isPending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.primaryBtnText}>{t("common.save")}</Text>}
         </TouchableOpacity>
       </Card>
     </ScrollView>

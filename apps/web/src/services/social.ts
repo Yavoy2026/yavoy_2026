@@ -9,7 +9,7 @@ export interface FavoritesResponse {
 
 export async function fetchFavorites(): Promise<FavoritesResponse> {
   const res = await authFetch("/me/favorites");
-  if (!res.ok) throw new Error("Не удалось загрузить избранное");
+  if (!res.ok) throw new ApiError(res.status, "favoritesLoadFailed", "favoritesLoadFailed");
   return res.json() as Promise<FavoritesResponse>;
 }
 
@@ -65,7 +65,7 @@ function adaptMyReview(r: ApiMyReview): MyReview {
 
 export async function fetchMyReviews(): Promise<MyReview[]> {
   const res = await authFetch("/me/reviews");
-  if (!res.ok) throw new Error("Не удалось загрузить отзывы");
+  if (!res.ok) throw new ApiError(res.status, "reviewsLoadFailed", "reviewsLoadFailed");
   const body = (await res.json()) as { items: ApiMyReview[] };
   return body.items.map(adaptMyReview);
 }
@@ -83,7 +83,7 @@ export async function createReview(
     const body = (await res.json().catch(() => null)) as {
       error?: { code?: string; message?: string };
     } | null;
-    throw new ApiError(res.status, body?.error?.code ?? "unknown", body?.error?.message ?? "Не удалось отправить отзыв");
+    throw new ApiError(res.status, body?.error?.code ?? "unknown", body?.error?.message ?? "reviewSendFailed");
   }
   return adaptMyReview((await res.json()) as ApiMyReview);
 }

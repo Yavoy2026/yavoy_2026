@@ -63,21 +63,20 @@ import { useBookings } from "@/providers/BookingsProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { Tour, TourReview, BookedTour } from "@/types/tour";
+import { tourLanguageList } from "@yavoy/i18n";
+import { useI18n } from "@/providers/I18nProvider";
+import { translateError } from "@/i18n/errors";
+import type { TKey } from "@/i18n/keys";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const transportIcons: Record<string, React.ComponentType<{ size: number; color: string }>> = {
   auto: Car, water: Waves, sea: Ship, bike: Bike, air: Plane,
 };
-const transportLabels: Record<string, string> = {
-  auto: "Автомобильная", water: "Водная", sea: "Морская", bike: "Велосипедная", air: "Авиа",
-};
-const interestLabels: Record<string, string> = {
-  city: "Городская", educational: "Познавательная", nature: "Природная", pilgrimage: "Паломничество",
-};
 
 function ReviewCard({ review }: { review: TourReview }) {
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   return (
     <View style={[detailStyles.reviewCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
       <View style={detailStyles.reviewHeader}>
@@ -146,6 +145,7 @@ function MapPickerModal({
   coords?: { lat: number; lng: number };
 }) {
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
 
   const openInYandex = useCallback(() => {
     let url: string;
@@ -173,7 +173,7 @@ function MapPickerModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={detailStyles.modalOverlay} activeOpacity={1} onPress={onClose}>
         <View style={[detailStyles.modalContent, { backgroundColor: colors.surface }]}>
-          <Text style={[detailStyles.modalTitle, { color: colors.text }]}>{"Открыть в карте"}</Text>
+          <Text style={[detailStyles.modalTitle, { color: colors.text }]}>{t("tour.mapTitle")}</Text>
           <Text style={[detailStyles.modalSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>{meetingPoint}</Text>
 
           <TouchableOpacity style={[detailStyles.mapOption, { backgroundColor: colors.surfaceSecondary }]} onPress={openInYandex} activeOpacity={0.7}>
@@ -181,8 +181,8 @@ function MapPickerModal({
               <Text style={detailStyles.mapEmoji}>{"🗺"}</Text>
             </View>
             <View style={detailStyles.mapOptionText}>
-              <Text style={[detailStyles.mapOptionTitle, { color: colors.text }]}>{"Яндекс Карты"}</Text>
-              <Text style={[detailStyles.mapOptionDesc, { color: colors.textMuted }]}>{"Навигация и маршрут"}</Text>
+              <Text style={[detailStyles.mapOptionTitle, { color: colors.text }]}>{t("tour.mapYandex")}</Text>
+              <Text style={[detailStyles.mapOptionDesc, { color: colors.textMuted }]}>{t("tour.mapYandexDesc")}</Text>
             </View>
             <ExternalLink size={16} color={colors.textMuted} />
           </TouchableOpacity>
@@ -192,14 +192,14 @@ function MapPickerModal({
               <Text style={detailStyles.mapEmoji}>{"📍"}</Text>
             </View>
             <View style={detailStyles.mapOptionText}>
-              <Text style={[detailStyles.mapOptionTitle, { color: colors.text }]}>{"2ГИС"}</Text>
-              <Text style={[detailStyles.mapOptionDesc, { color: colors.textMuted }]}>{"Подробная карта города"}</Text>
+              <Text style={[detailStyles.mapOptionTitle, { color: colors.text }]}>{t("tour.mapGis")}</Text>
+              <Text style={[detailStyles.mapOptionDesc, { color: colors.textMuted }]}>{t("tour.mapGisDesc")}</Text>
             </View>
             <ExternalLink size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[detailStyles.modalCancel, { borderColor: colors.border }]} onPress={onClose} activeOpacity={0.7}>
-            <Text style={[detailStyles.modalCancelText, { color: colors.textSecondary }]}>{"Отмена"}</Text>
+            <Text style={[detailStyles.modalCancelText, { color: colors.textSecondary }]}>{t("common.cancel")}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -219,6 +219,7 @@ function BookingAuthModal({
   onBookingComplete: (booking: BookedTour) => void;
 }) {
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { createBooking, isCreating } = useBookings();
@@ -237,23 +238,23 @@ function BookingAuthModal({
   const handleBook = useCallback(async () => {
     if (!tour) return;
     if (!isAuthenticated) {
-      Alert.alert("Нужен аккаунт", "Войдите, чтобы бронировать экскурсии", [
-        { text: "Отмена", style: "cancel" },
-        { text: "Войти", onPress: () => { onClose(); router.push("/auth/login"); } },
+      Alert.alert(t("booking.authRequiredTitle"), t("booking.authRequiredText"), [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.login"), onPress: () => { onClose(); router.push("/auth/login"); } },
       ]);
       return;
     }
     if (!selectedDate) {
-      Alert.alert("Ошибка", "На этот тур пока нет доступных дат");
+      Alert.alert(t("common.error"), t("booking.noDatesAlert"));
       return;
     }
     const contact = authMode === "phone" ? phoneValue : emailValue;
     if (!contact.trim()) {
-      Alert.alert("Ошибка", authMode === "phone" ? "Введите номер телефона" : "Введите email");
+      Alert.alert(t("common.error"), t(authMode === "phone" ? "booking.enterPhone" : "booking.enterEmail"));
       return;
     }
     if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert("Ошибка", "Введите имя и фамилию");
+      Alert.alert(t("common.error"), t("booking.enterName"));
       return;
     }
     try {
@@ -265,10 +266,7 @@ function BookingAuthModal({
         contact: contact.trim(),
       });
       onBookingComplete(booking);
-      Alert.alert(
-        "Заявка отправлена!",
-        `Код брони: ${booking.confirmationCode}. Мы подтвердим бронирование и свяжемся с вами.`,
-      );
+      Alert.alert(t("booking.sentTitle"), t("booking.sentText", { code: booking.confirmationCode }));
       onClose();
       setPhoneValue("");
       setEmailValue("");
@@ -277,10 +275,9 @@ function BookingAuthModal({
       setSelectedDateId(null);
       setTickets(1);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Попробуйте ещё раз";
-      Alert.alert("Не удалось забронировать", message);
+      Alert.alert(t("booking.failed"), translateError(e, t, "common.retry"));
     }
-  }, [authMode, phoneValue, emailValue, firstName, lastName, tour, isAuthenticated, selectedDate, tickets, maxTickets, createBooking, onClose, onBookingComplete, router]);
+  }, [authMode, phoneValue, emailValue, firstName, lastName, tour, isAuthenticated, selectedDate, tickets, maxTickets, createBooking, onClose, onBookingComplete, router, t]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -292,7 +289,7 @@ function BookingAuthModal({
                 <View style={[detailStyles.bookingHandle, { backgroundColor: colors.gray300 }]} />
               </View>
 
-              <Text style={[detailStyles.bookingModalTitle, { color: colors.text }]}>{"Бронирование"}</Text>
+              <Text style={[detailStyles.bookingModalTitle, { color: colors.text }]}>{t("booking.title")}</Text>
               <Text style={[detailStyles.bookingModalSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>{tour?.title || ""}</Text>
 
               {dates.length > 0 ? (
@@ -307,17 +304,17 @@ function BookingAuthModal({
                         activeOpacity={0.7}
                       >
                         <Text style={[detailStyles.dateChipText, { color: active ? "#FFFFFF" : colors.text }]}>{d.date}</Text>
-                        <Text style={[detailStyles.dateChipSeats, { color: active ? "#FFFFFF" : colors.textMuted }]}>{`мест: ${d.seatsLeft}`}</Text>
+                        <Text style={[detailStyles.dateChipSeats, { color: active ? "#FFFFFF" : colors.textMuted }]}>{t("units.seats", { count: d.seatsLeft })}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
               ) : (
-                <Text style={[detailStyles.bookingModalSubtitle, { color: colors.coral }]}>{"Нет доступных дат"}</Text>
+                <Text style={[detailStyles.bookingModalSubtitle, { color: colors.coral }]}>{t("booking.noDates")}</Text>
               )}
 
               <View style={detailStyles.ticketsRow}>
-                <Text style={[detailStyles.ticketsLabel, { color: colors.text }]}>{"Билеты"}</Text>
+                <Text style={[detailStyles.ticketsLabel, { color: colors.text }]}>{t("booking.tickets")}</Text>
                 <View style={detailStyles.ticketsStepper}>
                   <TouchableOpacity
                     style={[detailStyles.stepperBtn, { borderColor: colors.border }]}
@@ -336,7 +333,7 @@ function BookingAuthModal({
                   </TouchableOpacity>
                 </View>
                 {selectedDate ? (
-                  <Text style={[detailStyles.ticketsTotal, { color: colors.teal }]}>{`${(selectedDate.price * tickets).toLocaleString()} ₽`}</Text>
+                  <Text style={[detailStyles.ticketsTotal, { color: colors.teal }]}>{`${formatNumber(selectedDate.price * tickets)} ₽`}</Text>
                 ) : null}
               </View>
 
@@ -347,7 +344,7 @@ function BookingAuthModal({
                   activeOpacity={0.7}
                 >
                   <Phone size={14} color={authMode === "phone" ? "#FFFFFF" : colors.textMuted} />
-                  <Text style={[detailStyles.authModeBtnText, { color: authMode === "phone" ? "#FFFFFF" : colors.textMuted }]}>{"Телефон"}</Text>
+                  <Text style={[detailStyles.authModeBtnText, { color: authMode === "phone" ? "#FFFFFF" : colors.textMuted }]}>{t("booking.phone")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[detailStyles.authModeBtn, authMode === "email" && { backgroundColor: colors.teal }]}
@@ -392,7 +389,7 @@ function BookingAuthModal({
                 <User size={16} color={colors.textMuted} />
                 <TextInput
                   style={[detailStyles.inputField, { color: colors.text }]}
-                  placeholder="Имя"
+                  placeholder={t("booking.firstName")}
                   placeholderTextColor={colors.textMuted}
                   value={firstName}
                   onChangeText={setFirstName}
@@ -404,7 +401,7 @@ function BookingAuthModal({
                 <User size={16} color={colors.textMuted} />
                 <TextInput
                   style={[detailStyles.inputField, { color: colors.text }]}
-                  placeholder="Фамилия"
+                  placeholder={t("booking.lastName")}
                   placeholderTextColor={colors.textMuted}
                   value={lastName}
                   onChangeText={setLastName}
@@ -419,11 +416,11 @@ function BookingAuthModal({
                 activeOpacity={0.8}
                 testID="booking-submit"
               >
-                <Text style={detailStyles.bookingSubmitText}>{isCreating ? "Отправляем…" : "Забронировать"}</Text>
+                <Text style={detailStyles.bookingSubmitText}>{t(isCreating ? "common.sending" : "tour.book")}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={onClose} style={detailStyles.bookingCancelBtn} activeOpacity={0.7}>
-                <Text style={[detailStyles.bookingCancelText, { color: colors.textSecondary }]}>{"Отмена"}</Text>
+                <Text style={[detailStyles.bookingCancelText, { color: colors.textSecondary }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -435,6 +432,7 @@ function BookingAuthModal({
 
 function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void }) {
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   const { cityNameMap } = useCatalog();
   return (
     <TouchableOpacity
@@ -449,7 +447,7 @@ function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void })
           <MapPin size={11} color={colors.teal} />
           <Text style={[detailStyles.similarCity, { color: colors.textMuted }]}>{cityNameMap[tour.city] || tour.city}</Text>
         </View>
-        <Text style={[detailStyles.similarPrice, { color: colors.teal }]}>{`${tour.price.toLocaleString()} ${tour.currency}`}</Text>
+        <Text style={[detailStyles.similarPrice, { color: colors.teal }]}>{`${formatNumber(tour.price)} ${tour.currency}`}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -489,6 +487,7 @@ export default function TourDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { markViewed } = useViewedTours();
   const [mapModalVisible, setMapModalVisible] = useState<boolean>(false);
@@ -541,28 +540,28 @@ export default function TourDetailScreen() {
       const lines: string[] = [
         `🏷 ${tour.title}`,
         `📍 ${cityNameMap[tour.city] || tour.city}`,
-        `💰 ${tour.price.toLocaleString()} ${tour.currency} за человека`,
-        tour.originalPrice ? `🔥 Скидка! Было ${tour.originalPrice.toLocaleString()} ${tour.currency}` : "",
+        `💰 ${formatNumber(tour.price)} ${tour.currency} ${t("common.perPerson")}`,
+        tour.originalPrice ? `🔥 ${formatNumber(tour.originalPrice)} ${tour.currency}` : "",
         `⏱ ${tour.durationText}`,
-        tour.startTime ? `🕐 Начало: ${tour.startTime}` : "",
+        tour.startTime ? `🕐 ${t("tour.infoStart")}: ${tour.startTime}` : "",
         `👥 ${tour.groupSize}`,
-        `🗣 ${tour.languages.join(", ")}`,
+        `🗣 ${tourLanguageList(tour.languages, t as (k: string) => string)}`,
         `📅 ${tour.schedule}`,
         "",
         tour.description,
         "",
         tour.highlights.length > 0 ? `✨ ${tour.highlights.join(", ")}` : "",
         "",
-        `✅ Включено: ${tour.includes.join(", ")}`,
-        `❌ Не включено: ${tour.excludes.join(", ")}`,
+        `✅ ${t("tour.includes")}: ${tour.includes.join(", ")}`,
+        `❌ ${t("tour.excludes")}: ${tour.excludes.join(", ")}`,
         "",
-        tour.meetingPoint ? `📌 Место встречи: ${tour.meetingPoint}` : "",
-        tour.whatToBring && tour.whatToBring.length > 0 ? `🎒 Что взять: ${tour.whatToBring.join(", ")}` : "",
-        tour.bookingConditions ? `📋 Условия: ${tour.bookingConditions}` : "",
-        tour.prepayment ? `💳 Предоплата: ${tour.prepayment}` : "",
-        tour.cancellationPolicy ? `🔄 Отмена: ${tour.cancellationPolicy}` : "",
+        tour.meetingPoint ? `📌 ${t("voucher.meetingPoint")} ${tour.meetingPoint}` : "",
+        tour.whatToBring && tour.whatToBring.length > 0 ? `🎒 ${t("tour.whatToBring")}: ${tour.whatToBring.join(", ")}` : "",
+        tour.bookingConditions ? `📋 ${t("tour.policyBooking")}: ${tour.bookingConditions}` : "",
+        tour.prepayment ? `💳 ${t("tour.policyPrepayment")}: ${tour.prepayment}` : "",
+        tour.cancellationPolicy ? `🔄 ${t("tour.policyCancellation")}: ${tour.cancellationPolicy}` : "",
         "",
-        `👤 Организатор: ${tour.organizer.name} (${tour.organizer.rating}⭐, ${tour.organizer.reviewCount} отзывов)`,
+        `👤 ${t("tour.organizer")}: ${tour.organizer.name} (${tour.organizer.rating}⭐, ${t("units.reviews", { count: tour.organizer.reviewCount })})`,
         "",
         "YAVOY Travel Group",
       ];
@@ -571,7 +570,7 @@ export default function TourDetailScreen() {
     } catch (e) {
       console.log("Share error:", e);
     }
-  }, [cityNameMap]);
+  }, [cityNameMap, t, formatNumber]);
 
   const handleMeetingPointPress = useCallback((meetingPoint: string, coords?: { lat: number; lng: number }) => {
     if (Platform.OS !== "web") void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -615,12 +614,12 @@ export default function TourDetailScreen() {
               {tour.isBestseller ? (
                 <View style={detailStyles.bestsellerBadge}>
                   <Flame size={12} color="#FFFFFF" />
-                  <Text style={detailStyles.bestsellerText}>{"Хит продаж"}</Text>
+                  <Text style={detailStyles.bestsellerText}>{t("tourCard.bestseller")}</Text>
                 </View>
               ) : null}
               {tour.isLikelyToSellOut ? (
                 <View style={[detailStyles.sellOutBadge, { backgroundColor: colors.orangeLight }]}>
-                  <Text style={[detailStyles.sellOutText, { color: colors.orange }]}>{"\uD83D\uDD25 Раскупают быстро"}</Text>
+                  <Text style={[detailStyles.sellOutText, { color: colors.orange }]}>{`\uD83D\uDD25 ${t("tourCard.sellingOutFast")}`}</Text>
                 </View>
               ) : null}
             </View>
@@ -634,7 +633,7 @@ export default function TourDetailScreen() {
               </View>
               <View style={detailStyles.metaItem}>
                 <TransportIcon size={14} color={colors.teal} />
-                <Text style={[detailStyles.metaText, { color: colors.textSecondary }]}>{transportLabels[tour.transport]}</Text>
+                <Text style={[detailStyles.metaText, { color: colors.textSecondary }]}>{t(`enums.transportAdjective.${tour.transport}` as TKey)}</Text>
               </View>
               <View style={detailStyles.metaItem}>
                 <Clock size={14} color={colors.teal} />
@@ -643,20 +642,20 @@ export default function TourDetailScreen() {
             </View>
 
             <View style={[detailStyles.interestBadge, { backgroundColor: colors.tealSoft }]}>
-              <Text style={[detailStyles.interestText, { color: colors.teal }]}>{interestLabels[tour.interest] || tour.interest}</Text>
+              <Text style={[detailStyles.interestText, { color: colors.teal }]}>{t(`enums.interestAdjective.${tour.interest}` as TKey)}</Text>
             </View>
 
             <View style={detailStyles.featureRow}>
               {tour.isInstantConfirmation ? (
                 <View style={[detailStyles.featureItem, { backgroundColor: colors.tealSoft }]}>
                   <Zap size={14} color={colors.teal} />
-                  <Text style={[detailStyles.featureText, { color: colors.teal }]}>{"Мгновенное подтверждение"}</Text>
+                  <Text style={[detailStyles.featureText, { color: colors.teal }]}>{t("tour.instantConfirmation")}</Text>
                 </View>
               ) : null}
               {tour.isFreeCancellation ? (
                 <View style={[detailStyles.featureItem, { backgroundColor: colors.greenLight }]}>
                   <RotateCcw size={14} color={colors.green} />
-                  <Text style={[detailStyles.featureText, { color: colors.green }]}>{"Бесплатная отмена"}</Text>
+                  <Text style={[detailStyles.featureText, { color: colors.green }]}>{t("tour.freeCancellation")}</Text>
                 </View>
               ) : null}
             </View>
@@ -665,7 +664,7 @@ export default function TourDetailScreen() {
 
             {tour.highlights.length > 0 ? (
               <View style={detailStyles.section}>
-                <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>{"Основные моменты"}</Text>
+                <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>{t("tour.highlights")}</Text>
                 {tour.highlights.map((h, i) => (
                   <View key={i} style={detailStyles.highlightItem}>
                     <View style={[detailStyles.highlightDot, { backgroundColor: colors.teal }]} />
@@ -681,7 +680,7 @@ export default function TourDetailScreen() {
                   <View style={[detailStyles.whatToBringIconWrap, { backgroundColor: colors.orangeLight }]}>
                     <Backpack size={18} color={colors.orange} />
                   </View>
-                  <Text style={[detailStyles.whatToBringSectionTitle, { color: colors.text }]}>{"Что взять с собой"}</Text>
+                  <Text style={[detailStyles.whatToBringSectionTitle, { color: colors.text }]}>{t("tour.whatToBring")}</Text>
                 </View>
                 <View style={detailStyles.whatToBringList}>
                   {tour.whatToBring.map((item, i) => (
@@ -696,7 +695,7 @@ export default function TourDetailScreen() {
 
             <View style={[detailStyles.includesSection, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <View style={detailStyles.includesCol}>
-                <Text style={[detailStyles.includesTitle, { color: colors.text }]}>{"Включено"}</Text>
+                <Text style={[detailStyles.includesTitle, { color: colors.text }]}>{t("tour.includes")}</Text>
                 {tour.includes.map((item, i) => (
                   <View key={i} style={detailStyles.includesItem}>
                     <Check size={14} color={colors.green} />
@@ -705,7 +704,7 @@ export default function TourDetailScreen() {
                 ))}
               </View>
               <View style={detailStyles.includesCol}>
-                <Text style={[detailStyles.includesTitle, { color: colors.text }]}>{"Не включено"}</Text>
+                <Text style={[detailStyles.includesTitle, { color: colors.text }]}>{t("tour.excludes")}</Text>
                 {tour.excludes.map((item, i) => (
                   <View key={i} style={detailStyles.includesItem}>
                     <X size={14} color={colors.textMuted} />
@@ -722,7 +721,7 @@ export default function TourDetailScreen() {
                     <Clock size={16} color={colors.teal} />
                   </View>
                   <View style={detailStyles.infoCardContent}>
-                    <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{"НАЧАЛО ТУРА"}</Text>
+                    <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{t("tour.infoStart")}</Text>
                     <Text style={[detailStyles.infoCardValue, { color: colors.text }]}>{tour.startTime}</Text>
                   </View>
                 </View>
@@ -732,7 +731,7 @@ export default function TourDetailScreen() {
                   <Calendar size={16} color={colors.teal} />
                 </View>
                 <View style={detailStyles.infoCardContent}>
-                  <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{"РАСПИСАНИЕ"}</Text>
+                  <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{t("tour.infoSchedule")}</Text>
                   <Text style={[detailStyles.infoCardValue, { color: colors.text }]}>{tour.schedule}</Text>
                 </View>
               </View>
@@ -741,7 +740,7 @@ export default function TourDetailScreen() {
                   <Users size={16} color={colors.teal} />
                 </View>
                 <View style={detailStyles.infoCardContent}>
-                  <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{"ГРУППА"}</Text>
+                  <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{t("tour.infoGroup")}</Text>
                   <Text style={[detailStyles.infoCardValue, { color: colors.text }]}>{tour.groupSize}</Text>
                 </View>
               </View>
@@ -750,8 +749,8 @@ export default function TourDetailScreen() {
                   <Globe size={16} color={colors.teal} />
                 </View>
                 <View style={detailStyles.infoCardContent}>
-                  <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{"ЯЗЫКИ"}</Text>
-                  <Text style={[detailStyles.infoCardValue, { color: colors.text }]}>{tour.languages.join(", ")}</Text>
+                  <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{t("tour.infoLanguages")}</Text>
+                  <Text style={[detailStyles.infoCardValue, { color: colors.text }]}>{tourLanguageList(tour.languages, t as (k: string) => string)}</Text>
                 </View>
               </View>
               {tour.meetingPoint ? (
@@ -765,9 +764,9 @@ export default function TourDetailScreen() {
                     <Navigation size={16} color={colors.teal} />
                   </View>
                   <View style={detailStyles.infoCardContent}>
-                    <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{"МЕСТО ВСТРЕЧИ"}</Text>
+                    <Text style={[detailStyles.infoCardLabel, { color: colors.textMuted }]}>{t("tour.infoMeetingPoint")}</Text>
                     <Text style={[detailStyles.infoCardValue, { color: colors.teal }]}>{tour.meetingPoint}</Text>
-                    <Text style={[detailStyles.meetingPointHint, { color: colors.tealDark }]}>{"Нажмите, чтобы открыть на карте →"}</Text>
+                    <Text style={[detailStyles.meetingPointHint, { color: colors.tealDark }]}>{t("tour.meetingPointHint")}</Text>
                   </View>
                 </TouchableOpacity>
               ) : null}
@@ -775,13 +774,13 @@ export default function TourDetailScreen() {
 
             {(tour.bookingConditions || tour.prepayment || tour.cancellationPolicy || tour.groupJoiningConditions) ? (
               <View style={detailStyles.policiesSection}>
-                <Text style={[detailStyles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>{"Условия и политика"}</Text>
+                <Text style={[detailStyles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>{t("tour.policyTitle")}</Text>
                 {tour.bookingConditions ? (
                   <PolicySection
                     icon={FileText}
                     iconColor={colors.teal}
                     iconBg={colors.tealSoft}
-                    title="Условия бронирования"
+                    title={t("tour.policyBooking")}
                     text={tour.bookingConditions}
                     colors={colors}
                   />
@@ -791,7 +790,7 @@ export default function TourDetailScreen() {
                     icon={CreditCard}
                     iconColor={colors.orange}
                     iconBg={colors.orangeLight}
-                    title="Предоплата"
+                    title={t("tour.policyPrepayment")}
                     text={tour.prepayment}
                     colors={colors}
                   />
@@ -801,7 +800,7 @@ export default function TourDetailScreen() {
                     icon={Ban}
                     iconColor={colors.red}
                     iconBg="rgba(231,76,60,0.08)"
-                    title="Условия отмены"
+                    title={t("tour.policyCancellation")}
                     text={tour.cancellationPolicy}
                     colors={colors}
                   />
@@ -811,7 +810,7 @@ export default function TourDetailScreen() {
                     icon={UserPlus}
                     iconColor={colors.green}
                     iconBg={colors.greenLight}
-                    title="Присоединение к группе"
+                    title={t("tour.policyGroupJoining")}
                     text={tour.groupJoiningConditions}
                     colors={colors}
                   />
@@ -823,12 +822,12 @@ export default function TourDetailScreen() {
               <Image source={{ uri: tour.organizer.avatar }} style={[detailStyles.organizerAvatar, { backgroundColor: colors.surfaceSecondary }]} contentFit="cover" />
               <View style={detailStyles.organizerDetails}>
                 <View style={detailStyles.organizerNameRow}>
-                  <Text style={[detailStyles.organizerLabel, { color: colors.textMuted }]}>{"Организатор"}</Text>
+                  <Text style={[detailStyles.organizerLabel, { color: colors.textMuted }]}>{t("tour.organizer")}</Text>
                   {tour.organizer.verified ? <ShieldCheck size={14} color={colors.teal} /> : null}
                 </View>
                 <Text style={[detailStyles.organizerName, { color: colors.text }]}>{tour.organizer.name}</Text>
                 <StarRating rating={tour.organizer.rating} reviewCount={tour.organizer.reviewCount} size={13} />
-                <Text style={[detailStyles.organizerTours, { color: colors.textMuted }]}>{`${tour.organizer.toursCount} экскурсий на платформе`}</Text>
+                <Text style={[detailStyles.organizerTours, { color: colors.textMuted }]}>{t("tour.organizerTours", { count: tour.organizer.toursCount })}</Text>
               </View>
               <ChevronRight size={18} color={colors.textMuted} />
             </View>
@@ -836,7 +835,7 @@ export default function TourDetailScreen() {
             {tour.reviews.length > 0 ? (
               <View style={detailStyles.section}>
                 <View style={detailStyles.reviewsHeader}>
-                  <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>{"Отзывы"}</Text>
+                  <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>{t("tour.reviews")}</Text>
                   <View style={detailStyles.overallRating}>
                     <Star size={16} color={colors.gold} fill={colors.gold} />
                     <Text style={[detailStyles.overallRatingText, { color: colors.text }]}>{String(tour.organizer.rating)}</Text>
@@ -857,7 +856,7 @@ export default function TourDetailScreen() {
                 testID={`detail-fav-${tour.id}`}
               >
                 <Heart size={20} color={liked ? "#FFFFFF" : colors.coral} fill={liked ? colors.coral : "transparent"} />
-                <Text style={[detailStyles.actionText, { color: colors.textSecondary }, liked && { color: colors.coral }]}>{liked ? "В избранном" : "В избранное"}</Text>
+                <Text style={[detailStyles.actionText, { color: colors.textSecondary }, liked && { color: colors.coral }]}>{t(liked ? "tour.inFavorites" : "tour.addToFavorites")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[detailStyles.actionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -866,13 +865,13 @@ export default function TourDetailScreen() {
                 testID={`detail-share-${tour.id}`}
               >
                 <Share2 size={20} color={colors.teal} />
-                <Text style={[detailStyles.actionText, { color: colors.textSecondary }]}>{"Поделиться"}</Text>
+                <Text style={[detailStyles.actionText, { color: colors.textSecondary }]}>{t("common.share")}</Text>
               </TouchableOpacity>
             </View>
 
             {similarTours.length > 0 ? (
               <View style={detailStyles.similarSection}>
-                <Text style={[detailStyles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>{"Похожие туры"}</Text>
+                <Text style={[detailStyles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>{t("tour.similar")}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={detailStyles.similarList}>
                   {similarTours.map((st) => (
                     <SimilarTourCard key={st.id} tour={st} onPress={() => handleSimilarTourPress(st.id)} />
@@ -886,10 +885,10 @@ export default function TourDetailScreen() {
         <View style={[detailStyles.stickyBar, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.surface, borderTopColor: colors.border, shadowColor: colors.cardShadow }]}>
           <View style={detailStyles.stickyPriceSection}>
             {hasDiscount ? (
-              <Text style={[detailStyles.stickyOriginalPrice, { color: colors.textMuted }]}>{`${tour.originalPrice!.toLocaleString()}\u20BD`}</Text>
+              <Text style={[detailStyles.stickyOriginalPrice, { color: colors.textMuted }]}>{`${formatNumber(tour.originalPrice!)}\u20BD`}</Text>
             ) : null}
-            <Text style={[detailStyles.stickyPrice, { color: colors.text }]}>{`${tour.price.toLocaleString()} ${tour.currency}`}</Text>
-            <Text style={[detailStyles.stickyPriceNote, { color: colors.textMuted }]}>{"за человека"}</Text>
+            <Text style={[detailStyles.stickyPrice, { color: colors.text }]}>{`${formatNumber(tour.price)} ${tour.currency}`}</Text>
+            <Text style={[detailStyles.stickyPriceNote, { color: colors.textMuted }]}>{t("common.perPerson")}</Text>
           </View>
           <TouchableOpacity
             style={[detailStyles.bookButton, { backgroundColor: colors.teal }]}
@@ -897,7 +896,7 @@ export default function TourDetailScreen() {
             testID={`book-btn-${tour.id}`}
             onPress={() => handleBookPress(tour)}
           >
-            <Text style={detailStyles.bookButtonText}>{"Забронировать"}</Text>
+            <Text style={detailStyles.bookButtonText}>{t("tour.book")}</Text>
             {hasDiscount ? (
               <View style={[detailStyles.bookDiscountBadge, { backgroundColor: colors.green }]}>
                 <Text style={detailStyles.bookDiscountText}>{`-${discountPercent}%`}</Text>
@@ -912,7 +911,7 @@ export default function TourDetailScreen() {
   if (tourList.length === 0) {
     return (
       <View style={[detailStyles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <Text style={[detailStyles.errorText, { color: colors.textMuted }]}>{"Экскурсия не найдена"}</Text>
+        <Text style={[detailStyles.errorText, { color: colors.textMuted }]}>{t("tour.notFound")}</Text>
       </View>
     );
   }

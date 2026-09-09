@@ -1,4 +1,5 @@
 export * from "./common";
+export * from "./config";
 export * from "./catalog";
 export * from "./auth";
 export * from "./bookings";

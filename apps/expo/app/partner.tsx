@@ -45,6 +45,8 @@ import {
   MessageSquare,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useI18n, useT } from "@/providers/I18nProvider";
+import type { TKey } from "@/i18n/keys";
 import { usePartners } from "@/providers/PartnersProvider";
 import {
   PartnerTourSubmission,
@@ -62,17 +64,18 @@ type Period = "week" | "month" | "halfYear" | "year" | "all";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=400&fit=crop";
 
-const periodLabels: Record<Period, string> = {
-  week: "Неделя",
-  month: "Месяц",
-  halfYear: "Полгода",
-  year: "Год",
-  all: "Всё время",
+const periodLabels: Record<Period, TKey> = {
+  week: "partner.periodWeek",
+  month: "partner.periodMonth",
+  halfYear: "partner.periodHalfYear",
+  year: "partner.periodYear",
+  all: "partner.periodAll",
 };
 
 export default function PartnerScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t, formatNumber } = useI18n();
   const partners = usePartners();
   const [innInput, setInnInput] = useState<string>("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -105,7 +108,7 @@ export default function PartnerScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Нет доступа", "Разрешите доступ к медиатеке в настройках.");
+        Alert.alert(t("partner.mediaPermissionTitle"), t("partner.mediaPermissionText"));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -119,9 +122,9 @@ export default function PartnerScreen() {
       setFMedia((prev) => [...prev, ...items]);
     } catch (e) {
       console.log("[partner] pickMedia error", e);
-      Alert.alert("Ошибка", "Не удалось загрузить файл.");
+      Alert.alert(t("common.error"), t("partner.mediaUploadFailed"));
     }
-  }, []);
+  }, [t]);
 
   const removeMedia = useCallback((uri: string) => {
     setFMedia((prev) => prev.filter((m) => m.uri !== uri));
@@ -132,33 +135,33 @@ export default function PartnerScreen() {
   const handleVerify = useCallback(async () => {
     setVerifyError(null);
     if (!acceptedTerms || !acceptedPrivacy || !acceptedOffer) {
-      setVerifyError("Необходимо принять все условия ниже.");
+      setVerifyError(t("partner.agreementsRequiredApp"));
       return;
     }
     const res = await partners.verifyAndRegister(innInput);
     if (!res.ok) {
-      setVerifyError(res.error ?? "Ошибка проверки");
+      setVerifyError(res.error ?? t("partner.verifyError"));
     } else {
       setInnInput("");
     }
-  }, [innInput, partners, acceptedTerms, acceptedPrivacy, acceptedOffer]);
+  }, [innInput, partners, acceptedTerms, acceptedPrivacy, acceptedOffer, t]);
 
   const submitReply = useCallback((reviewId: string) => {
     const text = (replyDrafts[reviewId] ?? "").trim();
     if (!text) return;
     partners.submitReviewReply(reviewId, text);
     setReplyDrafts((prev) => ({ ...prev, [reviewId]: "" }));
-    Alert.alert("Отправлено на модерацию", "Ваш ответ будет опубликован после проверки администратором.");
-  }, [partners, replyDrafts]);
+    Alert.alert(t("partner.replySentTitle"), t("partner.replySentText"));
+  }, [partners, replyDrafts, t]);
 
   const submitNewTour = useCallback(() => {
     if (!fTitle.trim() || !fCity.trim() || !fPrice.trim()) {
-      Alert.alert("Заполните поля", "Название, город и цена обязательны.");
+      Alert.alert(t("partner.tourFieldsRequiredTitle"), t("partner.tourFieldsRequiredText"));
       return;
     }
     const priceNum = Number(fPrice.replace(/[^\d]/g, ""));
     if (Number.isNaN(priceNum) || priceNum <= 0) {
-      Alert.alert("Некорректная цена", "Введите число.");
+      Alert.alert(t("partner.priceInvalidTitle"), t("partner.priceInvalidText"));
       return;
     }
     const firstImage = fMedia.find((m) => m.type === "image");
@@ -175,8 +178,8 @@ export default function PartnerScreen() {
       interest: fInterest,
       category: fCategory,
       season: fSeason,
-      groupSize: fGroupSize.trim() || "до 15 человек",
-      meetingPoint: fMeeting.trim() || `${fCity.trim()}, центр`,
+      groupSize: fGroupSize.trim() || t("tourEditor.groupSizePlaceholder"),
+      meetingPoint: fMeeting.trim() || fCity.trim(),
     });
     setFTitle("");
     setFDesc("");
@@ -186,45 +189,45 @@ export default function PartnerScreen() {
     setFMeeting("");
     setFMedia([]);
     setShowAddForm(false);
-    Alert.alert("Отправлено", "Экскурсия отправлена администратору на модерацию.");
-  }, [partners, fTitle, fDesc, fCity, fPrice, fGroupSize, fMeeting, fDuration, fTransport, fInterest, fCategory, fSeason, fMedia]);
+    Alert.alert(t("partner.tourSentTitle"), t("partner.tourSentText"));
+  }, [partners, fTitle, fDesc, fCity, fPrice, fGroupSize, fMeeting, fDuration, fTransport, fInterest, fCategory, fSeason, fMedia, t]);
 
   const submitContactsHandler = useCallback((data: { email: string; phone: string; telegram: string }) => {
     partners.submitContacts(data);
-    Alert.alert("Заявка отправлена", "Ваш аккаунт направлен администратору на проверку. Уведомление придёт на указанный email.");
-  }, [partners]);
+    Alert.alert(t("partner.requestSentTitle"), t("partner.requestSentBody"));
+  }, [partners, t]);
 
   // ============ REGISTRATION VIEW ============
   if (!partners.isRegistered) {
     return (
       <>
-        <Stack.Screen options={{ title: "Стать партнёром", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+        <Stack.Screen options={{ title: t("partner.becomePartner"), headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
         <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <ScrollView contentContainerStyle={styles.regContent} keyboardShouldPersistTaps="handled">
             <View style={[styles.heroCard, { backgroundColor: colors.headerBg }]}>
               <View style={[styles.heroIcon, { backgroundColor: colors.teal + "30" }]}>
                 <Building2 size={36} color={colors.tealLight} />
               </View>
-              <Text style={styles.heroTitle}>Партнёрская программа YAVOY</Text>
-              <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>Размещайте свои экскурсии в одном из крупнейших агрегаторов России. Получайте бронирования, аналитику и поддержку.</Text>
+              <Text style={styles.heroTitle}>{t("partner.heroTitleApp")}</Text>
+              <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>{t("partner.heroSubtitleApp")}</Text>
               <View style={styles.heroBenefitsRow}>
-                <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>Без абон. платы</Text></View>
-                <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>Аналитика</Text></View>
-                <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>Чат с клиентом</Text></View>
+                <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>{t("partner.benefitNoFee")}</Text></View>
+                <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>{t("partner.benefitAnalytics")}</Text></View>
+                <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>{t("partner.benefitChat")}</Text></View>
               </View>
             </View>
 
             <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <View style={styles.regHeader}>
                 <ShieldCheck size={20} color={colors.teal} />
-                <Text style={[styles.regHeaderText, { color: colors.text }]}>Регистрация через ФНС</Text>
+                <Text style={[styles.regHeaderText, { color: colors.text }]}>{t("partner.registrationFns")}</Text>
               </View>
               <Text style={[styles.regDesc, { color: colors.textSecondary }]}>
                 {partners.registrationText}
               </Text>
               <TextInput
                 style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-                placeholder="ИНН (10/12 цифр) или ОГРН (13/15 цифр)"
+                placeholder={t("partner.innOgrnPlaceholder")}
                 placeholderTextColor={colors.textMuted}
                 value={innInput}
                 onChangeText={(t) => { setInnInput(t); setVerifyError(null); }}
@@ -244,7 +247,7 @@ export default function PartnerScreen() {
                   checked={acceptedTerms}
                   onToggle={() => setAcceptedTerms((v) => !v)}
                   onOpenDoc={() => setOpenDoc("terms")}
-                  label="пользовательским соглашением"
+                  label={t("partner.docTerms")}
                   testID="chk-terms"
                 />
                 <LegalCheckbox
@@ -252,7 +255,7 @@ export default function PartnerScreen() {
                   checked={acceptedPrivacy}
                   onToggle={() => setAcceptedPrivacy((v) => !v)}
                   onOpenDoc={() => setOpenDoc("privacy")}
-                  label="правилами обработки персональных данных"
+                  label={t("partner.docPrivacy")}
                   testID="chk-privacy"
                 />
                 <LegalCheckbox
@@ -260,7 +263,7 @@ export default function PartnerScreen() {
                   checked={acceptedOffer}
                   onToggle={() => setAcceptedOffer((v) => !v)}
                   onOpenDoc={() => setOpenDoc("offer")}
-                  label="договором-офертой"
+                  label={t("partner.docOffer")}
                   testID="chk-offer"
                 />
               </View>
@@ -275,17 +278,17 @@ export default function PartnerScreen() {
                 {partners.verifying ? (
                   <>
                     <ActivityIndicator color="#FFFFFF" size="small" />
-                    <Text style={styles.regSubmitText}>Проверка в ФНС…</Text>
+                    <Text style={styles.regSubmitText}>{t("partner.checkingFns")}</Text>
                   </>
                 ) : (
                   <>
                     <ShieldCheck size={16} color="#FFFFFF" />
-                    <Text style={styles.regSubmitText}>Проверить и зарегистрироваться</Text>
+                    <Text style={styles.regSubmitText}>{t("partner.checkAndRegister")}</Text>
                   </>
                 )}
               </TouchableOpacity>
               <Text style={[styles.regNote, { color: colors.textMuted }]}>
-                Передавая ИНН/ОГРН, вы соглашаетесь на проверку данных в ЕГРЮЛ/ЕГРИП и реестре самозанятых.
+                {t("partner.fnsDisclaimer")}
               </Text>
             </View>
           </ScrollView>
@@ -317,19 +320,19 @@ export default function PartnerScreen() {
   if (partners.profile && partners.profile.approvalStatus === "pending_approval") {
     return (
       <>
-        <Stack.Screen options={{ title: "Заявка на проверке", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+        <Stack.Screen options={{ title: t("partner.pendingTitleApp"), headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
         <View style={[styles.flex, { backgroundColor: colors.background, padding: 20, justifyContent: "center" as const }]}>
           <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow, alignItems: "center" as const }]}>
             <View style={[styles.heroIcon, { backgroundColor: colors.gold + "22" }]}>
               <Clock size={36} color={colors.gold} />
             </View>
-            <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>Заявка отправлена</Text>
+            <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>{t("partner.requestSent")}</Text>
             <Text style={[styles.regDesc, { color: colors.textSecondary, textAlign: "center" as const, marginTop: 8 }]}>
-              Данные ФНС подтверждены, контактная информация принята. Администратор проверит ваш профиль и пришлёт письмо на {partners.profile.email}.
+              {t("partner.requestSentText", { email: partners.profile.email ?? "" })}
             </Text>
             <TouchableOpacity onPress={() => partners.logout()} style={[styles.regSubmitBtn, { backgroundColor: colors.surfaceSecondary, marginTop: 16 }]}>
               <LogOut size={16} color={colors.text} />
-              <Text style={[styles.regSubmitText, { color: colors.text }]}>Выйти</Text>
+              <Text style={[styles.regSubmitText, { color: colors.text }]}>{t("common.logout")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -341,18 +344,18 @@ export default function PartnerScreen() {
   if (partners.profile && partners.profile.approvalStatus === "rejected") {
     return (
       <>
-        <Stack.Screen options={{ title: "Заявка отклонена", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+        <Stack.Screen options={{ title: t("partner.rejectedTitle"), headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
         <View style={[styles.flex, { backgroundColor: colors.background, padding: 20, justifyContent: "center" as const }]}>
           <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow, alignItems: "center" as const }]}>
             <View style={[styles.heroIcon, { backgroundColor: colors.red + "22" }]}>
               <XCircle size={36} color={colors.red} />
             </View>
-            <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>Заявка отклонена</Text>
+            <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>{t("partner.rejectedTitle")}</Text>
             {partners.profile.rejectionReason ? (
-              <Text style={[styles.regDesc, { color: colors.textSecondary, textAlign: "center" as const, marginTop: 8 }]}>Причина: {partners.profile.rejectionReason}</Text>
+              <Text style={[styles.regDesc, { color: colors.textSecondary, textAlign: "center" as const, marginTop: 8 }]}>{t("common.reason")}: {partners.profile.rejectionReason}</Text>
             ) : null}
             <TouchableOpacity onPress={() => partners.logout()} style={[styles.regSubmitBtn, { backgroundColor: colors.teal, marginTop: 16 }]}>
-              <Text style={styles.regSubmitText}>Начать заново</Text>
+              <Text style={styles.regSubmitText}>{t("partner.startOver")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -377,10 +380,10 @@ export default function PartnerScreen() {
             <ArrowLeft size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.dashHeaderCenter}>
-            <Text style={styles.dashHeaderTitle}>Кабинет партнёра</Text>
+            <Text style={styles.dashHeaderTitle}>{t("partner.cabinet")}</Text>
             <View style={styles.dashVerifiedRow}>
               <ShieldCheck size={11} color={colors.tealLight} />
-              <Text style={[styles.dashVerifiedText, { color: colors.tealLight }]}>Подтверждён ФНС</Text>
+              <Text style={[styles.dashVerifiedText, { color: colors.tealLight }]}>{t("partner.fnsVerified")}</Text>
             </View>
           </View>
           <TouchableOpacity onPress={() => partners.logout()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -392,21 +395,21 @@ export default function PartnerScreen() {
           <View style={[styles.profileBlock, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
             <Text style={[styles.profileLegalName, { color: colors.text }]}>{p.legalName}</Text>
             <View style={styles.profileMetaRow}>
-              <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>ИНН</Text>
+              <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>{t("partner.fieldInn")}</Text>
               <Text style={[styles.profileMetaValue, { color: colors.text }]}>{p.inn}</Text>
             </View>
             {p.ogrn ? (
               <View style={styles.profileMetaRow}>
-                <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>ОГРН</Text>
+                <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>{t("partner.fieldOgrn")}</Text>
                 <Text style={[styles.profileMetaValue, { color: colors.text }]}>{p.ogrn}</Text>
               </View>
             ) : null}
             <View style={styles.profileMetaRow}>
-              <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>Тип</Text>
-              <Text style={[styles.profileMetaValue, { color: colors.text }]}>{p.entityType === "company" ? "Юридическое лицо" : p.entityType === "ip" ? "Индивидуальный предприниматель" : "Самозанятый"}</Text>
+              <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>{t("partner.fieldType")}</Text>
+              <Text style={[styles.profileMetaValue, { color: colors.text }]}>{t(p.entityType === "company" ? "partner.entityCompany" : p.entityType === "ip" ? "partner.entityIp" : "partner.entitySelfEmployed")}</Text>
             </View>
             <View style={styles.profileMetaRow}>
-              <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>Адрес</Text>
+              <Text style={[styles.profileMetaLabel, { color: colors.textMuted }]}>{t("partner.fieldAddress")}</Text>
               <Text style={[styles.profileMetaValue, { color: colors.text, flex: 1, textAlign: "right" }]} numberOfLines={2}>{p.address}</Text>
             </View>
           </View>
@@ -417,12 +420,12 @@ export default function PartnerScreen() {
               <Star size={22} color={colors.gold} fill={colors.gold} />
             </View>
             <View style={styles.ratingInfo}>
-              <Text style={[styles.ratingTitle, { color: colors.text }]}>Рейтинг партнёра</Text>
-              <Text style={[styles.ratingSub, { color: colors.textMuted }]}>На основе отзывов клиентов</Text>
+              <Text style={[styles.ratingTitle, { color: colors.text }]}>{t("partner.rating")}</Text>
+              <Text style={[styles.ratingSub, { color: colors.textMuted }]}>{t("partner.ratingSub")}</Text>
             </View>
             <View style={styles.ratingValueWrap}>
               <Text style={[styles.ratingValue, { color: colors.text }]}>{partners.partnerRating.count > 0 ? partners.partnerRating.average.toFixed(1) : "—"}</Text>
-              <Text style={[styles.ratingCount, { color: colors.textMuted }]}>{partners.partnerRating.count} отз.</Text>
+              <Text style={[styles.ratingCount, { color: colors.textMuted }]}>{t("units.reviewsShort", { count: partners.partnerRating.count })}</Text>
             </View>
           </View>
 
@@ -431,17 +434,17 @@ export default function PartnerScreen() {
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <Wallet size={18} color={colors.teal} />
               <Text style={[styles.kpiValue, { color: colors.text }]}>{periodTotal.toLocaleString()} ₽</Text>
-              <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Оборот · {periodLabels[period].toLowerCase()}</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>{t("partner.kpiRevenue", { period: t(periodLabels[period]).toLowerCase() })}</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <Users size={18} color={colors.gold} />
               <Text style={[styles.kpiValue, { color: colors.text }]}>{partners.guests.length}</Text>
-              <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Гостей всего</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>{t("partner.kpiGuests")}</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <CheckCircle size={18} color={colors.green} />
               <Text style={[styles.kpiValue, { color: colors.text }]}>{partners.stats.published}</Text>
-              <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>В ленте</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>{t("partner.kpiInFeed")}</Text>
             </View>
           </View>
 
@@ -449,7 +452,7 @@ export default function PartnerScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.periodRow}>
             <View style={[styles.periodLabel, { backgroundColor: colors.surfaceSecondary }]}>
               <Filter size={12} color={colors.textMuted} />
-              <Text style={[styles.periodLabelText, { color: colors.textMuted }]}>Период</Text>
+              <Text style={[styles.periodLabelText, { color: colors.textMuted }]}>{t("partner.period")}</Text>
             </View>
             {(Object.keys(periodLabels) as Period[]).map((k) => {
               const active = period === k;
@@ -461,7 +464,7 @@ export default function PartnerScreen() {
                   activeOpacity={0.75}
                   testID={`period-${k}`}
                 >
-                  <Text style={[styles.periodChipText, { color: active ? "#FFFFFF" : colors.textSecondary }]}>{periodLabels[k]}</Text>
+                  <Text style={[styles.periodChipText, { color: active ? "#FFFFFF" : colors.textSecondary }]}>{t(periodLabels[k])}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -469,14 +472,24 @@ export default function PartnerScreen() {
 
           {/* Tabs */}
           <View style={[styles.tabsBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {(["tours", "guests", "transactions", "reviews", "chat"] as Tab[]).map((t) => {
-              const active = activeTab === t;
-              const label = t === "tours" ? "Туры" : t === "guests" ? "Клиенты" : t === "transactions" ? "Транзакции" : t === "reviews" ? "Отзывы" : "Чат";
+            {(["tours", "guests", "transactions", "reviews", "chat"] as Tab[]).map((tabKey) => {
+              const active = activeTab === tabKey;
+              const label = t(
+                tabKey === "tours"
+                  ? "partner.tabTours"
+                  : tabKey === "guests"
+                    ? "partner.tabGuests"
+                    : tabKey === "transactions"
+                      ? "partner.tabTransactions"
+                      : tabKey === "reviews"
+                        ? "partner.tabReviews"
+                        : "partner.tabChat",
+              );
               return (
                 <TouchableOpacity
-                  key={t}
+                  key={tabKey}
                   style={[styles.tabBtn, active && { borderBottomColor: colors.teal }]}
-                  onPress={() => setActiveTab(t)}
+                  onPress={() => setActiveTab(tabKey)}
                   activeOpacity={0.75}
                   testID={`partner-tab-${t}`}
                 >
@@ -496,21 +509,21 @@ export default function PartnerScreen() {
                 testID="partner-add-tour"
               >
                 <Plus size={16} color="#FFFFFF" />
-                <Text style={styles.addBtnText}>{showAddForm ? "Скрыть форму" : "Добавить экскурсию"}</Text>
+                <Text style={styles.addBtnText}>{t(showAddForm ? "partner.hideForm" : "partner.addTour")}</Text>
               </TouchableOpacity>
 
               {showAddForm ? (
                 <View style={[styles.formCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
-                  <Text style={[styles.formTitle, { color: colors.text }]}>Новая экскурсия</Text>
-                  <FormInput colors={colors} placeholder="Название" value={fTitle} onChangeText={setFTitle} />
-                  <FormInput colors={colors} placeholder="Описание" value={fDesc} onChangeText={setFDesc} multiline />
-                  <FormInput colors={colors} placeholder="Город" value={fCity} onChangeText={setFCity} />
-                  <FormInput colors={colors} placeholder="Цена, ₽" value={fPrice} onChangeText={setFPrice} keyboardType="number-pad" />
-                  <FormInput colors={colors} placeholder="Размер группы" value={fGroupSize} onChangeText={setFGroupSize} />
-                  <FormInput colors={colors} placeholder="Место сбора" value={fMeeting} onChangeText={setFMeeting} />
+                  <Text style={[styles.formTitle, { color: colors.text }]}>{t("partner.newTour")}</Text>
+                  <FormInput colors={colors} placeholder={t("partner.fieldTitle")} value={fTitle} onChangeText={setFTitle} />
+                  <FormInput colors={colors} placeholder={t("partner.fieldDescription")} value={fDesc} onChangeText={setFDesc} multiline />
+                  <FormInput colors={colors} placeholder={t("partner.fieldCity")} value={fCity} onChangeText={setFCity} />
+                  <FormInput colors={colors} placeholder={t("partner.fieldPrice")} value={fPrice} onChangeText={setFPrice} keyboardType="number-pad" />
+                  <FormInput colors={colors} placeholder={t("partner.fieldGroupSize")} value={fGroupSize} onChangeText={setFGroupSize} />
+                  <FormInput colors={colors} placeholder={t("partner.fieldMeetingPoint")} value={fMeeting} onChangeText={setFMeeting} />
 
                   <View style={styles.mediaSection}>
-                    <Text style={[styles.selectLabel, { color: colors.textMuted }]}>Фото и видео экскурсии</Text>
+                    <Text style={[styles.selectLabel, { color: colors.textMuted }]}>{t("partner.mediaLabel")}</Text>
                     <View style={styles.mediaButtonsRow}>
                       <TouchableOpacity
                         style={[styles.mediaBtn, { backgroundColor: colors.tealSoft, borderColor: colors.teal }]}
@@ -519,7 +532,7 @@ export default function PartnerScreen() {
                         testID="partner-pick-image"
                       >
                         <ImagePlus size={16} color={colors.teal} />
-                        <Text style={[styles.mediaBtnText, { color: colors.teal }]}>Добавить фото</Text>
+                        <Text style={[styles.mediaBtnText, { color: colors.teal }]}>{t("partner.addPhoto")}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.mediaBtn, { backgroundColor: colors.gold + "22", borderColor: colors.gold }]}
@@ -528,7 +541,7 @@ export default function PartnerScreen() {
                         testID="partner-pick-video"
                       >
                         <VideoIcon size={16} color={colors.gold} />
-                        <Text style={[styles.mediaBtnText, { color: colors.gold }]}>Добавить видео</Text>
+                        <Text style={[styles.mediaBtnText, { color: colors.gold }]}>{t("partner.addVideo")}</Text>
                       </TouchableOpacity>
                     </View>
                     {fMedia.length > 0 ? (
@@ -540,7 +553,7 @@ export default function PartnerScreen() {
                             ) : (
                               <View style={[styles.mediaThumbImg, styles.mediaVideoPlaceholder, { backgroundColor: colors.headerBg }]}>
                                 <Play size={22} color="#FFFFFF" />
-                                <Text style={styles.mediaVideoLabel}>Видео</Text>
+                                <Text style={styles.mediaVideoLabel}>{t("partner.video")}</Text>
                               </View>
                             )}
                             <TouchableOpacity
@@ -554,19 +567,19 @@ export default function PartnerScreen() {
                         ))}
                       </ScrollView>
                     ) : (
-                      <Text style={[styles.mediaHint, { color: colors.textMuted }]}>Первое фото станет обложкой экскурсии.</Text>
+                      <Text style={[styles.mediaHint, { color: colors.textMuted }]}>{t("partner.mediaHint")}</Text>
                     )}
                   </View>
 
-                  <FormSelect colors={colors} label="Длительность" value={fDuration} options={[["one_day","Однодневная"],["multi_day","Многодневная"]]} onChange={(v) => setFDuration(v as DurationType)} />
-                  <FormSelect colors={colors} label="Транспорт" value={fTransport} options={[["auto","Авто"],["water","Водный"],["sea","Морской"],["bike","Вело"],["air","Авиа"]]} onChange={(v) => setFTransport(v as TransportType)} />
-                  <FormSelect colors={colors} label="Интерес" value={fInterest} options={[["city","Городские"],["educational","Познавательные"],["nature","Природные"],["pilgrimage","Паломничество"]]} onChange={(v) => setFInterest(v as InterestType)} />
-                  <FormSelect colors={colors} label="Категория" value={fCategory ?? ""} options={[["","—"],["agro","Агро"],["photo","Фото"],["ethno","Этно"],["parents","С родителями"],["glamping","Глэмпинг"],["animals","С животными"],["mystic","Мистические"],["wild_animals","Дикие животные"],["wine","Винные"],["gastro","Гастро"]]} onChange={(v) => setFCategory(v === "" ? undefined : v as CategoryType)} />
-                  <FormSelect colors={colors} label="Сезон" value={fSeason} options={[["all_year","Круглый год"],["winter","Зима"],["spring","Весна"],["summer","Лето"],["autumn","Осень"]]} onChange={(v) => setFSeason(v as SeasonType)} />
+                  <FormSelect colors={colors} label={t("tourEditor.duration")} value={fDuration} options={[["one_day", t("enums.duration.one_day")],["multi_day", t("enums.duration.multi_day")]]} onChange={(v) => setFDuration(v as DurationType)} />
+                  <FormSelect colors={colors} label={t("tourEditor.transport")} value={fTransport} options={[["auto", t("enums.transport.auto")],["water", t("enums.transport.water")],["sea", t("enums.transport.sea")],["bike", t("enums.transport.bike")],["air", t("enums.transport.air")]]} onChange={(v) => setFTransport(v as TransportType)} />
+                  <FormSelect colors={colors} label={t("tourEditor.interest")} value={fInterest} options={[["city", t("enums.interest.city")],["educational", t("enums.interest.educational")],["nature", t("enums.interest.nature")],["pilgrimage", t("enums.interest.pilgrimage")]]} onChange={(v) => setFInterest(v as InterestType)} />
+                  <FormSelect colors={colors} label={t("tourEditor.category")} value={fCategory ?? ""} options={[["", t("common.notSet")], ...(["agro","photo","ethno","parents","glamping","animals","mystic","wild_animals","wine","gastro"] as const).map((c) => [c, t(`enums.category.${c}` as TKey)] as [string, string])]} onChange={(v) => setFCategory(v === "" ? undefined : v as CategoryType)} />
+                  <FormSelect colors={colors} label={t("tourEditor.season")} value={fSeason} options={(["all_year","winter","spring","summer","autumn"] as const).map((x) => [x, t(`enums.season.${x}` as TKey)] as [string, string])} onChange={(v) => setFSeason(v as SeasonType)} />
 
                   <TouchableOpacity style={[styles.submitFormBtn, { backgroundColor: colors.gold }]} onPress={submitNewTour} activeOpacity={0.8} testID="partner-submit-tour">
                     <Send size={16} color="#1B2838" />
-                    <Text style={[styles.submitFormText, { color: "#1B2838" }]}>Отправить на модерацию</Text>
+                    <Text style={[styles.submitFormText, { color: "#1B2838" }]}>{t("partner.submitTour")}</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -580,7 +593,7 @@ export default function PartnerScreen() {
           {activeTab === "guests" ? (
             <View style={styles.tabContent}>
               {partners.guests.length === 0 ? (
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Пока нет участников</Text>
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t("partner.noGuests")}</Text>
               ) : partners.guests.map((g) => {
                 const tour = partners.tours.find((t) => t.id === g.tourId);
                 return (
@@ -594,11 +607,11 @@ export default function PartnerScreen() {
                       <View style={styles.guestMetaRow}>
                         <Calendar size={11} color={colors.textMuted} />
                         <Text style={[styles.guestMeta, { color: colors.textMuted }]}>{g.tourDate}</Text>
-                        <Text style={[styles.guestMeta, { color: colors.textMuted }]}>· {g.ticketCount} чел.</Text>
+                        <Text style={[styles.guestMeta, { color: colors.textMuted }]}>· {t("units.people", { count: g.ticketCount })}</Text>
                       </View>
                     </View>
                     <View style={[styles.guestStatus, { backgroundColor: g.status === "upcoming" ? colors.tealSoft : g.status === "completed" ? colors.greenLight : "rgba(255,107,107,0.1)" }]}>
-                      <Text style={[styles.guestStatusText, { color: g.status === "upcoming" ? colors.teal : g.status === "completed" ? colors.green : colors.red }]}>{g.status === "upcoming" ? "Предстоит" : g.status === "completed" ? "Прошёл" : "Отменён"}</Text>
+                      <Text style={[styles.guestStatusText, { color: g.status === "upcoming" ? colors.teal : g.status === "completed" ? colors.green : colors.red }]}>{t(g.status === "upcoming" ? "partner.guestUpcoming" : g.status === "completed" ? "partner.guestCompleted" : "partner.guestCancelled")}</Text>
                     </View>
                   </View>
                 );
@@ -609,9 +622,9 @@ export default function PartnerScreen() {
           {activeTab === "transactions" ? (
             <View style={styles.tabContent}>
               <View style={[styles.totalCard, { backgroundColor: colors.headerBg }]}>
-                <Text style={styles.totalLabel}>Оборот за {periodLabels[period].toLowerCase()}</Text>
+                <Text style={styles.totalLabel}>{t("partner.revenueForPeriod", { period: t(periodLabels[period]).toLowerCase() })}</Text>
                 <Text style={styles.totalValue}>{periodTotal.toLocaleString()} ₽</Text>
-                <Text style={styles.totalSub}>Завершённых платежей: {partners.transactions.filter((t) => t.status === "completed").length}</Text>
+                <Text style={styles.totalSub}>{t("partner.completedPayments", { count: partners.transactions.filter((x) => x.status === "completed").length })}</Text>
               </View>
               {filteredTransactions.map((tr) => {
                 const StatusIcon = tr.status === "completed" ? CheckCircle : tr.status === "pending" ? Clock : XCircle;
@@ -626,7 +639,7 @@ export default function PartnerScreen() {
                       <Text style={[styles.txAmount, { color: colors.text }]}>{tr.amount.toLocaleString()} {tr.currency}</Text>
                       <View style={styles.txStatusRow}>
                         <StatusIcon size={11} color={sc} />
-                        <Text style={[styles.txStatusText, { color: sc }]}>{tr.status === "completed" ? "Зачислено" : tr.status === "pending" ? "В обработке" : "Возврат"}</Text>
+                        <Text style={[styles.txStatusText, { color: sc }]}>{t(tr.status === "completed" ? "partner.txCredited" : tr.status === "pending" ? "enums.transactionStatus.pending" : "enums.transactionStatus.refunded")}</Text>
                       </View>
                     </View>
                   </View>
@@ -638,7 +651,7 @@ export default function PartnerScreen() {
           {activeTab === "reviews" ? (
             <View style={styles.tabContent}>
               {partners.reviews.length === 0 ? (
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>Пока нет отзывов</Text>
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t("partner.noReviews")}</Text>
               ) : partners.reviews.map((rv) => {
                 const tour = partners.tours.find((t) => t.id === rv.tourId);
                 const reply = rv.reply;
@@ -666,19 +679,19 @@ export default function PartnerScreen() {
                         <View style={styles.replyHeader}>
                           <MessageSquare size={12} color={reply.status === "approved" ? colors.teal : reply.status === "pending" ? colors.gold : colors.red} />
                           <Text style={[styles.replyHeaderText, { color: reply.status === "approved" ? colors.teal : reply.status === "pending" ? colors.gold : colors.red }]}>
-                            Ваш ответ · {reply.status === "approved" ? "Опубликован" : reply.status === "pending" ? "На модерации" : "Отклонён"}
+                            {t("partner.replyStatus", { status: t(reply.status === "approved" ? "enums.tourStatus.published" : reply.status === "pending" ? "enums.tourStatus.pending" : "enums.tourStatus.rejected") })}
                           </Text>
                         </View>
                         <Text style={[styles.replyText, { color: colors.text }]}>{reply.content}</Text>
                         {reply.status === "rejected" && reply.rejectionReason ? (
-                          <Text style={[styles.replyReason, { color: colors.red }]}>Причина: {reply.rejectionReason}</Text>
+                          <Text style={[styles.replyReason, { color: colors.red }]}>{t("common.reason")}: {reply.rejectionReason}</Text>
                         ) : null}
                       </View>
                     ) : (
                       <View style={styles.replyForm}>
                         <TextInput
                           style={[styles.replyInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-                          placeholder="Ответить на отзыв…"
+                          placeholder={t("partner.replyPlaceholder")}
                           placeholderTextColor={colors.textMuted}
                           value={draft}
                           onChangeText={(t) => setReplyDrafts((prev) => ({ ...prev, [rv.id]: t }))}
@@ -691,7 +704,7 @@ export default function PartnerScreen() {
                           testID={`reply-send-${rv.id}`}
                         >
                           <Send size={14} color="#FFFFFF" />
-                          <Text style={styles.replySendBtnText}>На модерацию</Text>
+                          <Text style={styles.replySendBtnText}>{t("partner.replySend")}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -703,17 +716,17 @@ export default function PartnerScreen() {
 
           {activeTab === "chat" ? (
             <View style={styles.tabContent}>
-              <Text style={[styles.chatHint, { color: colors.textMuted }]}>Чат доступен клиентам, купившим тур. Администратор YAVOY автоматически подключается третьей стороной при поступлении сообщений.</Text>
+              <Text style={[styles.chatHint, { color: colors.textMuted }]}>{t("partner.chatHint")}</Text>
               {!chatTourId ? (
                 <View style={{ gap: 8 }}>
-                  {partners.tours.map((t) => {
-                    const lastMsg = [...partners.chat].reverse().find((m) => m.tourId === t.id);
+                  {partners.tours.map((chatTour) => {
+                    const lastMsg = [...partners.chat].reverse().find((m) => m.tourId === chatTour.id);
                     return (
-                      <TouchableOpacity key={t.id} style={[styles.chatRow, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]} onPress={() => setChatTourId(t.id)} activeOpacity={0.75}>
-                        <Image source={{ uri: t.image }} style={styles.chatRowImage} contentFit="cover" />
+                      <TouchableOpacity key={chatTour.id} style={[styles.chatRow, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]} onPress={() => setChatTourId(chatTour.id)} activeOpacity={0.75}>
+                        <Image source={{ uri: chatTour.image }} style={styles.chatRowImage} contentFit="cover" />
                         <View style={styles.chatRowInfo}>
-                          <Text style={[styles.chatRowTitle, { color: colors.text }]} numberOfLines={1}>{t.title}</Text>
-                          <Text style={[styles.chatRowSub, { color: colors.textMuted }]} numberOfLines={1}>{lastMsg ? `${lastMsg.authorName}: ${lastMsg.content}` : "Нет сообщений"}</Text>
+                          <Text style={[styles.chatRowTitle, { color: colors.text }]} numberOfLines={1}>{chatTour.title}</Text>
+                          <Text style={[styles.chatRowSub, { color: colors.textMuted }]} numberOfLines={1}>{lastMsg ? `${lastMsg.authorName}: ${lastMsg.content}` : t("partner.chatEmpty")}</Text>
                         </View>
                         <ChevronRight size={18} color={colors.textMuted} />
                       </TouchableOpacity>
@@ -742,7 +755,7 @@ export default function PartnerScreen() {
                   <View style={[styles.chatInputRow, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
                     <TextInput
                       style={[styles.chatInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-                      placeholder="Сообщение клиенту…"
+                      placeholder={t("partner.chatPlaceholder")}
                       placeholderTextColor={colors.textMuted}
                       value={chatInput}
                       onChangeText={setChatInput}
@@ -827,11 +840,12 @@ interface TourRowProps {
 }
 
 function TourRow({ tour, colors, guestsCount, onChat }: TourRowProps) {
+  const t = useT();
   const statusCfg = useMemo(() => {
-    if (tour.status === "published") return { label: "Опубликован", color: colors.green, bg: colors.greenLight, Icon: CheckCircle };
-    if (tour.status === "pending") return { label: "На модерации", color: colors.orange, bg: "rgba(243,156,18,0.12)", Icon: Clock };
-    return { label: "Отклонён", color: colors.red, bg: "rgba(231,76,60,0.12)", Icon: XCircle };
-  }, [tour.status, colors]);
+    if (tour.status === "published") return { label: t("enums.tourStatus.published"), color: colors.green, bg: colors.greenLight, Icon: CheckCircle };
+    if (tour.status === "pending") return { label: t("enums.tourStatus.pending"), color: colors.orange, bg: "rgba(243,156,18,0.12)", Icon: Clock };
+    return { label: t("enums.tourStatus.rejected"), color: colors.red, bg: "rgba(231,76,60,0.12)", Icon: XCircle };
+  }, [tour.status, colors, t]);
   const StatusIcon = statusCfg.Icon;
   return (
     <View style={[styles.tourCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
@@ -850,7 +864,7 @@ function TourRow({ tour, colors, guestsCount, onChat }: TourRowProps) {
           </View>
           <TouchableOpacity onPress={onChat} style={[styles.tourChatBtn, { backgroundColor: colors.gold + "20" }]} activeOpacity={0.75}>
             <MessageCircle size={11} color={colors.gold} />
-            <Text style={[styles.tourChatText, { color: colors.gold }]}>Чат</Text>
+            <Text style={[styles.tourChatText, { color: colors.gold }]}>{t("partner.chat")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1056,6 +1070,7 @@ interface LegalCheckboxProps {
 }
 
 function LegalCheckbox({ colors, checked, onToggle, onOpenDoc, label, testID }: LegalCheckboxProps) {
+  const t = useT();
   return (
     <View style={styles.legalRow}>
       <TouchableOpacity
@@ -1068,7 +1083,7 @@ function LegalCheckbox({ colors, checked, onToggle, onOpenDoc, label, testID }: 
         {checked ? <Check size={14} color="#FFFFFF" /> : null}
       </TouchableOpacity>
       <Text style={[styles.legalText, { color: colors.textSecondary }]}>
-        Я ознакомлен и соглашаюсь с{" "}
+        {t("partner.agreePrefix")}
         <Text style={[styles.legalLink, { color: colors.teal }]} onPress={onOpenDoc}>
           {label}
         </Text>
@@ -1085,6 +1100,7 @@ interface LegalDocumentModalProps {
 }
 
 function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModalProps) {
+  const t = useT();
   if (!doc) return null;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -1105,7 +1121,7 @@ function LegalDocumentModal({ colors, visible, onClose, doc }: LegalDocumentModa
           </ScrollView>
           <View style={[styles.docModalFooter, { borderTopColor: colors.border }]}>
             <TouchableOpacity onPress={onClose} activeOpacity={0.8} style={[styles.docModalFooterBtn, { backgroundColor: colors.teal }]}>
-              <Text style={styles.docModalFooterText}>Закрыть</Text>
+              <Text style={styles.docModalFooterText}>{t("common.close")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1118,40 +1134,39 @@ interface Country {
   code: string;
   dial: string;
   flag: string;
-  name: string;
 }
 
 const COUNTRIES: Country[] = [
-  { code: "RU", dial: "+7", flag: "🇦🇦", name: "Россия" },
-  { code: "KZ", dial: "+7", flag: "🇦🇦", name: "Казахстан" },
-  { code: "BY", dial: "+375", flag: "🇦🇦", name: "Беларусь" },
-  { code: "UA", dial: "+380", flag: "🇦🇦", name: "Украина" },
-  { code: "UZ", dial: "+998", flag: "🇦🇦", name: "Узбекистан" },
-  { code: "KG", dial: "+996", flag: "🇦🇦", name: "Кыргызстан" },
-  { code: "AM", dial: "+374", flag: "🇦🇦", name: "Армения" },
-  { code: "AZ", dial: "+994", flag: "🇦🇦", name: "Азербайджан" },
-  { code: "GE", dial: "+995", flag: "🇦🇦", name: "Грузия" },
-  { code: "MD", dial: "+373", flag: "🇦🇦", name: "Молдова" },
-  { code: "TJ", dial: "+992", flag: "🇦🇦", name: "Таджикистан" },
-  { code: "TM", dial: "+993", flag: "🇦🇦", name: "Туркменистан" },
-  { code: "TR", dial: "+90", flag: "🇦🇦", name: "Турция" },
-  { code: "AE", dial: "+971", flag: "🇦🇦", name: "ОАЭ" },
-  { code: "IL", dial: "+972", flag: "🇦🇦", name: "Израиль" },
-  { code: "DE", dial: "+49", flag: "🇦🇦", name: "Германия" },
-  { code: "FR", dial: "+33", flag: "🇦🇦", name: "Франция" },
-  { code: "IT", dial: "+39", flag: "🇦🇦", name: "Италия" },
-  { code: "ES", dial: "+34", flag: "🇦🇦", name: "Испания" },
-  { code: "GB", dial: "+44", flag: "🇦🇦", name: "Великобритания" },
-  { code: "US", dial: "+1", flag: "🇦🇦", name: "США" },
-  { code: "CA", dial: "+1", flag: "🇦🇦", name: "Канада" },
-  { code: "CN", dial: "+86", flag: "🇦🇦", name: "Китай" },
-  { code: "JP", dial: "+81", flag: "🇦🇦", name: "Япония" },
-  { code: "KR", dial: "+82", flag: "🇦🇦", name: "Южная Корея" },
-  { code: "IN", dial: "+91", flag: "🇦🇦", name: "Индия" },
-  { code: "TH", dial: "+66", flag: "🇦🇦", name: "Таиланд" },
-  { code: "VN", dial: "+84", flag: "🇦🇦", name: "Вьетнам" },
-  { code: "EG", dial: "+20", flag: "🇦🇦", name: "Египет" },
-  { code: "BR", dial: "+55", flag: "🇦🇦", name: "Бразилия" },
+  { code: "RU", dial: "+7", flag: "🇦🇦" },
+  { code: "KZ", dial: "+7", flag: "🇦🇦" },
+  { code: "BY", dial: "+375", flag: "🇦🇦" },
+  { code: "UA", dial: "+380", flag: "🇦🇦" },
+  { code: "UZ", dial: "+998", flag: "🇦🇦" },
+  { code: "KG", dial: "+996", flag: "🇦🇦" },
+  { code: "AM", dial: "+374", flag: "🇦🇦" },
+  { code: "AZ", dial: "+994", flag: "🇦🇦" },
+  { code: "GE", dial: "+995", flag: "🇦🇦" },
+  { code: "MD", dial: "+373", flag: "🇦🇦" },
+  { code: "TJ", dial: "+992", flag: "🇦🇦" },
+  { code: "TM", dial: "+993", flag: "🇦🇦" },
+  { code: "TR", dial: "+90", flag: "🇦🇦" },
+  { code: "AE", dial: "+971", flag: "🇦🇦" },
+  { code: "IL", dial: "+972", flag: "🇦🇦" },
+  { code: "DE", dial: "+49", flag: "🇦🇦" },
+  { code: "FR", dial: "+33", flag: "🇦🇦" },
+  { code: "IT", dial: "+39", flag: "🇦🇦" },
+  { code: "ES", dial: "+34", flag: "🇦🇦" },
+  { code: "GB", dial: "+44", flag: "🇦🇦" },
+  { code: "US", dial: "+1", flag: "🇦🇦" },
+  { code: "CA", dial: "+1", flag: "🇦🇦" },
+  { code: "CN", dial: "+86", flag: "🇦🇦" },
+  { code: "JP", dial: "+81", flag: "🇦🇦" },
+  { code: "KR", dial: "+82", flag: "🇦🇦" },
+  { code: "IN", dial: "+91", flag: "🇦🇦" },
+  { code: "TH", dial: "+66", flag: "🇦🇦" },
+  { code: "VN", dial: "+84", flag: "🇦🇦" },
+  { code: "EG", dial: "+20", flag: "🇦🇦" },
+  { code: "BR", dial: "+55", flag: "🇦🇦" },
 ];
 
 interface CountryPickerProps {
@@ -1162,19 +1177,23 @@ interface CountryPickerProps {
 }
 
 function CountryPicker({ visible, onClose, onSelect, colors }: CountryPickerProps) {
+  const t = useT();
   const [query, setQuery] = useState<string>("");
+  const countryName = useCallback((code: string) => t(`countries.${code}` as TKey), [t]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return COUNTRIES;
-    return COUNTRIES.filter((c) => c.name.toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q));
-  }, [query]);
+    return COUNTRIES.filter(
+      (c) => countryName(c.code).toLowerCase().includes(q) || c.dial.includes(q) || c.code.toLowerCase().includes(q),
+    );
+  }, [query, countryName]);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.docModalOverlay}>
         <Pressable style={styles.docModalBackdrop} onPress={onClose} />
         <View style={[styles.docModalCard, { backgroundColor: colors.surface }]}>
           <View style={[styles.docModalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.docModalTitle, { color: colors.text }]}>Выберите страну</Text>
+            <Text style={[styles.docModalTitle, { color: colors.text }]}>{t("countries.pickerTitle")}</Text>
             <TouchableOpacity onPress={onClose} style={[styles.docModalClose, { backgroundColor: colors.surfaceSecondary }]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <XIcon size={16} color={colors.text} />
             </TouchableOpacity>
@@ -1182,7 +1201,7 @@ function CountryPicker({ visible, onClose, onSelect, colors }: CountryPickerProp
           <View style={{ paddingHorizontal: 14, paddingTop: 10 }}>
             <TextInput
               style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-              placeholder="Поиск страны или кода"
+              placeholder={t("countries.searchPlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={query}
               onChangeText={setQuery}
@@ -1199,12 +1218,12 @@ function CountryPicker({ visible, onClose, onSelect, colors }: CountryPickerProp
                 activeOpacity={0.7}
               >
                 <Text style={{ fontSize: 22 }}>{c.flag}</Text>
-                <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: colors.text }}>{c.name}</Text>
+                <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: colors.text }}>{countryName(c.code)}</Text>
                 <Text style={{ fontSize: 14, fontWeight: "700", color: colors.teal }}>{c.dial}</Text>
               </TouchableOpacity>
             ))}
             {filtered.length === 0 ? (
-              <Text style={{ textAlign: "center", padding: 24, color: colors.textMuted, fontSize: 13 }}>Ничего не найдено</Text>
+              <Text style={{ textAlign: "center", padding: 24, color: colors.textMuted, fontSize: 13 }}>{t("countries.nothingFound")}</Text>
             ) : null}
           </ScrollView>
         </View>
@@ -1221,6 +1240,7 @@ interface ContactsFormProps {
 }
 
 function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormProps) {
+  const t = useT();
   const [email, setEmail] = useState<string>("");
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [phoneDigits, setPhoneDigits] = useState<string>("");
@@ -1239,32 +1259,32 @@ function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormPro
     const e = email.trim();
     const tg = telegram.trim().replace(/^@/, "");
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-    if (!emailValid) { setError("Введите корректный email."); return; }
-    if (phoneDigits.length < 7) { setError("Введите корректный номер телефона."); return; }
-    if (!tg) { setError("Укажите никнейм в Telegram."); return; }
+    if (!emailValid) { setError(t("partner.emailInvalid")); return; }
+    if (phoneDigits.length < 7) { setError(t("partner.phoneInvalid")); return; }
+    if (!tg) { setError(t("partner.telegramRequired")); return; }
     const fullPhone = `${country.dial}${phoneDigits}`;
     onSubmit({ email: e, phone: fullPhone, telegram: tg });
-  }, [email, phoneDigits, telegram, country, onSubmit]);
+  }, [email, phoneDigits, telegram, country, onSubmit, t]);
 
   return (
     <>
-      <Stack.Screen options={{ title: "Контактные данные", headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
+      <Stack.Screen options={{ title: t("partner.contactsTitle"), headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.white }} />
       <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}>
         <ScrollView contentContainerStyle={styles.regContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={[styles.heroCard, { backgroundColor: colors.headerBg }]}>
             <View style={[styles.heroIcon, { backgroundColor: colors.teal + "30" }]}>
               <ShieldCheck size={36} color={colors.tealLight} />
             </View>
-            <Text style={styles.heroTitle}>Шаг 2 · Контакты</Text>
-            <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>ФНС подтвердила {legalName}. Заполните контактные данные — после проверки администратором вы получите доступ к кабинету.</Text>
+            <Text style={styles.heroTitle}>{t("partner.contactsStep2Title")}</Text>
+            <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>{t("partner.contactsStep2Sub", { name: legalName })}</Text>
           </View>
 
           <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
             <View style={styles.regHeader}>
               <MessageCircle size={20} color={colors.teal} />
-              <Text style={[styles.regHeaderText, { color: colors.text }]}>Контактные данные партнёра</Text>
+              <Text style={[styles.regHeaderText, { color: colors.text }]}>{t("partner.contactsFormTitle")}</Text>
             </View>
-            <Text style={[styles.regDesc, { color: colors.textSecondary }]}>Эти данные нужны администратору для проверки и связи с вами.</Text>
+            <Text style={[styles.regDesc, { color: colors.textSecondary }]}>{t("partner.contactsFormDesc")}</Text>
 
             <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Email</Text>
             <TextInput
@@ -1283,7 +1303,7 @@ function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormPro
               testID="partner-email-input"
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 12 }]}>Телефон</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 12 }]}>{t("partner.fieldPhone")}</Text>
             <View style={styles.phoneRow}>
               <TouchableOpacity
                 onPress={() => setPickerOpen(true)}
@@ -1297,7 +1317,7 @@ function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormPro
               </TouchableOpacity>
               <TextInput
                 style={[styles.regInput, { flex: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-                placeholder="Номер телефона"
+                placeholder={t("partner.phoneNumberPlaceholder")}
                 placeholderTextColor={colors.textMuted}
                 value={phoneDigits}
                 onChangeText={handlePhoneChange}
@@ -1313,7 +1333,7 @@ function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormPro
             <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 12 }]}>Telegram</Text>
             <TextInput
               style={[styles.regInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-              placeholder="никнейм без @"
+              placeholder={t("partner.telegramNickPlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={telegram}
               onChangeText={(t) => { setTelegram(t); setError(null); }}
@@ -1337,10 +1357,10 @@ function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormPro
               testID="partner-contacts-submit"
             >
               <Send size={16} color="#FFFFFF" />
-              <Text style={styles.regSubmitText}>Отправить администратору</Text>
+              <Text style={styles.regSubmitText}>{t("partner.sendToAdmin")}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onLogout} style={{ marginTop: 12, alignSelf: "center" }}>
-              <Text style={[styles.regNote, { color: colors.textMuted, textDecorationLine: "underline" }]}>Выйти и начать заново</Text>
+              <Text style={[styles.regNote, { color: colors.textMuted, textDecorationLine: "underline" }]}>{t("partner.logoutRestart")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

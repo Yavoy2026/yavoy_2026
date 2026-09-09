@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    fs: { allow: [path.resolve(__dirname, ".."), path.resolve(__dirname, "../../packages")] },
     hmr: {
       overlay: false,
     },
@@ -16,6 +17,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // общий с Expo пакет переводов; подключаем алиасом, а не npm-зависимостью —
+      // пакет без зависимостей, а симлинки в двух разных менеджерах пакетов хрупки
+      "@yavoy/i18n": path.resolve(__dirname, "../../packages/i18n/src"),
     },
   },
   // Expose both VITE_* (Vite default) and EXPO_PUBLIC_* (Rork's cross-platform

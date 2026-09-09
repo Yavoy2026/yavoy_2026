@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import createContextHook from "@nkzw/create-context-hook";
+import { LOCALE_LABELS } from "@yavoy/i18n";
 import { SupportMessage } from "@/types/tour";
+import { useI18n } from "@/providers/I18nProvider";
 
-const SYSTEM_PROMPT = `Ты дружелюбный AI-консультант мобильного приложения YAVOY — агрегатора туристических экскурсий по России. Помогай подобрать тур, узнавай предпочтения (город, бюджет, интересы, длительность, сезон), рекомендуй экскурсии, объясняй условия бронирования. Отвечай кратко и по-русски. Категории туров YAVOY: городские, познавательные, природные, паломничество, агротуры, фототуры, этнотуры, для родителей, глэмпинг, с животными, мистические, к диким животным, винные, гастро. Если пользователь просит говорить с менеджером, оператором или жалуется на ошибку/проблему, которую ты не можешь решить — ответь коротко: "ESCALATE: <причина>" в самом начале сообщения, затем извинись и сообщи, что переключаешь на менеджера.`;
+/** Внутренний промпт модели (не UI); язык ответа подставляется из выбранной локали */
+const SYSTEM_PROMPT = `Ты дружелюбный AI-консультант мобильного приложения YAVOY — агрегатора туристических экскурсий по России. Помогай подобрать тур, узнавай предпочтения (город, бюджет, интересы, длительность, сезон), рекомендуй экскурсии, объясняй условия бронирования. Отвечай кратко и на языке пользователя: {{language}}. Категории туров YAVOY: городские, познавательные, природные, паломничество, агротуры, фототуры, этнотуры, для родителей, глэмпинг, с животными, мистические, к диким животным, винные, гастро. Если пользователь просит говорить с менеджером, оператором или жалуется на ошибку/проблему, которую ты не можешь решить — ответь коротко: "ESCALATE: <причина>" в самом начале сообщения, затем извинись и сообщи, что переключаешь на менеджера.`;
 
 interface AIChatRequestMessage {
   role: "system" | "user" | "assistant";
@@ -24,11 +27,12 @@ async function callAI(messages: AIChatRequestMessage[]): Promise<string> {
 }
 
 export const [SupportProvider, useSupport] = createContextHook(() => {
+  const { t, locale } = useI18n();
   const [messages, setMessages] = useState<SupportMessage[]>([
     {
       id: "sup-welcome",
       role: "assistant",
-      content: "Здравствуйте! Я AI-консультант YAVOY. Помогу подобрать экскурсию — расскажите, куда хотите поехать и какие интересы у вас?",
+      content: t("support.greeting"),
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -51,7 +55,7 @@ export const [SupportProvider, useSupport] = createContextHook(() => {
           {
             id: `agent-${Date.now()}`,
             role: "agent",
-            content: "Менеджер YAVOY ответит вам в ближайшее время. Спасибо за ожидание!",
+            content: t("support.managerWillReply"),
             createdAt: new Date().toISOString(),
           },
         ]);
@@ -62,7 +66,7 @@ export const [SupportProvider, useSupport] = createContextHook(() => {
     setIsThinking(true);
     try {
       const history: AIChatRequestMessage[] = [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT.replace("{{language}}", LOCALE_LABELS[locale]) },
         ...messages
           .filter((m) => m.role !== "agent")
           .map<AIChatRequestMessage>((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content })),
@@ -73,14 +77,14 @@ export const [SupportProvider, useSupport] = createContextHook(() => {
       const shouldEscalate = trimmed.toUpperCase().startsWith("ESCALATE");
       const reply = shouldEscalate
         ? trimmed.replace(/^ESCALATE:?\s*/i, "").trim() ||
-          "Я не могу продолжить диалог, переключаю вас на менеджера."
+          t("support.cannotContinue")
         : trimmed;
       setMessages((prev) => [
         ...prev,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          content: reply || "Уточните, пожалуйста, ваш запрос.",
+          content: reply || t("support.clarify"),
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -91,7 +95,7 @@ export const [SupportProvider, useSupport] = createContextHook(() => {
           {
             id: `sys-${Date.now()}`,
             role: "agent",
-            content: "Чат переведён на администратора/менеджера YAVOY. Мы свяжемся с вами в течение нескольких минут.",
+            content: t("support.escalatedNotice"),
             createdAt: new Date().toISOString(),
           },
         ]);
@@ -103,7 +107,7 @@ export const [SupportProvider, useSupport] = createContextHook(() => {
         {
           id: `err-${Date.now()}`,
           role: "assistant",
-          content: "Извините, не удалось получить ответ. Переключаю вас на менеджера.",
+          content: t("support.aiUnavailable"),
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -111,19 +115,19 @@ export const [SupportProvider, useSupport] = createContextHook(() => {
     } finally {
       setIsThinking(false);
     }
-  }, [messages, escalated]);
+  }, [messages, escalated, t, locale]);
 
   const reset = useCallback(() => {
     setMessages([
       {
         id: "sup-welcome",
         role: "assistant",
-        content: "Здравствуйте! Я AI-консультант YAVOY. Помогу подобрать экскурсию — расскажите, куда хотите поехать и какие интересы у вас?",
+        content: t("support.greeting"),
         createdAt: new Date().toISOString(),
       },
     ]);
     setEscalated(false);
-  }, []);
+  }, [t]);
 
   return useMemo(() => ({ messages, sendMessage, isThinking, escalated, reset }), [messages, sendMessage, isThinking, escalated, reset]);
 });
