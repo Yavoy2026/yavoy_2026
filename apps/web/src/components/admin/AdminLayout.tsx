@@ -1,5 +1,5 @@
 import { Building2, Check, ExternalLink, LogOut, Map, MessageSquare, Moon, ShieldCheck, Sun, Users, Loader2 } from "lucide-react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import LanguageMenu from "@/components/LanguageMenu";
 import { useApp } from "@/context/AppContext";
@@ -30,9 +30,11 @@ const PARTNER_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = 
  * футер с марками платёжных систем, нижняя навигация покупателя и герой-баннер
  * под таблицей модерации — источник большей части UI-багов бэкофиса.
  *
- * Переходы между разделами — обычными <a href>, а не роутерными Link: документ
- * грузится заново, React стартует с чистого листа, и стейт предыдущего раздела
- * не переезжает в следующий (осознанное решение владельца, YAV-26).
+ * Переходы между разделами — роутерные. Полная перезагрузка документа, которую
+ * мы пробовали сначала, страховала от протечек стейта грубой силой, но платить
+ * за это приходилось на каждом переходе: разбор всего бандла, повторный whoami
+ * и все запросы заново. Изоляцию держит не перезагрузка, а то, что каждый
+ * раздел владеет своими запросами, а мутации сбрасывают кэш явно.
  */
 export function AdminLayout({
   section,
@@ -77,9 +79,9 @@ export function AdminLayout({
         <ShieldCheck size={48} className="text-muted-foreground" />
         <h1 className="text-xl font-extrabold">{t("backoffice.deniedTitle")}</h1>
         <p className="text-sm text-muted-foreground">{t("backoffice.deniedText")}</p>
-        <a href="/" className="mt-2 rounded-xl bg-teal px-5 py-2.5 text-sm font-bold text-white">
+        <Link to="/" className="mt-2 rounded-xl bg-teal px-5 py-2.5 text-sm font-bold text-white">
           {t("common.home")}
-        </a>
+        </Link>
       </div>
     );
   }
@@ -102,9 +104,9 @@ export function AdminLayout({
 
         <nav className="flex gap-0.5 overflow-x-auto p-2 md:flex-col md:overflow-visible">
           {nav.map((item) => (
-            <a
+            <Link
               key={item.section}
-              href={`/admin/${item.section}`}
+              to={`/admin/${item.section}`}
               className={cn(
                 "flex shrink-0 items-center gap-2 rounded px-2.5 py-1.5 text-sm transition-colors",
                 section === item.section
@@ -113,7 +115,7 @@ export function AdminLayout({
               )}
             >
               <item.icon size={15} /> {t(item.label)}
-            </a>
+            </Link>
           ))}
         </nav>
       </aside>
@@ -122,9 +124,9 @@ export function AdminLayout({
         <header className="flex items-center gap-2 border-b border-border px-4 py-2">
           <h1 className="mr-auto truncate text-sm font-semibold">{title}</h1>
           {action}
-          <a href="/" className={iconBtn} aria-label={t("backoffice.toStorefront")} title={t("backoffice.toStorefront")}>
+          <Link to="/" className={iconBtn} aria-label={t("backoffice.toStorefront")} title={t("backoffice.toStorefront")}>
             <ExternalLink size={15} />
-          </a>
+          </Link>
           <LanguageMenu className={`${iconBtn} w-auto gap-1 px-2 text-xs font-semibold`} />
           <button onClick={() => setThemeMode(isDark ? "light" : "dark")} aria-label={t("nav.theme")} className={iconBtn}>
             {isDark ? <Sun size={15} /> : <Moon size={15} />}
