@@ -2,6 +2,9 @@ import { p } from "../plural";
 import type { Catalog } from "./ru";
 
 export const en: Catalog = {
+  meta: {
+    title: "YaVoy · Tours and routes",
+  },
   common: {
     back: "Back",
     cancel: "Cancel",
@@ -536,9 +539,9 @@ export const en: Catalog = {
     description: "Description",
     image: "Image (URL) *",
     gallery: "Gallery (URL, one per line)",
-    price: "Price, ₽ *",
-    originalPrice: "Price before discount, ₽",
-    originalPriceShort: "Before discount, ₽",
+    price: "Price, {currency} *",
+    originalPrice: "Price before discount, {currency}",
+    originalPriceShort: "Before discount, {currency}",
     duration: "Duration",
     durationText: "Duration text",
     durationTextHint: "Duration text (e.g. “8 hours”)",
@@ -674,7 +677,7 @@ export const en: Catalog = {
     fieldTitlePlaceholder: "Excursion title",
     fieldDescription: "Description",
     fieldCity: "City",
-    fieldPrice: "Price, ₽",
+    fieldPrice: "Price, {currency}",
     fieldGroupSize: "Group size",
     fieldMeetingPoint: "Meeting point",
     mediaLabel: "Excursion photos and video",

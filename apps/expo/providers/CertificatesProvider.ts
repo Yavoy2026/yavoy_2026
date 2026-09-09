@@ -50,7 +50,6 @@ export const [CertificatesProvider, useCertificates] = createContextHook(() => {
       const cert: GiftCertificate = {
         id: `cert-${Date.now()}`,
         nominal,
-        currency: "₽",
         fromName,
         toName,
         purchasedAt: new Date().toISOString().split("T")[0],

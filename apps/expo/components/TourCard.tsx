@@ -28,7 +28,7 @@ interface TourCardProps {
 
 export default React.memo(function TourCard({ tour, onPress, compact = false }: TourCardProps) {
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const { cityNameMap } = useCatalog();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isViewed } = useViewedTours();
@@ -59,7 +59,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `${tour.title} — ${t("common.from")} ${formatNumber(tour.price)}${tour.currency}\n\n${t("tour.organizer")}: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYaVoy Travel Group`,
+        message: `${tour.title} — ${t("common.from")} ${formatMoney(tour.price)}\n\n${t("tour.organizer")}: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYaVoy Travel Group`,
       });
     } catch (e) {
       console.log("Share error:", e);
@@ -165,9 +165,9 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
             <View style={styles.priceContainer}>
               <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t("common.from")}</Text>
               {hasDiscount ? (
-                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{`${formatNumber(tour.originalPrice!)}₽`}</Text>
+                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{formatMoney(tour.originalPrice!)}</Text>
               ) : null}
-              <Text style={[styles.price, { color: colors.teal }]}>{`${formatNumber(tour.price)}${tour.currency}`}</Text>
+              <Text style={[styles.price, { color: colors.teal }]}>{formatMoney(tour.price)}</Text>
             </View>
           </View>
         </View>

@@ -79,7 +79,7 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                       <Gift size={24} color={colors.gold} />
                     </View>
                     <Text style={styles.voucherLabel}>{t("certificate.type")}</Text>
-                    <Text style={styles.voucherNominal}>{formatMoney(purchasedCert.nominal, purchasedCert.currency)}</Text>
+                    <Text style={styles.voucherNominal}>{formatMoney(purchasedCert.nominal)}</Text>
                     <View style={styles.voucherDivider} />
                     <View style={styles.voucherRow}>
                       <Text style={styles.voucherFieldLabel}>{t("certificate.to")}</Text>

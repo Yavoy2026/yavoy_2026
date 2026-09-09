@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   date,
@@ -15,6 +16,13 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+
+/**
+ * Деньги — только целые минорные единицы, и только bigint: в int4 помещается
+ * 21,5 млн сум, а групповая бронь узбекского тура это пробивает (YAV-21).
+ * mode "number" безопасен — 2^53 тийинов это 90 трлн сум.
+ */
+const money = (name: string) => bigint(name, { mode: "number" });
 
 // ─── Enums ───────────────────────────────────────────────────
 
@@ -71,8 +79,8 @@ export const tours = pgTable(
     description: text("description").notNull(),
     imageUrl: text("image_url").notNull(),
     gallery: jsonb("gallery").$type<string[]>().notNull().default([]),
-    priceKopeks: integer("price_kopeks").notNull(),
-    originalPriceKopeks: integer("original_price_kopeks"),
+    priceKopeks: money("price_kopeks").notNull(),
+    originalPriceKopeks: money("original_price_kopeks"),
     currency: text("currency").notNull().default("RUB"),
     durationType: durationTypeEnum("duration_type").notNull(),
     durationText: text("duration_text").notNull().default(""),
@@ -139,7 +147,7 @@ export const tourDates = pgTable(
     startsOn: date("starts_on").notNull(),
     seatsTotal: integer("seats_total").notNull(),
     seatsLeft: integer("seats_left").notNull(),
-    priceOverrideKopeks: integer("price_override_kopeks"),
+    priceOverrideKopeks: money("price_override_kopeks"),
   },
   (t) => [
     uniqueIndex("tour_dates_tour_date_idx").on(t.tourId, t.startsOn),
@@ -158,7 +166,7 @@ export const bookings = pgTable(
     tourDateId: uuid("tour_date_id").notNull().references(() => tourDates.id),
     status: bookingStatusEnum("status").notNull().default("requested"),
     ticketsCount: integer("tickets_count").notNull(),
-    amountKopeks: integer("amount_kopeks").notNull(),
+    amountKopeks: money("amount_kopeks").notNull(),
     currency: text("currency").notNull().default("RUB"),
     confirmationCode: text("confirmation_code").notNull(),
     firstName: text("first_name").notNull(),
@@ -195,11 +203,11 @@ export const payments = pgTable(
     providerPaymentId: text("provider_payment_id"),
     status: paymentStatusEnum("status").notNull().default("created"),
     /** Сумма в минорных единицах валюты (тийин для UZS, копейка для RUB) */
-    amountMinor: integer("amount_minor").notNull(),
+    amountMinor: money("amount_minor").notNull(),
     currency: text("currency").notNull(),
     /** Платёжная страница провайдера */
     payUrl: text("pay_url"),
-    refundedMinor: integer("refunded_minor").notNull().default(0),
+    refundedMinor: money("refunded_minor").notNull().default(0),
     /** Последний коллбэк провайдера целиком — для разбора инцидентов */
     lastEvent: jsonb("last_event"),
     maskedPan: text("masked_pan"),

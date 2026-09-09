@@ -85,7 +85,7 @@ export const TourWritePayloadSchema = z.object({
   gallery: z.array(z.string()).default([]),
   price_kopeks: z.number().int().min(0),
   original_price_kopeks: z.number().int().min(0).nullable().optional(),
-  currency: z.string().default("RUB"),
+  // валюта не редактируется: она одна на инсталляцию и берётся из CURRENCY (YAV-21)
   duration_type: DurationTypeSchema,
   duration_text: z.string().default(""),
   transport: TransportTypeSchema,

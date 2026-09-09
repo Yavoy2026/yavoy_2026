@@ -14,7 +14,7 @@ export default function Explore() {
   const { tours, cities, cityNameMap } = useCatalog();
   const { favoriteCities, toggleFavoriteCity } = useApp();
   const [transport, setTransport] = useState<string | null>(null);
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
 
   const topRated = useMemo(
     () => [...tours].sort((a, b) => b.organizer.rating - a.organizer.rating).slice(0, 6),
@@ -103,7 +103,7 @@ export default function Explore() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{tour.title}</div>
                   <div className="text-xs text-muted-foreground">{cityNameMap[tour.city]} · {tour.durationText}</div>
-                  <div className="text-sm font-bold text-teal">{t("common.from")} {formatNumber(tour.price)}{tour.currency}</div>
+                  <div className="text-sm font-bold text-teal">{t("common.from")} {formatMoney(tour.price)}</div>
                 </div>
                 <ChevronRight size={18} className="text-muted-foreground" />
               </button>
@@ -131,7 +131,7 @@ export default function Explore() {
                 <div className="truncate font-semibold">{tour.title}</div>
                 <StarRating rating={tour.organizer.rating} size={12} showValue reviewCount={tour.organizer.reviewCount} />
               </div>
-              <div className="text-sm font-bold text-teal">{t("common.from")} {formatNumber(tour.price)}{tour.currency}</div>
+              <div className="text-sm font-bold text-teal">{t("common.from")} {formatMoney(tour.price)}</div>
             </button>
           ))}
         </div>

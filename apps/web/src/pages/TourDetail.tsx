@@ -34,7 +34,7 @@ export default function TourDetail() {
   const [contact, setContact] = useState("");
   // акцепт оферты обязателен перед оплатой — требование банка, п.7 (YAV-21)
   const [offerAccepted, setOfferAccepted] = useState(false);
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
 
   const tour = useMemo(() => tours.find((t) => t.id === id), [tours, id]);
   const index = useMemo(() => tours.findIndex((t) => t.id === id), [tours, id]);
@@ -226,8 +226,8 @@ export default function TourDetail() {
         <div>
           <div className="sticky top-24 rounded-3xl bg-card p-6 shadow-lg ring-1 ring-border/60">
             <div className="mb-4 flex items-end gap-2">
-              <span className="text-3xl font-extrabold text-teal">{formatNumber(tour.price)}{tour.currency}</span>
-              {tour.originalPrice && <span className="mb-1 text-sm text-muted-foreground line-through">{formatNumber(tour.originalPrice)}{tour.currency}</span>}
+              <span className="text-3xl font-extrabold text-teal">{formatMoney(tour.price)}</span>
+              {tour.originalPrice && <span className="mb-1 text-sm text-muted-foreground line-through">{formatMoney(tour.originalPrice)}</span>}
               <span className="mb-1 text-xs text-muted-foreground">{t("common.perPersonShort")}</span>
             </div>
 
@@ -300,7 +300,7 @@ export default function TourDetail() {
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t("common.total")}</span>
-                  <span className="text-xl font-extrabold text-teal">{formatNumber(tour.price * tickets)}{tour.currency}</span>
+                  <span className="text-xl font-extrabold text-teal">{formatMoney(tour.price * tickets)}</span>
                 </div>
                 <button
                   disabled={

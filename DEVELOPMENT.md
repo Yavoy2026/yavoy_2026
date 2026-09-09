@@ -163,6 +163,12 @@ Stage (не прод!) развёрнут на VPS `89.169.21.102` (Ubuntu 24.04
 - веб: https://89.169.21.102.sslip.io
 - API: https://api.89.169.21.102.sslip.io (Swagger: `/docs`)
 
+Сейчас стенд поднят **узбекской инсталляцией**: `DEFAULT_LOCALE=uz`, `CURRENCY=UZS`,
+`PAYMENT_PROVIDER=none` (ждём реквизиты OCTO). Каталог на нём остался демонстрационный,
+российский, — узбекского каталога пока нет, а сид стирает каталог и брони, поэтому
+пересев делается только осознанно. Вернуть стенд к российскому виду — три строки в
+`.env` и `up -d backend`, пересборка не нужна.
+
 Файлы на сервере: `/opt/yavoy` (compose, Caddyfile, .env с секретами).
 Сервисы: postgres + backend + caddy (веб-статика запечена в образ caddy, TLS автоматически).
 Compose один и тот же для stage и будущего прода (`deploy/docker-compose.prod.yml`) —
@@ -184,8 +190,12 @@ ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.y
 Для прода (свой домен): поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
 `.env` на сервере, пересобрать веб-образ (URL API зашивается при сборке).
 
-Язык стенда меняется без пересборки: `DEFAULT_LOCALE` / `SUPPORTED_LOCALES` /
-`MAIL_LOCALE` в `.env` на сервере + `docker compose … up -d backend`. Клиенты берут
-дефолт из `GET /v1/config`, поэтому ни веб-образ, ни APK трогать не нужно.
+Язык и валюта стенда меняются без пересборки: `DEFAULT_LOCALE` / `SUPPORTED_LOCALES` /
+`MAIL_LOCALE` / `CURRENCY` в `.env` на сервере + `docker compose … up -d backend`. Клиенты
+берут и то и другое из `GET /v1/config`, поэтому ни веб-образ, ни APK трогать не нужно.
+Так же переключается и вся инсталляция целиком: узбекская витрина — это
+`DEFAULT_LOCALE=uz` + `CURRENCY=UZS` + `PAYMENT_PROVIDER=octo` и ничего больше.
+Валюта применяется к **новым** турам и броням; уже лежащие в базе строки хранят ту,
+с которой были созданы, — смена `CURRENCY` их не переписывает.
 `SUPPORTED_LOCALES` позволяет временно убрать язык из переключателя — например,
 пока узбекский не вычитан носителем.

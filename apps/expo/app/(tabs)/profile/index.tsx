@@ -173,7 +173,7 @@ export default function ProfileScreen() {
   const { tours, cityNameMap } = useCatalog();
   const router = useRouter();
   const { colors, themeMode, setTheme } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const auth = useAuth();
   const { favoriteIds } = useFavorites();
   const { bookings, upcomingBookings, completedBookings } = useBookings();
@@ -454,7 +454,7 @@ export default function ProfileScreen() {
                       <MapPin size={11} color={colors.textMuted} />
                       <Text style={[styles.miniLocation, { color: colors.textMuted }]}>{cityNameMap[tour.city] || tour.city}</Text>
                     </View>
-                    <Text style={[styles.miniPrice, { color: colors.teal }]}>{`${tour.price.toLocaleString()}${tour.currency}`}</Text>
+                    <Text style={[styles.miniPrice, { color: colors.teal }]}>{formatMoney(tour.price)}</Text>
                   </View>
                   <ChevronRight size={16} color={colors.textMuted} />
                 </TouchableOpacity>
@@ -559,7 +559,7 @@ export default function ProfileScreen() {
                       <Gift size={18} color={colors.gold} />
                     </View>
                     <View style={styles.certInfo}>
-                      <Text style={[styles.certNominal, { color: colors.text }]}>{`${cert.nominal.toLocaleString()} ${cert.currency}`}</Text>
+                      <Text style={[styles.certNominal, { color: colors.text }]}>{formatMoney(cert.nominal)}</Text>
                       <Text style={[styles.certTo, { color: colors.textMuted }]}>{t("certificate.forWhom", { name: cert.toName })}</Text>
                     </View>
                     <Text style={[styles.certCode, { color: colors.textMuted }]}>{cert.code}</Text>
@@ -717,7 +717,7 @@ export default function ProfileScreen() {
                   </View>
                   <View style={styles.transactionRight}>
                     <Text style={[styles.transactionAmount, { color: colors.text }]}>
-                      {`${tr.status === "refunded" ? "+" : "-"}${tr.amount.toLocaleString()}${tr.currency}`}
+                      {`${tr.status === "refunded" ? "+" : "-"}${formatMoney(tr.amount)}`}
                     </Text>
                     <View style={styles.transactionStatus}>
                       <StatusIcon size={12} color={config.color} />
@@ -1006,7 +1006,7 @@ export default function ProfileScreen() {
                   </View>
                   <View style={styles.voucherRow}>
                     <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.payment")}</Text>
-                    <Text style={[styles.voucherFieldValue, { color: colors.teal }]}>{`${voucherBooking.totalPrice.toLocaleString()} ${voucherBooking.currency}`}</Text>
+                    <Text style={[styles.voucherFieldValue, { color: colors.teal }]}>{formatMoney(voucherBooking.totalPrice)}</Text>
                   </View>
                   <View style={styles.voucherRow}>
                     <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("voucher.organizer")}</Text>
@@ -1124,7 +1124,7 @@ export default function ProfileScreen() {
                     <Gift size={24} color={colors.gold} />
                   </View>
                   <Text style={[styles.voucherType, { color: colors.textMuted }]}>{t("certificate.type")}</Text>
-                  <Text style={[styles.voucherNominalLarge, { color: colors.gold }]}>{`${voucherCert.nominal.toLocaleString()} ${voucherCert.currency}`}</Text>
+                  <Text style={[styles.voucherNominalLarge, { color: colors.gold }]}>{formatMoney(voucherCert.nominal)}</Text>
                   <View style={[styles.voucherDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.voucherRow}>
                     <Text style={[styles.voucherFieldLabel, { color: colors.textMuted }]}>{t("certificate.to")}</Text>
@@ -1147,7 +1147,7 @@ export default function ProfileScreen() {
                       Share.share({
                         message: [
                           `YAVOY ${t("certificate.type")}`,
-                          `${t("certificate.nominal")}: ${formatNumber(voucherCert.nominal)} ${voucherCert.currency}`,
+                          `${t("certificate.nominal")}: ${formatMoney(voucherCert.nominal)}`,
                           `${t("certificate.to")} ${voucherCert.toName}`,
                           `${t("certificate.from")} ${voucherCert.fromName}`,
                           `${t("certificate.code")} ${voucherCert.code}`,

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { useT } from "@/i18n/I18nProvider";
+import { CURRENCY_SYMBOL } from "@yavoy/i18n";
+import { useI18n, useT } from "@/i18n/I18nProvider";
 import { translateError } from "@/i18n/errors";
 import type { TKey } from "@/i18n/keys";
 import {
@@ -172,7 +173,7 @@ export function TourEditor({
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(() => initialForm(tour, cities[0]?.id ?? ""));
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
-  const t = useT();
+  const { t, currency } = useI18n();
 
   const save = useMutation({
     mutationFn: () => {
@@ -214,8 +215,8 @@ export function TourEditor({
 
           <Section title={t("tourEditor.sectionPrice")}>
             <div className="grid grid-cols-2 gap-3">
-              <Input label={t("tourEditor.price")} type="number" value={form.price_rub} onChange={(v) => set("price_rub", v)} />
-              <Input label={t("tourEditor.originalPrice")} type="number" value={form.original_price_rub} onChange={(v) => set("original_price_rub", v)} />
+              <Input label={t("tourEditor.price", { currency: CURRENCY_SYMBOL[currency] })} type="number" value={form.price_rub} onChange={(v) => set("price_rub", v)} />
+              <Input label={t("tourEditor.originalPrice", { currency: CURRENCY_SYMBOL[currency] })} type="number" value={form.original_price_rub} onChange={(v) => set("original_price_rub", v)} />
             </div>
           </Section>
 

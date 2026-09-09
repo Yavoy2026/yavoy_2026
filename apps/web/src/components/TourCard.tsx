@@ -16,7 +16,7 @@ export function TourCard({ tour, compact = false }: TourCardProps) {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useApp();
   const { cityNameMap } = useCatalog();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const fav = isFavorite(tour.id);
 
   return (
@@ -89,10 +89,10 @@ export function TourCard({ tour, compact = false }: TourCardProps) {
         <div className="flex items-end justify-between">
           <div>
             <span className="text-xs text-muted-foreground">{t("common.from")} </span>
-            <span className="text-lg font-extrabold text-teal">{formatNumber(tour.price)}{tour.currency}</span>
+            <span className="text-lg font-extrabold text-teal">{formatMoney(tour.price)}</span>
             {tour.originalPrice && (
               <span className="ml-1.5 text-xs text-muted-foreground line-through">
-                {formatNumber(tour.originalPrice)}{tour.currency}
+                {formatMoney(tour.originalPrice)}
               </span>
             )}
           </div>

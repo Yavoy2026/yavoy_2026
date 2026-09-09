@@ -1,3 +1,4 @@
+import { CurrencySchema } from "@yavoy/contracts";
 import { LOCALES } from "@yavoy/i18n";
 import { z } from "zod";
 
@@ -41,7 +42,7 @@ const EnvSchema = z.object({
    */
   PAYMENT_PROVIDER: z.enum(["none", "octo"]).default("none"),
   /** Валюта инсталляции: UZS для узбекской витрины, RUB для российской */
-  CURRENCY: z.enum(["UZS", "RUB", "USD"]).default("RUB"),
+  CURRENCY: CurrencySchema.default("RUB"),
   /** Публичный URL API — на него провайдер шлёт коллбэк, а клиент возвращается после оплаты */
   PUBLIC_API_URL: optional(z.string().url()),
   /** Куда вернуть покупателя с платёжной страницы */

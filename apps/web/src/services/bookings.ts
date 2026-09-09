@@ -40,7 +40,6 @@ function adaptBooking(b: ApiBooking): BookedTour {
     tourStartTime: b.start_time ?? "10:00",
     ticketCount: b.tickets_count,
     totalPrice: Math.round(b.amount_kopeks / 100),
-    currency: "₽",
     confirmationCode: b.confirmation_code,
     status: b.status === "completed" ? "completed" : "upcoming",
     apiStatus: b.status,

@@ -84,7 +84,6 @@ function adaptTour(t: ApiTour): Tour {
     gallery: t.gallery,
     price: Math.round(t.price_kopeks / 100),
     originalPrice: t.original_price_kopeks != null ? Math.round(t.original_price_kopeks / 100) : undefined,
-    currency: "₽",
     duration: t.duration_type,
     durationText: t.duration_text,
     transport: t.transport,

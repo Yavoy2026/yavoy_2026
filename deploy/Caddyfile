@@ -1,8 +1,22 @@
 {$WEB_DOMAIN} {
 	encode gzip
 	root * /srv
-	try_files {path} /index.html
-	file_server
+
+	# Ассет с расширением обязан отдавать честный 404, если файла нет.
+	# Иначе SPA-фолбэк вернёт index.html со статусом 200, и браузер получит
+	# HTML вместо картинки или JS-чанка — вместо ошибки будет молчаливая пустота.
+	@asset path *.js *.css *.map *.json *.txt *.xml *.webmanifest \
+		*.svg *.png *.jpg *.jpeg *.webp *.gif *.ico *.avif \
+		*.woff *.woff2 *.ttf *.otf
+	handle @asset {
+		file_server
+	}
+
+	# Всё остальное — маршруты клиентского роутера
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
 }
 
 {$API_DOMAIN} {

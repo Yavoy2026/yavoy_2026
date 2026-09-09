@@ -26,7 +26,8 @@ import {
   type BackofficeTour,
   type TourWritePayload,
 } from "@/services/backoffice";
-import { useT } from "@/providers/I18nProvider";
+import { CURRENCY_SYMBOL } from "@yavoy/i18n";
+import { useI18n, useT } from "@/providers/I18nProvider";
 import { translateError } from "@/i18n/errors";
 import type { TKey } from "@/i18n/keys";
 
@@ -175,7 +176,7 @@ export function TourEditorModal({
   onSuccess: (msg: string) => void;
 }) {
   const { colors } = useTheme();
-  const t = useT();
+  const { t, currency } = useI18n();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(() => initialForm(tour, cities[0]?.id ?? ""));
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
@@ -257,11 +258,11 @@ export function TourEditorModal({
           <Section title={t("tourEditor.sectionPrice")} colors={colors}>
             <View style={styles.row2}>
               <View style={styles.flex1}>
-                {label(t("tourEditor.price"))}
+                {label(t("tourEditor.price", { currency: CURRENCY_SYMBOL[currency] }))}
                 <TextInput style={inputStyle} value={form.price_rub} onChangeText={(v) => set("price_rub", v.replace(/\D/g, ""))} keyboardType="number-pad" />
               </View>
               <View style={styles.flex1}>
-                {label(t("tourEditor.originalPriceShort"))}
+                {label(t("tourEditor.originalPriceShort", { currency: CURRENCY_SYMBOL[currency] }))}
                 <TextInput style={inputStyle} value={form.original_price_rub} onChangeText={(v) => set("original_price_rub", v.replace(/\D/g, ""))} keyboardType="number-pad" />
               </View>
             </View>

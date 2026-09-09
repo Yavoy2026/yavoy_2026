@@ -1,4 +1,4 @@
-import { CATALOGS, createTranslator, formatMoneyKopeks } from "@yavoy/i18n";
+import { CATALOGS, createTranslator, formatMoneyMinor } from "@yavoy/i18n";
 import type { FastifyBaseLogger } from "fastify";
 import { env } from "../env.ts";
 
@@ -17,7 +17,8 @@ export interface Mailer {
  * переключатель языка живёт в приложении и до сервера не доезжает (решение по YAV-25).
  */
 const t = createTranslator(CATALOGS, env.MAIL_LOCALE);
-const money = (kopeks: number) => formatMoneyKopeks(kopeks, env.MAIL_LOCALE);
+// валюта инсталляции, иначе узбекский ваучер придёт с рублями
+const money = (minor: number) => formatMoneyMinor(minor, env.MAIL_LOCALE, env.CURRENCY);
 
 /**
  * SMTP задаётся через SMTP_URL (smtp://user:pass@host:port).

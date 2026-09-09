@@ -1,3 +1,4 @@
+import { CURRENCY_SYMBOL, FALLBACK_CURRENCY, isPrefixCurrency, MINOR_UNITS, type Currency } from "./currency";
 import { INTL_LOCALE, type Locale } from "./locales";
 
 /**
@@ -15,12 +16,19 @@ const safe = <T>(fn: () => T, fallback: T): T => {
 export const formatNumber = (value: number, locale: Locale): string =>
   safe(() => new Intl.NumberFormat(INTL_LOCALE[locale]).format(value), String(value));
 
-/** Деньги приходят из API в копейках; в рубли переводим здесь, на границе UI. */
-export const formatMoneyKopeks = (kopeks: number, locale: Locale, currency = "₽"): string =>
-  `${formatNumber(Math.round(kopeks / 100), locale)} ${currency}`;
+/** Сумма в мажорных единицах + символ валюты инсталляции. */
+export const formatMoney = (amount: number, locale: Locale, currency: Currency = FALLBACK_CURRENCY): string => {
+  const value = formatNumber(amount, locale);
+  const symbol = CURRENCY_SYMBOL[currency];
+  return isPrefixCurrency(currency) ? `${symbol}${value}` : `${value} ${symbol}`;
+};
 
-export const formatMoney = (rubles: number, locale: Locale, currency = "₽"): string =>
-  `${formatNumber(rubles, locale)} ${currency}`;
+/**
+ * Деньги приходят из API в минорных единицах (копейки, тийины); в мажорные
+ * переводим здесь, на границе UI, — внутри системы арифметика только целая.
+ */
+export const formatMoneyMinor = (minor: number, locale: Locale, currency: Currency = FALLBACK_CURRENCY): string =>
+  formatMoney(Math.round(minor / MINOR_UNITS), locale, currency);
 
 const toDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value));
 

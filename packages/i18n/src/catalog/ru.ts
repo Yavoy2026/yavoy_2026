@@ -6,6 +6,10 @@ import { p } from "../plural";
  * Длинные юридические тексты сюда намеренно не попадают (см. YAV-25).
  */
 export const ru = {
+  /** Заголовок вкладки браузера: index.html статичен, title ставит I18nProvider */
+  meta: {
+    title: "YaVoy · Экскурсии и маршруты",
+  },
   common: {
     back: "Назад",
     cancel: "Отмена",
@@ -582,9 +586,9 @@ export const ru = {
     description: "Описание",
     image: "Картинка (URL) *",
     gallery: "Галерея (URL, по одному на строку)",
-    price: "Цена, ₽ *",
-    originalPrice: "Цена до скидки, ₽",
-    originalPriceShort: "До скидки, ₽",
+    price: "Цена, {currency} *",
+    originalPrice: "Цена до скидки, {currency}",
+    originalPriceShort: "До скидки, {currency}",
     duration: "Длительность",
     durationText: "Текст длительности",
     durationTextHint: "Текст длительности (например «8 часов»)",
@@ -721,7 +725,7 @@ export const ru = {
     fieldTitlePlaceholder: "Название экскурсии",
     fieldDescription: "Описание",
     fieldCity: "Город",
-    fieldPrice: "Цена, ₽",
+    fieldPrice: "Цена, {currency}",
     fieldGroupSize: "Размер группы",
     fieldMeetingPoint: "Место сбора",
     mediaLabel: "Фото и видео экскурсии",

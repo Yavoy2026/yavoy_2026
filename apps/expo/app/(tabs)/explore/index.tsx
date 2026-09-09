@@ -17,7 +17,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 export default function ExploreScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const { tours, cities, cityNameMap } = useCatalog();
   const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
   const [selectedInterest, setSelectedInterest] = useState<string | null>(null);
@@ -120,7 +120,7 @@ export default function ExploreScreen() {
                   <Text style={[styles.tourRowCity, { color: colors.textMuted }]}>{cityNameMap[tour.city] || tour.city}</Text>
                   <Text style={[styles.tourRowDuration, { color: colors.textMuted }]}>{`\u00B7 ${tour.durationText}`}</Text>
                 </View>
-                <Text style={[styles.tourRowPrice, { color: colors.teal }]}>{`${t("common.from")} ${formatNumber(tour.price)}${tour.currency}`}</Text>
+                <Text style={[styles.tourRowPrice, { color: colors.teal }]}>{`${t("common.from")} ${formatMoney(tour.price)}`}</Text>
               </View>
               <ChevronRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -151,7 +151,7 @@ export default function ExploreScreen() {
                 <Text style={[styles.ratedRating, { color: colors.text }]}>{String(tour.organizer.rating)}</Text>
                 <Text style={[styles.ratedReviews, { color: colors.textMuted }]}>{`(${t("units.reviews", { count: tour.organizer.reviewCount })})`}</Text>
               </View>
-              <Text style={[styles.ratedPrice, { color: colors.teal }]}>{`${t("common.from")} ${formatNumber(tour.price)}${tour.currency}`}</Text>
+              <Text style={[styles.ratedPrice, { color: colors.teal }]}>{`${t("common.from")} ${formatMoney(tour.price)}`}</Text>
             </View>
             <ChevronRight size={16} color={colors.textMuted} />
           </TouchableOpacity>

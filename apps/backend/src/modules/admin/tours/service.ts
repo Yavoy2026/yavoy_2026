@@ -11,6 +11,7 @@ import type {
 import type { UserRole } from "@yavoy/contracts";
 import type { Db } from "../../../db/client.ts";
 import type { tours } from "../../../db/schema.ts";
+import { env } from "../../../env.ts";
 import { badRequest, conflict, notFound } from "../../../errors.ts";
 import { countPartnerTours, getProfileRowById, type PartnerRow } from "../partners/repo.ts";
 import { organizerFromProfile, requirePartnerProfile } from "../partners/service.ts";
@@ -104,7 +105,6 @@ function payloadToPatch(p: UpdateTourPayload): TourPatch {
   if (p.gallery !== undefined) patch.gallery = p.gallery;
   if (p.price_kopeks !== undefined) patch.priceKopeks = p.price_kopeks;
   if (p.original_price_kopeks !== undefined) patch.originalPriceKopeks = p.original_price_kopeks;
-  if (p.currency !== undefined) patch.currency = p.currency;
   if (p.duration_type !== undefined) patch.durationType = p.duration_type;
   if (p.duration_text !== undefined) patch.durationText = p.duration_text;
   if (p.transport !== undefined) patch.transport = p.transport;
@@ -184,6 +184,7 @@ export async function createTour(db: Db, actor: Actor, payload: TourWritePayload
     ...(payloadToPatch(payload) as typeof tours.$inferInsert),
     partnerId,
     organizer,
+    currency: env.CURRENCY, // одна на инсталляцию, а не свойство тура
     status: "draft", // публикация — отдельным осознанным действием
   });
   return getAdminTour(db, actor, inserted.id);

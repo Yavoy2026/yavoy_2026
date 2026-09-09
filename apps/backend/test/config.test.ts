@@ -11,12 +11,18 @@ describe("GET /v1/config", () => {
   it("отдаёт язык по умолчанию и список языков без авторизации", async () => {
     const res = await t.app.inject({ method: "GET", url: "/v1/config" });
     expect(res.statusCode).toBe(200);
-    const body = res.json() as { default_locale: string; supported_locales: string[] };
+    const body = res.json() as { default_locale: string; supported_locales: string[]; currency: string };
     // дефолт env — en; тесты не задают DEFAULT_LOCALE
     expect(body.default_locale).toBe("en");
     expect(body.supported_locales).toEqual(["ru", "en", "uz"]);
     // дефолт обязан быть выбираемым в переключателе
     expect(body.supported_locales).toContain(body.default_locale);
+  });
+
+  it("отдаёт валюту инсталляции — по ней клиент выбирает символ (YAV-21)", async () => {
+    const res = await t.app.inject({ method: "GET", url: "/v1/config" });
+    // дефолт env — RUB; узбекская инсталляция поднимается с CURRENCY=UZS
+    expect((res.json() as { currency: string }).currency).toBe("RUB");
   });
 });
 

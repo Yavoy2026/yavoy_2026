@@ -34,7 +34,7 @@ import type { ThemeColors } from "@/constants/colors";
 import type { UserProfile, UserRole } from "@/services/api";
 import * as bo from "@/services/backoffice";
 import { TourEditorModal } from "@/components/backoffice/TourEditorModal";
-import { useT } from "@/providers/I18nProvider";
+import { useI18n, useT } from "@/providers/I18nProvider";
 import { translateError } from "@/i18n/errors";
 import type { TKey } from "@/i18n/keys";
 
@@ -147,6 +147,7 @@ export default function BackofficeScreen() {
 
 function BookingsTab({ colors }: { colors: ThemeColors }) {
   const { t, showError, errText } = useBackofficeAlerts();
+  const { formatMoney } = useI18n();
   const queryClient = useQueryClient();
   const requested = useQuery({ queryKey: ["bo-bookings", "requested"], queryFn: () => bo.fetchBackofficeBookings("requested") });
   const confirmed = useQuery({ queryKey: ["bo-bookings", "confirmed"], queryFn: () => bo.fetchBackofficeBookings("confirmed") });
@@ -180,7 +181,7 @@ function BookingsTab({ colors }: { colors: ThemeColors }) {
             <View style={styles.flex1}>
               <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{b.tourTitle}</Text>
               <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
-                {b.tourDate} · {t("units.people", { count: b.tickets })} · {b.amountRub.toLocaleString()}₽ · {b.code}
+                {b.tourDate} · {t("units.people", { count: b.tickets })} · {formatMoney(b.amountRub)} · {b.code}
               </Text>
               <Text style={[styles.cardMeta, { color: colors.textMuted }]}>{b.guest} · {b.contact}</Text>
             </View>
@@ -368,6 +369,7 @@ function UsersTab({ colors, isAdmin, myId }: { colors: ThemeColors; isAdmin: boo
 
 function ToursTab({ colors, isPartner, isStaff }: { colors: ThemeColors; isPartner: boolean; isStaff: boolean }) {
   const { t, showError, errText } = useBackofficeAlerts();
+  const { formatMoneyMinor } = useI18n();
   const queryClient = useQueryClient();
   const { cities } = useCatalog();
   const tours = useQuery({ queryKey: ["backoffice-tours"], queryFn: bo.fetchBackofficeTours });
@@ -413,7 +415,7 @@ function ToursTab({ colors, isPartner, isStaff }: { colors: ThemeColors; isPartn
                 <View style={styles.flex1}>
                   <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{tour.title}</Text>
                   <Text style={[styles.cardMeta, { color: colors.textMuted }]} numberOfLines={1}>
-                    {tour.city_name} · {Math.round(tour.price_kopeks / 100).toLocaleString()}₽ · {tour.organizer.name}
+                    {tour.city_name} · {formatMoneyMinor(tour.price_kopeks)} · {tour.organizer.name}
                   </Text>
                   <Text style={[styles.statusBadge, { color: published ? colors.mint : colors.gold }]}>
                     {published ? t("enums.tourStatus.published") : isPartner ? t("backoffice.draftByManager") : t("enums.tourStatus.draft")}

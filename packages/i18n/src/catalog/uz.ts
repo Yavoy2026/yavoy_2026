@@ -8,6 +8,9 @@ import type { Catalog } from "./ru";
  * формы one и other совпадают.
  */
 export const uz: Catalog = {
+  meta: {
+    title: "YaVoy · Ekskursiyalar va marshrutlar",
+  },
   common: {
     back: "Orqaga",
     cancel: "Bekor qilish",
@@ -548,9 +551,9 @@ export const uz: Catalog = {
     description: "Tavsif",
     image: "Rasm (URL) *",
     gallery: "Galereya (URL, har biri alohida qatorda)",
-    price: "Narx, ₽ *",
-    originalPrice: "Chegirmagacha narx, ₽",
-    originalPriceShort: "Chegirmagacha, ₽",
+    price: "Narx, {currency} *",
+    originalPrice: "Chegirmagacha narx, {currency}",
+    originalPriceShort: "Chegirmagacha, {currency}",
     duration: "Davomiyligi",
     durationText: "Davomiylik matni",
     durationTextHint: "Davomiylik matni (masalan «8 soat»)",
@@ -688,7 +691,7 @@ export const uz: Catalog = {
     fieldTitlePlaceholder: "Ekskursiya nomi",
     fieldDescription: "Tavsif",
     fieldCity: "Shahar",
-    fieldPrice: "Narx, ₽",
+    fieldPrice: "Narx, {currency}",
     fieldGroupSize: "Guruh hajmi",
     fieldMeetingPoint: "Yigʻilish joyi",
     mediaLabel: "Ekskursiya foto va videosi",

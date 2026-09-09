@@ -45,6 +45,7 @@ import {
   MessageSquare,
 } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { CURRENCY_SYMBOL } from "@yavoy/i18n";
 import { useI18n, useT } from "@/providers/I18nProvider";
 import type { TKey } from "@/i18n/keys";
 import { usePartners } from "@/providers/PartnersProvider";
@@ -75,7 +76,7 @@ const periodLabels: Record<Period, TKey> = {
 export default function PartnerScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney, currency } = useI18n();
   const partners = usePartners();
   const [innInput, setInnInput] = useState<string>("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -170,7 +171,6 @@ export default function PartnerScreen() {
       description: fDesc.trim(),
       city: fCity.trim(),
       price: priceNum,
-      currency: "₽",
       image: firstImage?.uri ?? DEFAULT_IMAGE,
       media: fMedia,
       duration: fDuration,
@@ -433,7 +433,7 @@ export default function PartnerScreen() {
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <Wallet size={18} color={colors.teal} />
-              <Text style={[styles.kpiValue, { color: colors.text }]}>{periodTotal.toLocaleString()} ₽</Text>
+              <Text style={[styles.kpiValue, { color: colors.text }]}>{formatMoney(periodTotal)}</Text>
               <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>{t("partner.kpiRevenue", { period: t(periodLabels[period]).toLowerCase() })}</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
@@ -518,7 +518,7 @@ export default function PartnerScreen() {
                   <FormInput colors={colors} placeholder={t("partner.fieldTitle")} value={fTitle} onChangeText={setFTitle} />
                   <FormInput colors={colors} placeholder={t("partner.fieldDescription")} value={fDesc} onChangeText={setFDesc} multiline />
                   <FormInput colors={colors} placeholder={t("partner.fieldCity")} value={fCity} onChangeText={setFCity} />
-                  <FormInput colors={colors} placeholder={t("partner.fieldPrice")} value={fPrice} onChangeText={setFPrice} keyboardType="number-pad" />
+                  <FormInput colors={colors} placeholder={t("partner.fieldPrice", { currency: CURRENCY_SYMBOL[currency] })} value={fPrice} onChangeText={setFPrice} keyboardType="number-pad" />
                   <FormInput colors={colors} placeholder={t("partner.fieldGroupSize")} value={fGroupSize} onChangeText={setFGroupSize} />
                   <FormInput colors={colors} placeholder={t("partner.fieldMeetingPoint")} value={fMeeting} onChangeText={setFMeeting} />
 
@@ -623,7 +623,7 @@ export default function PartnerScreen() {
             <View style={styles.tabContent}>
               <View style={[styles.totalCard, { backgroundColor: colors.headerBg }]}>
                 <Text style={styles.totalLabel}>{t("partner.revenueForPeriod", { period: t(periodLabels[period]).toLowerCase() })}</Text>
-                <Text style={styles.totalValue}>{periodTotal.toLocaleString()} ₽</Text>
+                <Text style={styles.totalValue}>{formatMoney(periodTotal)}</Text>
                 <Text style={styles.totalSub}>{t("partner.completedPayments", { count: partners.transactions.filter((x) => x.status === "completed").length })}</Text>
               </View>
               {filteredTransactions.map((tr) => {
@@ -636,7 +636,7 @@ export default function PartnerScreen() {
                       <Text style={[styles.txSub, { color: colors.textMuted }]}>{tr.guestName} · {tr.date}</Text>
                     </View>
                     <View style={styles.txRight}>
-                      <Text style={[styles.txAmount, { color: colors.text }]}>{tr.amount.toLocaleString()} {tr.currency}</Text>
+                      <Text style={[styles.txAmount, { color: colors.text }]}>{formatMoney(tr.amount)}</Text>
                       <View style={styles.txStatusRow}>
                         <StatusIcon size={11} color={sc} />
                         <Text style={[styles.txStatusText, { color: sc }]}>{t(tr.status === "completed" ? "partner.txCredited" : tr.status === "pending" ? "enums.transactionStatus.pending" : "enums.transactionStatus.refunded")}</Text>
@@ -840,7 +840,7 @@ interface TourRowProps {
 }
 
 function TourRow({ tour, colors, guestsCount, onChat }: TourRowProps) {
-  const t = useT();
+  const { t, formatMoney } = useI18n();
   const statusCfg = useMemo(() => {
     if (tour.status === "published") return { label: t("enums.tourStatus.published"), color: colors.green, bg: colors.greenLight, Icon: CheckCircle };
     if (tour.status === "pending") return { label: t("enums.tourStatus.pending"), color: colors.orange, bg: "rgba(243,156,18,0.12)", Icon: Clock };
@@ -852,7 +852,7 @@ function TourRow({ tour, colors, guestsCount, onChat }: TourRowProps) {
       <Image source={{ uri: tour.image }} style={styles.tourImage} contentFit="cover" />
       <View style={styles.tourInfo}>
         <Text style={[styles.tourTitle, { color: colors.text }]} numberOfLines={2}>{tour.title}</Text>
-        <Text style={[styles.tourMeta, { color: colors.textMuted }]}>{tour.city} · {tour.price.toLocaleString()} {tour.currency}</Text>
+        <Text style={[styles.tourMeta, { color: colors.textMuted }]}>{tour.city} · {formatMoney(tour.price)}</Text>
         <View style={styles.tourFooter}>
           <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
             <StatusIcon size={11} color={statusCfg.color} />

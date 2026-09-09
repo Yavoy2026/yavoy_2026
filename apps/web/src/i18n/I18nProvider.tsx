@@ -4,11 +4,13 @@ import {
   FALLBACK_LOCALE,
   LOCALES,
   formatDate as fmtDate,
+  FALLBACK_CURRENCY,
   formatMoney as fmtMoney,
-  formatMoneyKopeks as fmtMoneyKopeks,
+  formatMoneyMinor as fmtMoneyMinor,
   formatNumber as fmtNumber,
   isLocale,
   type Catalog,
+  type Currency,
   type Locale,
   type Params,
 } from "@yavoy/i18n";
@@ -24,10 +26,12 @@ const CONFIG_KEY = "yavoy_app_config";
 interface I18nValue {
   locale: Locale;
   supported: Locale[];
+  /** Валюта инсталляции; приходит с сервера вместе с языком */
+  currency: Currency;
   setLocale: (locale: Locale) => void;
   t: (key: TKey, params?: Params & { count?: number }) => string;
-  formatMoney: (rubles: number, currency?: string) => string;
-  formatMoneyKopeks: (kopeks: number, currency?: string) => string;
+  formatMoney: (amount: number, currency?: Currency) => string;
+  formatMoneyMinor: (minor: number, currency?: Currency) => string;
   formatNumber: (value: number) => string;
   formatDate: (value: Date | string, options?: Intl.DateTimeFormatOptions) => string;
 }
@@ -61,6 +65,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const [locale, setLocaleState] = useState<Locale>(stored ?? cached?.default_locale ?? FALLBACK_LOCALE);
   const [supported, setSupported] = useState<Locale[]>(cached?.supported_locales ?? [...LOCALES]);
+  const [currency, setCurrency] = useState<Currency>(cached?.currency ?? FALLBACK_CURRENCY);
   // ждать сеть нужно только на самом первом запуске: ни выбора, ни кэша нет
   const [ready, setReady] = useState(stored !== null || cached !== null);
 
@@ -71,6 +76,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
         setSupported(cfg.supported_locales);
+        setCurrency(cfg.currency);
         if (readStoredLocale() === null) setLocaleState(cfg.default_locale);
       })
       .catch(() => {
@@ -86,6 +92,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
+    // index.html статичен, поэтому заголовок вкладки переводим здесь
+    document.title = createTranslator<Catalog>(CATALOGS, locale)("meta.title");
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
@@ -98,14 +106,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return {
       locale,
       supported,
+      currency,
       setLocale,
       t: translate as I18nValue["t"],
-      formatMoney: (rubles, currency) => fmtMoney(rubles, locale, currency),
-      formatMoneyKopeks: (kopeks, currency) => fmtMoneyKopeks(kopeks, locale, currency),
+      formatMoney: (amount, override) => fmtMoney(amount, locale, override ?? currency),
+      formatMoneyMinor: (minor, override) => fmtMoneyMinor(minor, locale, override ?? currency),
       formatNumber: (v) => fmtNumber(v, locale),
       formatDate: (v, options) => fmtDate(v, locale, options),
     };
-  }, [locale, supported, setLocale]);
+  }, [locale, supported, currency, setLocale]);
 
   // короткий скелетон вместо мигания языка на первом кадре
   if (!ready) return <div className="min-h-screen bg-background" />;

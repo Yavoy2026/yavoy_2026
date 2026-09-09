@@ -77,7 +77,7 @@ const transportIcons: Record<string, React.ComponentType<{ size: number; color: 
 
 function ReviewCard({ review }: { review: TourReview }) {
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   return (
     <View style={[detailStyles.reviewCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
       <View style={detailStyles.reviewHeader}>
@@ -146,7 +146,7 @@ function MapPickerModal({
   coords?: { lat: number; lng: number };
 }) {
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
 
   const openInYandex = useCallback(() => {
     let url: string;
@@ -220,7 +220,7 @@ function BookingAuthModal({
   onBookingComplete: (booking: BookedTour) => void;
 }) {
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { createBooking, isCreating } = useBookings();
@@ -346,7 +346,7 @@ function BookingAuthModal({
                   </TouchableOpacity>
                 </View>
                 {selectedDate ? (
-                  <Text style={[detailStyles.ticketsTotal, { color: colors.teal }]}>{`${formatNumber(selectedDate.price * tickets)} ₽`}</Text>
+                  <Text style={[detailStyles.ticketsTotal, { color: colors.teal }]}>{formatMoney(selectedDate.price * tickets)}</Text>
                 ) : null}
               </View>
 
@@ -473,7 +473,7 @@ function BookingAuthModal({
 
 function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void }) {
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const { cityNameMap } = useCatalog();
   return (
     <TouchableOpacity
@@ -488,7 +488,7 @@ function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void })
           <MapPin size={11} color={colors.teal} />
           <Text style={[detailStyles.similarCity, { color: colors.textMuted }]}>{cityNameMap[tour.city] || tour.city}</Text>
         </View>
-        <Text style={[detailStyles.similarPrice, { color: colors.teal }]}>{`${formatNumber(tour.price)} ${tour.currency}`}</Text>
+        <Text style={[detailStyles.similarPrice, { color: colors.teal }]}>{formatMoney(tour.price)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -528,7 +528,7 @@ export default function TourDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { markViewed } = useViewedTours();
   const [mapModalVisible, setMapModalVisible] = useState<boolean>(false);
@@ -581,8 +581,8 @@ export default function TourDetailScreen() {
       const lines: string[] = [
         `🏷 ${tour.title}`,
         `📍 ${cityNameMap[tour.city] || tour.city}`,
-        `💰 ${formatNumber(tour.price)} ${tour.currency} ${t("common.perPerson")}`,
-        tour.originalPrice ? `🔥 ${formatNumber(tour.originalPrice)} ${tour.currency}` : "",
+        `💰 ${formatMoney(tour.price)} ${t("common.perPerson")}`,
+        tour.originalPrice ? `🔥 ${formatMoney(tour.originalPrice)}` : "",
         `⏱ ${tour.durationText}`,
         tour.startTime ? `🕐 ${t("tour.infoStart")}: ${tour.startTime}` : "",
         `👥 ${tour.groupSize}`,
@@ -928,7 +928,7 @@ export default function TourDetailScreen() {
             {hasDiscount ? (
               <Text style={[detailStyles.stickyOriginalPrice, { color: colors.textMuted }]}>{`${formatNumber(tour.originalPrice!)}\u20BD`}</Text>
             ) : null}
-            <Text style={[detailStyles.stickyPrice, { color: colors.text }]}>{`${formatNumber(tour.price)} ${tour.currency}`}</Text>
+            <Text style={[detailStyles.stickyPrice, { color: colors.text }]}>{formatMoney(tour.price)}</Text>
             <Text style={[detailStyles.stickyPriceNote, { color: colors.textMuted }]}>{t("common.perPerson")}</Text>
           </View>
           <TouchableOpacity

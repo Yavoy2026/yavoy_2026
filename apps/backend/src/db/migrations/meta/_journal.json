@@ -50,6 +50,13 @@
       "when": 1788937536250,
       "tag": "0006_hard_scorpion",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788984821421,
+      "tag": "0007_military_quasimodo",
+      "breakpoints": true
     }
   ]
 }

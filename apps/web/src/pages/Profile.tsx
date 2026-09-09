@@ -33,7 +33,7 @@ export default function Profile() {
   const [reelCity, setReelCity] = useState("");
 
   const { tours, cityNameMap } = useCatalog();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney } = useI18n();
   const queryClient = useQueryClient();
   const bookingsQuery = useQuery({ queryKey: ["my-bookings"], queryFn: fetchMyBookings, enabled: isAuthenticated });
   const bookings = bookingsQuery.data ?? [];
@@ -151,7 +151,7 @@ export default function Profile() {
                       <div className="text-xs text-muted-foreground">{bk.tourDate} · {bk.tourStartTime} · {t("units.people", { count: bk.ticketCount })} · {bk.confirmationCode}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold">{formatNumber(bk.totalPrice)}{bk.currency}</div>
+                      <div className="font-bold">{formatMoney(bk.totalPrice)}</div>
                       <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {t(cfg.label)}</div>
                       {bk.apiStatus === "completed" && !reviewedBookingIds.has(bk.id) && (
                         <button onClick={() => setReviewBooking(bk)} className="mt-1 text-xs font-semibold text-gold hover:underline">{t("booking.leaveReview")}</button>
@@ -160,7 +160,7 @@ export default function Profile() {
                   </div>
                 );
               })}
-              <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">{t("profile.tripsTotal", { amount: `${formatNumber(totalSpent)}₽` })}</div>
+              <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">{t("profile.tripsTotal", { amount: formatMoney(totalSpent) })}</div>
             </>
           )}
         </Row>
@@ -173,7 +173,7 @@ export default function Profile() {
                 <div className="truncate font-semibold">{tour.title}</div>
                 <div className="text-xs text-muted-foreground">{cityNameMap[tour.city]}</div>
               </div>
-              <div className="text-sm font-bold text-teal">{formatNumber(tour.price)}{tour.currency}</div>
+              <div className="text-sm font-bold text-teal">{formatMoney(tour.price)}</div>
             </button>
           ))}
         </Row>

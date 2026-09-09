@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { PartnerTourSubmission, PartnerGuest, PartnerTransaction } from "@/types";
+import { CURRENCY_SYMBOL } from "@yavoy/i18n";
 import { useI18n, useT } from "@/i18n/I18nProvider";
 import type { TKey } from "@/i18n/keys";
 
@@ -29,9 +30,9 @@ const guests: PartnerGuest[] = [
 ];
 
 const partnerTransactions: PartnerTransaction[] = [
-  { id: "pt1", tourTitle: "Гастротур по рынкам Москвы", amount: 7000, currency: "₽", date: "2026-06-12", guestName: "Ольга Петрова", status: "completed" },
-  { id: "pt2", tourTitle: "Гастротур по рынкам Москвы", amount: 14000, currency: "₽", date: "2026-06-14", guestName: "Иван Сидоров", status: "completed" },
-  { id: "pt3", tourTitle: "Ночной джаз-квартал", amount: 2800, currency: "₽", date: "2026-06-15", guestName: "Мария Кузнецова", status: "pending" },
+  { id: "pt1", tourTitle: "Гастротур по рынкам Москвы", amount: 7000, date: "2026-06-12", guestName: "Ольга Петрова", status: "completed" },
+  { id: "pt2", tourTitle: "Гастротур по рынкам Москвы", amount: 14000, date: "2026-06-14", guestName: "Иван Сидоров", status: "completed" },
+  { id: "pt3", tourTitle: "Ночной джаз-квартал", amount: 2800, date: "2026-06-15", guestName: "Мария Кузнецова", status: "pending" },
 ];
 
 const reviews = [
@@ -53,7 +54,7 @@ export default function Partner() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTour, setNewTour] = useState({ title: "", city: "", price: "" });
   const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney, currency } = useI18n();
 
   const allAgreed = agree.terms && agree.privacy && agree.offer;
   const innValid = /^\d{10}$|^\d{12}$/.test(inn);
@@ -198,7 +199,7 @@ export default function Partner() {
         <div>
           {/* Stats */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard icon={TrendingUp} label={t("partner.kpiIncome")} value={`${formatNumber(revenue)}₽`} />
+            <StatCard icon={TrendingUp} label={t("partner.kpiIncome")} value={formatMoney(revenue)} />
             <StatCard icon={Receipt} label={t("partner.kpiTransactions")} value={String(partnerTransactions.length)} />
             <StatCard icon={Users} label={t("partner.kpiGuestsShort")} value={String(guests.reduce((sum, g) => sum + g.ticketCount, 0))} />
             <StatCard icon={Star} label={t("partner.kpiRating")} value={avgRating.toFixed(1)} accent />
@@ -220,7 +221,7 @@ export default function Partner() {
                 <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
                   <input value={newTour.title} onChange={(e) => setNewTour((p) => ({ ...p, title: e.target.value }))} placeholder={t("partner.fieldTitlePlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                   <input value={newTour.city} onChange={(e) => setNewTour((p) => ({ ...p, city: e.target.value }))} placeholder={t("partner.fieldCity")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder={t("partner.fieldPrice")} inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder={t("partner.fieldPrice", { currency: CURRENCY_SYMBOL[currency] })} inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                   <p className="text-xs text-muted-foreground">{t("partner.mediaWebHint")}</p>
                   <button onClick={addTour} className="w-full rounded-xl bg-teal py-2.5 font-bold text-white">{t("partner.submitTour")}</button>
                 </div>
@@ -230,7 +231,7 @@ export default function Partner() {
                   <img src={s.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{s.title}</div>
-                    <div className="text-xs text-muted-foreground">{s.city} · {formatNumber(s.price)}₽ · {s.submittedAt}</div>
+                    <div className="text-xs text-muted-foreground">{s.city} · {formatMoney(s.price)} · {s.submittedAt}</div>
                   </div>
                   <StatusBadge status={s.status} />
                 </div>
@@ -263,7 +264,7 @@ export default function Partner() {
               </div>
               <div className="mb-4 rounded-2xl bg-teal/10 p-4 text-center">
                 <div className="text-xs text-muted-foreground">{t("partner.revenueForPeriodWeb")}</div>
-                <div className="text-2xl font-extrabold text-teal">{formatNumber(revenue)}₽</div>
+                <div className="text-2xl font-extrabold text-teal">{formatMoney(revenue)}</div>
               </div>
               <div className="space-y-2.5">
                 {partnerTransactions.map((tx) => (
@@ -273,7 +274,7 @@ export default function Partner() {
                       <div className="text-xs text-muted-foreground">{tx.guestName} · {tx.date}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-teal">+{formatNumber(tx.amount)}{tx.currency}</div>
+                      <div className="font-bold text-teal">+{formatMoney(tx.amount)}</div>
                       <StatusBadge status={tx.status === "completed" ? "published" : "pending"} small />
                     </div>
                   </div>

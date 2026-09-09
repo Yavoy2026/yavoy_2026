@@ -6,11 +6,13 @@ import {
   FALLBACK_LOCALE,
   LOCALES,
   formatDate as fmtDate,
+  FALLBACK_CURRENCY,
   formatMoney as fmtMoney,
-  formatMoneyKopeks as fmtMoneyKopeks,
+  formatMoneyMinor as fmtMoneyMinor,
   formatNumber as fmtNumber,
   isLocale,
   type Catalog,
+  type Currency,
   type Locale,
   type Params,
 } from "@yavoy/i18n";
@@ -30,6 +32,7 @@ const CONFIG_KEY = "yavoy_app_config";
 export const [I18nProvider, useI18n] = createContextHook(() => {
   const [locale, setLocaleState] = useState<Locale>(FALLBACK_LOCALE);
   const [supported, setSupported] = useState<Locale[]>([...LOCALES]);
+  const [currency, setCurrency] = useState<Currency>(FALLBACK_CURRENCY);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -53,6 +56,7 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
       if (userChoice) setLocaleState(userChoice);
       else if (cached && isLocale(cached.default_locale)) setLocaleState(cached.default_locale);
       if (cached?.supported_locales?.length) setSupported(cached.supported_locales);
+      if (cached?.currency) setCurrency(cached.currency);
       // при наличии выбора или кэша сеть уже не блокирует первый кадр
       if (userChoice || cached) setReady(true);
 
@@ -61,6 +65,7 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
         if (cancelled) return;
         await AsyncStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
         setSupported(cfg.supported_locales);
+        setCurrency(cfg.currency);
         if (!userChoice) setLocaleState(cfg.default_locale);
       } catch {
         // офлайн или бэкенд лежит — остаёмся на кэше/фолбэке
@@ -89,15 +94,17 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
     () => ({
       locale,
       supported,
+      /** Валюта инсталляции; приходит с сервера вместе с языком */
+      currency,
       setLocale,
       ready,
       t,
       formatNumber: (value: number) => fmtNumber(value, locale),
-      formatMoney: (rubles: number, currency?: string) => fmtMoney(rubles, locale, currency),
-      formatMoneyKopeks: (kopeks: number, currency?: string) => fmtMoneyKopeks(kopeks, locale, currency),
+      formatMoney: (amount: number, override?: Currency) => fmtMoney(amount, locale, override ?? currency),
+      formatMoneyMinor: (minor: number, override?: Currency) => fmtMoneyMinor(minor, locale, override ?? currency),
       formatDate: (value: Date | string, options?: Intl.DateTimeFormatOptions) => fmtDate(value, locale, options),
     }),
-    [locale, supported, setLocale, ready, t],
+    [locale, supported, currency, setLocale, ready, t],
   );
 });
 

@@ -24,7 +24,6 @@ const initialTours: PartnerTourSubmission[] = [
     description: "Дегустации, локальные сыры и виноделие региона.",
     city: "Кисловодск",
     price: 8500,
-    currency: "₽",
     image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop",
     duration: "one_day",
     transport: "auto",
@@ -43,7 +42,6 @@ const initialTours: PartnerTourSubmission[] = [
     description: "Маршрут средней сложности с гидом и фотосессией на вершине.",
     city: "Пятигорск",
     price: 4200,
-    currency: "₽",
     image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=400&fit=crop",
     duration: "one_day",
     transport: "auto",
@@ -66,12 +64,12 @@ const initialGuests: PartnerGuest[] = [
 ];
 
 const initialTransactions: PartnerTransaction[] = [
-  { id: "ptr1", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 17000, currency: "₽", date: "2026-04-20", guestName: "Анна Соколова", status: "completed" },
-  { id: "ptr2", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 25500, currency: "₽", date: "2026-05-04", guestName: "Дмитрий Кузнецов", status: "completed" },
-  { id: "ptr3", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 34000, currency: "₽", date: "2026-05-20", guestName: "Мария Орлова", status: "pending" },
-  { id: "ptr4", tourId: "psub2", tourTitle: "Восхождение на Бештау", amount: 8400, currency: "₽", date: "2026-05-22", guestName: "Сергей Васильев", status: "pending" },
-  { id: "ptr5", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 8500, currency: "₽", date: "2026-03-12", guestName: "Игорь Лебедев", status: "completed" },
-  { id: "ptr6", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 17000, currency: "₽", date: "2025-12-10", guestName: "Наталья Котова", status: "completed" },
+  { id: "ptr1", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 17000, date: "2026-04-20", guestName: "Анна Соколова", status: "completed" },
+  { id: "ptr2", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 25500, date: "2026-05-04", guestName: "Дмитрий Кузнецов", status: "completed" },
+  { id: "ptr3", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 34000, date: "2026-05-20", guestName: "Мария Орлова", status: "pending" },
+  { id: "ptr4", tourId: "psub2", tourTitle: "Восхождение на Бештау", amount: 8400, date: "2026-05-22", guestName: "Сергей Васильев", status: "pending" },
+  { id: "ptr5", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 8500, date: "2026-03-12", guestName: "Игорь Лебедев", status: "completed" },
+  { id: "ptr6", tourId: "psub1", tourTitle: "Гастротур по КМВ", amount: 17000, date: "2025-12-10", guestName: "Наталья Котова", status: "completed" },
 ];
 
 const initialChat: PartnerChatMessage[] = [

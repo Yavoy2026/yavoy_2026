@@ -28,7 +28,7 @@ export default function Backoffice() {
   const navigate = useNavigate();
   const { user, role, isLoading: authLoading, updateUserRole, activateUserById, deactivateUserById } = useAuth();
   const queryClient = useQueryClient();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatMoney, formatMoneyMinor } = useI18n();
 
   const isPartner = role === "partner";
   const isStaff = role === "admin" || role === "manager";
@@ -167,7 +167,7 @@ export default function Backoffice() {
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {tour.city_name} · {formatNumber(Math.round(tour.price_kopeks / 100))}₽ · {tour.organizer.name}
+                      {tour.city_name} · {formatMoneyMinor(tour.price_kopeks)} · {tour.organizer.name}
                     </div>
                   </div>
                   <button
@@ -224,7 +224,7 @@ export default function Backoffice() {
                   <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{b.tourTitle}</div>
-                    <div className="text-xs text-muted-foreground">{b.tourDate} · {t("units.people", { count: b.tickets })} · {formatNumber(b.amount)}₽ · {b.code}</div>
+                    <div className="text-xs text-muted-foreground">{b.tourDate} · {t("units.people", { count: b.tickets })} · {formatMoney(b.amount)} · {b.code}</div>
                     <div className="text-xs text-muted-foreground">{b.guest} · {b.contact}</div>
                   </div>
                   <Actions

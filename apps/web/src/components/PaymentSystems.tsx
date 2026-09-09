@@ -45,6 +45,10 @@ export function PaymentSystems({ className = "" }: { className?: string }) {
                 className="h-5 w-auto object-contain"
                 loading="lazy"
                 onError={() => setMissing((prev) => ({ ...prev, [system.id]: true }))}
+                /* «загрузился» с нулевым размером — тоже отсутствующий файл */
+                onLoad={(e) => {
+                  if (e.currentTarget.naturalWidth === 0) setMissing((prev) => ({ ...prev, [system.id]: true }));
+                }}
               />
             )}
           </li>

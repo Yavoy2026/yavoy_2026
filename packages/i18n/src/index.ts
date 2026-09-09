@@ -1,5 +1,15 @@
 export { LOCALES, FALLBACK_LOCALE, isLocale, toLocale, LOCALE_LABELS, INTL_LOCALE } from "./locales";
 export type { Locale } from "./locales";
+export {
+  CURRENCIES,
+  FALLBACK_CURRENCY,
+  isCurrency,
+  toCurrency,
+  CURRENCY_SYMBOL,
+  isPrefixCurrency,
+  MINOR_UNITS,
+} from "./currency";
+export type { Currency } from "./currency";
 export { p, selectPlural, isPlural } from "./plural";
 export type { Plural } from "./plural";
 export { createTranslator } from "./translate";
@@ -7,7 +17,7 @@ export type { CatalogPath, Params, Translator } from "./translate";
 export {
   formatNumber,
   formatMoney,
-  formatMoneyKopeks,
+  formatMoneyMinor,
   formatDate,
   formatDateShort,
   formatMonthYear,

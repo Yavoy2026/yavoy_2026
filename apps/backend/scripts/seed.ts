@@ -5,6 +5,7 @@
  */
 import { readFileSync } from "node:fs";
 import { createDb } from "../src/db/client.ts";
+import { env } from "../src/env.ts";
 import { cities, tourDates, tours } from "../src/db/schema.ts";
 
 interface SeedCity {
@@ -110,7 +111,7 @@ const rows = data.tours
     gallery: t.gallery ?? [],
     priceKopeks: Math.round(t.price * 100),
     originalPriceKopeks: t.originalPrice ? Math.round(t.originalPrice * 100) : null,
-    currency: "RUB",
+    currency: env.CURRENCY,
     durationType: t.duration,
     durationText: t.durationText ?? "",
     transport: t.transport,

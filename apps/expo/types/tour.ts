@@ -33,7 +33,6 @@ export interface Tour {
   gallery: string[];
   price: number;
   originalPrice?: number;
-  currency: string;
   duration: DurationType;
   durationText: string;
   transport: TransportType;
@@ -102,7 +101,6 @@ export interface Transaction {
   tourTitle: string;
   tourImage: string;
   amount: number;
-  currency: string;
   date: string;
   status: "completed" | "pending" | "refunded";
 }
@@ -127,7 +125,6 @@ export interface BookedTour {
   tourStartTime: string;
   ticketCount: number;
   totalPrice: number;
-  currency: string;
   confirmationCode: string;
   status: "upcoming" | "completed";
   /** Точный статус с бэкенда: requested — заявка ждёт подтверждения */
@@ -143,7 +140,6 @@ export interface BookedTour {
 export interface GiftCertificate {
   id: string;
   nominal: number;
-  currency: string;
   fromName: string;
   toName: string;
   purchasedAt: string;
@@ -269,7 +265,6 @@ export interface PartnerTourSubmission {
   description: string;
   city: string;
   price: number;
-  currency: string;
   image: string;
   media?: PartnerMediaItem[];
   duration: DurationType;
@@ -300,7 +295,6 @@ export interface PartnerTransaction {
   tourId: string;
   tourTitle: string;
   amount: number;
-  currency: string;
   date: string;
   guestName: string;
   status: "completed" | "pending" | "refunded";
