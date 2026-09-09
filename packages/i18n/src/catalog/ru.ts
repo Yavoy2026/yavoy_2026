@@ -494,9 +494,8 @@ export const ru = {
   backoffice: {
     title: "Бэкофис YaVoy",
     titlePartner: "Кабинет партнёра",
-    subtitle: "Модерация контента и управление платформой",
-    subtitlePartner: "Ваши туры и профиль организации",
     backofficeShort: "Бэкофис",
+    toStorefront: "На витрину",
     deniedTitle: "Доступ запрещён",
     deniedText: "Бэкофис доступен партнёрам, менеджерам и администраторам.",
     tabMyTours: "Мои туры",

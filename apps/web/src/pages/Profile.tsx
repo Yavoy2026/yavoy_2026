@@ -119,14 +119,14 @@ export default function Profile() {
           </button>
         ) : null}
         {user?.role === "partner" && (
-          <button onClick={() => navigate("/backoffice")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
+          <button onClick={() => navigate("/admin")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={22} className="text-teal" /></div>
             <div className="flex-1"><div className="font-bold">{t("profile.partnerCabinet")}</div><div className="text-xs text-muted-foreground">{t("profile.partnerCabinetDesc")}</div></div>
             <ChevronRight size={18} className="text-muted-foreground" />
           </button>
         )}
         {(user?.role === "admin" || user?.role === "manager") && (
-          <button onClick={() => navigate("/backoffice")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
+          <button onClick={() => navigate("/admin")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15"><ShieldCheck size={22} className="text-gold" /></div>
             <div className="flex-1"><div className="font-bold">{t("profile.backoffice")}</div><div className="text-xs text-muted-foreground">{t("profile.backofficeDesc")}</div></div>
             <ChevronRight size={18} className="text-muted-foreground" />

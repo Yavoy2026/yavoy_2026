@@ -16,8 +16,14 @@ import TourDetail from "./pages/TourDetail";
 import Reels from "./pages/Reels";
 import Auth from "./pages/Auth";
 import Partner from "./pages/Partner";
-import Backoffice from "./pages/Backoffice";
 import NotFound from "./pages/NotFound";
+import AdminIndex from "./pages/admin/AdminIndex";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminTours from "./pages/admin/AdminTours";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminPartners from "./pages/admin/AdminPartners";
+import AdminOrg from "./pages/admin/AdminOrg";
 import Legal from "./pages/Legal";
 
 const queryClient = new QueryClient();
@@ -40,12 +46,20 @@ const App = () => (
             <Route path="/reels" element={<Reels />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/partner" element={<Partner />} />
-            <Route path="/backoffice" element={<Backoffice />} />
             {/* обязательны для интернет-эквайринга: банк проверяет их наличие (YAV-21) */}
             <Route path="/offer" element={<Legal doc="offer" />} />
             <Route path="/privacy" element={<Legal doc="privacy" />} />
-            {/* старые ссылки/закладки на /admin продолжают работать */}
-            <Route path="/admin" element={<Navigate to="/backoffice" replace />} />
+
+            {/* Панель управления: свой макет, разделы — отдельные адреса (YAV-26) */}
+            <Route path="/admin" element={<AdminIndex />} />
+            <Route path="/admin/bookings" element={<AdminBookings />} />
+            <Route path="/admin/reviews" element={<AdminReviews />} />
+            <Route path="/admin/tours" element={<AdminTours />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/partners" element={<AdminPartners />} />
+            <Route path="/admin/org" element={<AdminOrg />} />
+            {/* старые ссылки и закладки на бэкофис продолжают работать */}
+            <Route path="/backoffice" element={<Navigate to="/admin" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

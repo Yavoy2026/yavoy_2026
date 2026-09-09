@@ -459,9 +459,8 @@ export const uz: Catalog = {
   backoffice: {
     title: "YaVoy bekofisi",
     titlePartner: "Hamkor kabineti",
-    subtitle: "Kontent moderatsiyasi va platforma boshqaruvi",
-    subtitlePartner: "Sizning turlaringiz va tashkilot profili",
     backofficeShort: "Bekofis",
+    toStorefront: "Vitrinaga",
     deniedTitle: "Ruxsat yoʻq",
     deniedText: "Bekofis hamkorlar, menejerlar va administratorlar uchun mavjud.",
     tabMyTours: "Mening turlarim",

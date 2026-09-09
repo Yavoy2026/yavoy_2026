@@ -447,9 +447,8 @@ export const en: Catalog = {
   backoffice: {
     title: "YaVoy back office",
     titlePartner: "Partner dashboard",
-    subtitle: "Content moderation and platform management",
-    subtitlePartner: "Your tours and organisation profile",
     backofficeShort: "Back office",
+    toStorefront: "To storefront",
     deniedTitle: "Access denied",
     deniedText: "The back office is available to partners, managers and administrators.",
     tabMyTours: "My tours",
