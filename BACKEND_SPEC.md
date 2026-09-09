@@ -69,7 +69,8 @@ yavoy_2026/
 │       └── Dockerfile
 ├── packages/
 │   ├── contracts/      # zod-схемы + типы, импортируются бэкендом (клиенты — через адаптеры)
-│   └── i18n/           # каталоги ru/en/uz, плюрализация, форматтеры; общий для бэкенда и клиентов
+│   ├── i18n/           # каталоги ru/en/uz, плюрализация, форматтеры; общий для бэкенда и клиентов
+│   └── legal/          # оферта и политика конфиденциальности; общий текст для клиентов
 ├── docker-compose.yml  # dev: postgres
 ├── deploy/             # прод: compose + Caddy
 └── pnpm-workspace.yaml # workspace: apps/backend + packages/*
@@ -148,9 +149,11 @@ bookings           id, user_id FK, tour_id FK, tour_date_id FK,
                    idempotency_key UNIQUE, expires_at (TTL неоплаченной брони),
                    cancelled_at, cancel_reason, created_at
 
-payments           id, booking_id FK, provider (yookassa), provider_payment_id UNIQUE,
-                   status (pending|succeeded|canceled|refunded),
-                   amount_kopeks, payload jsonb (сырой вебхук), created_at, updated_at
+payments           РЕАЛИЗОВАНО (YAV-21): id, booking_id FK, provider (octo|yookassa),
+                   provider_payment_id (UNIQUE вместе с provider), status
+                   (created|pending|succeeded|cancelled|failed), amount_minor, currency,
+                   pay_url, refunded_minor, last_event jsonb (сырой коллбэк),
+                   masked_pan, card_vendor, created_at, updated_at, paid_at
 
 loyalty_accounts   user_id PK, balance_points
 loyalty_entries    id, user_id, delta, reason (booking|reel|promo|redeem), ref_id, created_at
@@ -284,16 +287,32 @@ PUT    /me/favorites/{tour|city}/{id}           (идемпотентно)
 DELETE /me/favorites/{tour|city}/{id}
 ```
 
-### 5.5 Бронирования и оплата (Фаза 4)
+### 5.5 Бронирования и оплата (реализовано частично; YAV-21)
 ```
-POST   /bookings               Idempotency-Key; {tour_date_id, tickets_count, contact...}
-                               → {booking, payment_url}   (ЮKassa confirmation)
-GET    /me/bookings?status&cursor
-GET    /bookings/{id}          (владелец / партнёр тура / админ)
-POST   /bookings/{id}/cancel   → расчёт возврата по cancellation_policy
-POST   /webhooks/yookassa      (без auth, верификация источника)
-GET    /me/transactions?cursor
+POST   /bookings               {tour_date_id, tickets_count, contact...}
+                               → {booking, payment_url}   payment_url=null без эквайринга
+GET    /me/bookings
+POST   /bookings/{id}/cancel   (владелец / staff)
+POST   /bookings/{id}/confirm  (manager+) — ручное подтверждение там, где оплаты нет
+POST   /bookings/{id}/complete (manager+)
+POST   /webhooks/{provider}    без auth, подлинность — по подписи в теле
+GET    /me/transactions?cursor (backlog)
 ```
+
+**Эквайринг — параметр инсталляции.** Релиза два (РФ и Узбекистан), у каждого
+свой провайдер и своя валюта, поэтому доменный код знает только интерфейс
+`PaymentProvider` (`modules/payments/provider.ts`): `createPayment`,
+`parseWebhook`, `refund`. Реализация выбирается по `PAYMENT_PROVIDER`;
+`none` — оплаты нет, бронь идёт в `requested` и подтверждается менеджером.
+
+Жизненный цикл с оплатой:
+`pending_payment` (места удержаны) → коллбэк `succeeded` → `confirmed` + ваучер;
+`cancelled`/`failed` или истёкший `PAYMENT_TTL_MIN` → `cancelled`, места в продажу.
+Коллбэки идемпотентны: повторная доставка того же статуса не меняет ничего.
+
+**Реквизиты карт не проходят через наш код ни при каких условиях** — оплата
+на странице банка, нам приходит только результат. Это требование раздела VIII
+правил АО «Октобанк» и оно же снимает с нас PCI DSS.
 
 ### 5.6 Отзывы (Фаза 5)
 ```

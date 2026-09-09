@@ -39,7 +39,8 @@ export const [BookingsProvider, useBookings] = createContextHook(() => {
   });
 
   const createBooking = useCallback(
-    (payload: CreateBookingPayload): Promise<BookedTour> => createMutation.mutateAsync(payload),
+    (payload: CreateBookingPayload): Promise<{ booking: BookedTour; paymentUrl: string | null }> =>
+      createMutation.mutateAsync(payload),
     [createMutation],
   );
 

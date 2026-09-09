@@ -59,6 +59,7 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen name="support" options={{ presentation: "card", animation: "slide_from_right" }} />
+      <Stack.Screen name="legal" options={{ presentation: "card", animation: "slide_from_right" }} />
       <Stack.Screen name="partner" options={{ presentation: "card", animation: "slide_from_right" }} />
       <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />

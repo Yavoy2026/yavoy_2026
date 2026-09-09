@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => ({
       // общий с Expo пакет переводов; подключаем алиасом, а не npm-зависимостью —
       // пакет без зависимостей, а симлинки в двух разных менеджерах пакетов хрупки
       "@yavoy/i18n": path.resolve(__dirname, "../../packages/i18n/src"),
+      "@yavoy/legal": path.resolve(__dirname, "../../packages/legal/src"),
     },
   },
   // Expose both VITE_* (Vite default) and EXPO_PUBLIC_* (Rork's cross-platform

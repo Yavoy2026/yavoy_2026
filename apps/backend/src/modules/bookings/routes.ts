@@ -3,6 +3,7 @@ import {
   BookingSchema,
   BookingStatusSchema,
   CreateBookingPayloadSchema,
+  CreateBookingResponseSchema,
   ErrorEnvelopeSchema,
 } from "@yavoy/contracts";
 import type { FastifyInstance } from "fastify";
@@ -29,10 +30,14 @@ export async function bookingsRoutes(fastify: FastifyInstance) {
       schema: {
         tags: ["bookings"],
         body: CreateBookingPayloadSchema,
-        response: { 200: BookingSchema, 401: ErrorEnvelopeSchema, 409: ErrorEnvelopeSchema },
+        response: {
+          200: CreateBookingResponseSchema,
+          401: ErrorEnvelopeSchema,
+          409: ErrorEnvelopeSchema,
+        },
       },
     },
-    async (req) => createBooking(app.db, app.mailer, req.user!.sub, req.body),
+    async (req) => createBooking(app.db, app.mailer, req.user!.sub, req.body, app.payments),
   );
 
   app.get(

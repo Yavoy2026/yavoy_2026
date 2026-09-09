@@ -1198,6 +1198,25 @@ export default function ProfileScreen() {
           <Info size={14} color={colors.textMuted} />
           <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{t("profile.about")}</Text>
         </TouchableOpacity>
+        {/* обязательны для интернет-эквайринга — паритет с вебом (YAV-21) */}
+        <TouchableOpacity
+          style={styles.footerLink}
+          onPress={() => router.push({ pathname: "/legal", params: { doc: "offer" } })}
+          activeOpacity={0.7}
+          testID="link-offer"
+        >
+          <FileText size={14} color={colors.textMuted} />
+          <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{t("legal.offer")}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.footerLink}
+          onPress={() => router.push({ pathname: "/legal", params: { doc: "privacy" } })}
+          activeOpacity={0.7}
+          testID="link-privacy"
+        >
+          <ShieldCheck size={14} color={colors.textMuted} />
+          <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{t("legal.privacy")}</Text>
+        </TouchableOpacity>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>{`YAVOY v${APP_VERSION}`}</Text>
       </View>
 

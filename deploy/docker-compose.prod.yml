@@ -35,6 +35,20 @@ services:
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-ru}
       SUPPORTED_LOCALES: ${SUPPORTED_LOCALES:-ru,en,uz}
       MAIL_LOCALE: ${MAIL_LOCALE:-ru}
+      # Эквайринг: none — оплаты нет, octo — узбекская инсталляция (YAV-21)
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-none}
+      CURRENCY: ${CURRENCY:-RUB}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      PAYMENT_RETURN_URL: ${PAYMENT_RETURN_URL:-}
+      PAYMENT_TTL_MIN: ${PAYMENT_TTL_MIN:-30}
+      OCTO_SHOP_ID: ${OCTO_SHOP_ID:-}
+      OCTO_SECRET: ${OCTO_SECRET:-}
+      OCTO_NOTIFY_SECRET: ${OCTO_NOTIFY_SECRET:-}
+      OCTO_TEST: ${OCTO_TEST:-true}
+      # Без SMTP_URL письма (код входа, подтверждение брони) уходят только в лог
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
 
   # Caddy: TLS + статика веб-клиента (запечена в образ) + reverse proxy на API
   caddy:

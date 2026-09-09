@@ -1,6 +1,18 @@
 import { z } from "zod";
 
-export const BookingStatusSchema = z.enum(["requested", "confirmed", "completed", "cancelled"]);
+/**
+ * pending_payment — бронь создана, места удержаны, ждём оплату (YAV-21).
+ * Появляется только на инсталляциях с подключённым эквайрингом; там, где
+ * PAYMENT_PROVIDER=none, бронь по-прежнему создаётся сразу в requested
+ * и подтверждается менеджером руками.
+ */
+export const BookingStatusSchema = z.enum([
+  "pending_payment",
+  "requested",
+  "confirmed",
+  "completed",
+  "cancelled",
+]);
 export type BookingStatus = z.infer<typeof BookingStatusSchema>;
 
 export const TourDateSchema = z.object({
@@ -44,6 +56,17 @@ export const BookingSchema = z.object({
   cancelled_at: z.string().nullable(),
 });
 export type Booking = z.infer<typeof BookingSchema>;
+
+/**
+ * Ответ на создание брони. payment_url заполнен, когда бронь ждёт оплаты:
+ * клиент должен отправить пользователя на платёжную страницу банка.
+ * Реквизиты карты вводятся там — мы их не видим и не храним.
+ */
+export const CreateBookingResponseSchema = z.object({
+  booking: BookingSchema,
+  payment_url: z.string().url().nullable(),
+});
+export type CreateBookingResponse = z.infer<typeof CreateBookingResponseSchema>;
 
 export const BookingListResponseSchema = z.object({ items: z.array(BookingSchema) });
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>;

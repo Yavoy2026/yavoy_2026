@@ -28,7 +28,22 @@ export const categoryTypeEnum = pgEnum("category_type", [
 export const seasonTypeEnum = pgEnum("season_type", ["winter", "spring", "summer", "autumn", "all_year"]);
 export const tourStatusEnum = pgEnum("tour_status", ["draft", "pending", "published", "rejected", "archived"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "partner", "manager", "admin"]);
-export const bookingStatusEnum = pgEnum("booking_status", ["requested", "confirmed", "completed", "cancelled"]);
+// pending_payment — бронь удерживает места и ждёт оплату (YAV-21)
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "pending_payment",
+  "requested",
+  "confirmed",
+  "completed",
+  "cancelled",
+]);
+export const paymentProviderEnum = pgEnum("payment_provider", ["octo", "yookassa"]);
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "created",
+  "pending",
+  "succeeded",
+  "cancelled",
+  "failed",
+]);
 export const favoriteEntityEnum = pgEnum("favorite_entity", ["tour", "city"]);
 export const reviewStatusEnum = pgEnum("review_status", ["pending", "published", "rejected"]);
 
@@ -158,6 +173,46 @@ export const bookings = pgTable(
     index("bookings_status_idx").on(t.status),
     uniqueIndex("bookings_code_idx").on(t.confirmationCode),
     check("bookings_tickets_positive", sql`${t.ticketsCount} > 0`),
+  ],
+);
+
+// ─── Платежи (YAV-21) ────────────────────────────────────────
+
+/**
+ * Платёж по брони. Таблица общая для всех инсталляций: провайдер отличается
+ * колонкой, а не схемой. Реквизиты карт здесь не хранятся и храниться не могут —
+ * платёж проходит на стороне банка, нам приходит только его результат.
+ */
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    provider: paymentProviderEnum("provider").notNull(),
+    /** ID платежа на стороне провайдера; появляется после создания платежа */
+    providerPaymentId: text("provider_payment_id"),
+    status: paymentStatusEnum("status").notNull().default("created"),
+    /** Сумма в минорных единицах валюты (тийин для UZS, копейка для RUB) */
+    amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull(),
+    /** Платёжная страница провайдера */
+    payUrl: text("pay_url"),
+    refundedMinor: integer("refunded_minor").notNull().default(0),
+    /** Последний коллбэк провайдера целиком — для разбора инцидентов */
+    lastEvent: jsonb("last_event"),
+    maskedPan: text("masked_pan"),
+    cardVendor: text("card_vendor"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("payments_booking_idx").on(t.bookingId),
+    // повторный коллбэк по тому же платежу не должен создавать вторую строку
+    uniqueIndex("payments_provider_id_idx").on(t.provider, t.providerPaymentId),
+    check("payments_amount_positive", sql`${t.amountMinor} > 0`),
   ],
 );
 

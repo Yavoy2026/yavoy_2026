@@ -6,6 +6,7 @@ import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.ts";
 import * as schema from "../src/db/schema.ts";
 import type { MailMessage } from "../src/mail/mailer.ts";
+import type { PaymentProvider } from "../src/modules/payments/provider.ts";
 
 const ADMIN_URL = process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://yavoy:yavoy@localhost:5434/yavoy";
 
@@ -17,7 +18,7 @@ export interface TestApp {
 }
 
 /** Каждый тест-файл получает свежую БД — изоляция без очисток между тестами */
-export async function createTestApp(): Promise<TestApp> {
+export async function createTestApp(opts: { payments?: PaymentProvider | null } = {}): Promise<TestApp> {
   const dbName = `yavoy_test_${Math.random().toString(36).slice(2, 10)}`;
   const admin = postgres(ADMIN_URL, { max: 1 });
   await admin.unsafe(`CREATE DATABASE ${dbName}`);
@@ -34,6 +35,7 @@ export async function createTestApp(): Promise<TestApp> {
         outbox.push(msg);
       },
     },
+    payments: opts.payments ?? null,
   });
 
   return {

@@ -14,6 +14,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { tourLanguageList } from "@yavoy/i18n";
 import { useI18n } from "@/i18n/I18nProvider";
+import { SLOT, withSlot } from "@/i18n/slot";
+import { Link } from "react-router-dom";
 import { translateError } from "@/i18n/errors";
 
 export default function TourDetail() {
@@ -30,6 +32,8 @@ export default function TourDetail() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [contact, setContact] = useState("");
+  // акцепт оферты обязателен перед оплатой — требование банка, п.7 (YAV-21)
+  const [offerAccepted, setOfferAccepted] = useState(false);
   const { t, formatNumber } = useI18n();
 
   const tour = useMemo(() => tours.find((t) => t.id === id), [tours, id]);
@@ -37,10 +41,17 @@ export default function TourDetail() {
 
   const bookMutation = useMutation({
     mutationFn: createBooking,
-    onSuccess: (b) => {
+    onSuccess: ({ booking: b, paymentUrl }) => {
       void queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
       void queryClient.invalidateQueries({ queryKey: ["catalog"] });
       setBooking(false);
+
+      // с подключённым эквайрингом бронь ждёт оплату — уводим на страницу банка
+      if (paymentUrl) {
+        toast.success(t("booking.redirecting"));
+        window.location.assign(paymentUrl);
+        return;
+      }
       toast.success(`${t("booking.sentTitle")} ${t("booking.sentText", { code: b.confirmationCode })}`, { duration: 8000 });
     },
     onError: (e: unknown) => toast.error(translateError(e, t, "booking.failed")),
@@ -270,12 +281,36 @@ export default function TourDetail() {
                 <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t("booking.firstName")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                 <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t("booking.lastName")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                 <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder={t("booking.contact")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                <label className="flex cursor-pointer items-start gap-2 text-xs leading-snug text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={offerAccepted}
+                    onChange={(e) => setOfferAccepted(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
+                  />
+                  <span>
+                    {withSlot(
+                      `${t("legal.acceptPrefix")}${SLOT}`,
+                      <Link to="/offer" target="_blank" className="font-semibold text-teal hover:underline">
+                        {t("legal.offer")}
+                      </Link>,
+                    )}
+                  </span>
+                </label>
+
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t("common.total")}</span>
                   <span className="text-xl font-extrabold text-teal">{formatNumber(tour.price * tickets)}{tour.currency}</span>
                 </div>
                 <button
-                  disabled={bookMutation.isPending || !dateId || !firstName.trim() || !lastName.trim() || contact.trim().length < 3}
+                  disabled={
+                    bookMutation.isPending ||
+                    !offerAccepted ||
+                    !dateId ||
+                    !firstName.trim() ||
+                    !lastName.trim() ||
+                    contact.trim().length < 3
+                  }
                   onClick={() => {
                     if (!dateId) return;
                     bookMutation.mutate({

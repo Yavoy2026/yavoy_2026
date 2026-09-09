@@ -8,6 +8,9 @@
       ],
       "@yavoy/i18n": [
         "../../packages/i18n/src/index.ts"
+      ],
+      "@yavoy/legal": [
+        "../../packages/legal/src/index.ts"
       ]
     }
   },

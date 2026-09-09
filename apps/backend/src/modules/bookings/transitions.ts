@@ -5,11 +5,13 @@ import { conflict } from "../../errors.ts";
  * Машина состояний брони (спека §1.3, правило 1).
  * Любая смена статуса — только через assertTransition.
  *
- * requested → confirmed | cancelled
- * confirmed → completed | cancelled
+ * pending_payment → confirmed | cancelled   (оплата прошла / истёк ttl, YAV-21)
+ * requested       → confirmed | cancelled   (ручное подтверждение менеджером)
+ * confirmed       → completed | cancelled
  * completed, cancelled — терминальные
  */
 const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
+  pending_payment: ["confirmed", "cancelled"],
   requested: ["confirmed", "cancelled"],
   confirmed: ["completed", "cancelled"],
   completed: [],
@@ -27,5 +29,5 @@ export function assertTransition(from: BookingStatus, to: BookingStatus): void {
 
 /** Статусы, в которых бронь удерживает места */
 export function holdsSeats(status: BookingStatus): boolean {
-  return status === "requested" || status === "confirmed";
+  return status === "pending_payment" || status === "requested" || status === "confirmed";
 }

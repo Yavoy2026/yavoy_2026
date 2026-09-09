@@ -60,8 +60,10 @@ describe("бронирования", () => {
       payload: bookingPayload(2),
     });
     expect(res.statusCode).toBe(200);
-    const b = res.json();
+    // без подключённого эквайринга ответ содержит бронь и payment_url: null
+    const { booking: b, payment_url: payUrl } = res.json();
     bookingId = b.id;
+    expect(payUrl).toBeNull();
     expect(b.status).toBe("requested");
     expect(b.amount_kopeks).toBe(500_000); // 2 × 250 000
     expect(b.confirmation_code).toMatch(/^YV-/);
@@ -135,7 +137,7 @@ describe("бронирования", () => {
       headers: authed(userToken),
       payload: bookingPayload(1),
     });
-    const otherId = created.json().id;
+    const otherId = created.json().booking.id;
 
     const stranger = await signupWithRole(t, "stranger@test.ru", "user", "Чужой");
     const res = await call({

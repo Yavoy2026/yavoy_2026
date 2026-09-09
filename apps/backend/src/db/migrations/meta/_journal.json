@@ -43,6 +43,13 @@
       "when": 1789000000000,
       "tag": "0005_tour_languages_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788937536250,
+      "tag": "0006_hard_scorpion",
+      "breakpoints": true
     }
   ]
 }

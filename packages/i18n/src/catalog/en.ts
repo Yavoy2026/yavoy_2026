@@ -249,6 +249,8 @@ export const en: Catalog = {
     sentTitle: "Request sent!",
     sentText: "Booking code: {{code}}. We'll confirm the booking and get in touch.",
     failed: "Could not book",
+    redirecting: "Taking you to payment…",
+    payFailed: "Could not open the payment page. The booking is saved — open it in your profile and pay again.",
     leaveReview: "Leave a review",
     voucher: "Voucher",
   },
@@ -770,6 +772,17 @@ export const en: Catalog = {
     pickerTitle: "Choose a country",
     searchPlaceholder: "Search by country or code",
     nothingFound: "Nothing found",
+  },
+
+  legal: {
+    offer: "Public offer",
+    privacy: "Privacy policy",
+    updatedAt: "Revision of {{date}}",
+    draftNotice:
+      "Draft: the document still has unfilled details. They must be completed and the text reviewed by a lawyer before it goes to the bank.",
+    acceptPrefix: "I have read and accept the ",
+    paymentsTitle: "We accept",
+    securityNote: "Payment happens on the bank's secure page. We never receive or store your card details.",
   },
 
   errors: {

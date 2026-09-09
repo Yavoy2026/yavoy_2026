@@ -1,6 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Compass, Map, Heart, User, Play, Sun, Moon, Search } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { Footer } from "@/components/Footer";
 import { useT } from "@/i18n/I18nProvider";
 import type { TKey } from "@/i18n/keys";
 import { cn } from "@/lib/utils";
@@ -77,7 +78,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 md:px-6 md:pb-12">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 pt-6 md:px-6">{children}</main>
+
+      <Footer />
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-xl md:hidden">

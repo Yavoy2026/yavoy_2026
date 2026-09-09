@@ -21,13 +21,16 @@ import { adminToursRoutes } from "./modules/admin/tours/routes.ts";
 import { authRoutes } from "./modules/auth/routes.ts";
 import { bookingsRoutes } from "./modules/bookings/routes.ts";
 import { catalogRoutes } from "./modules/catalog/routes.ts";
+import { createPaymentProvider, type PaymentProvider } from "./modules/payments/index.ts";
+import { paymentsRoutes } from "./modules/payments/routes.ts";
+import { expireStalePayments } from "./modules/payments/service.ts";
 import { configRoutes } from "./modules/config/routes.ts";
 import { favoritesRoutes } from "./modules/favorites/routes.ts";
 import { reviewsRoutes } from "./modules/reviews/routes.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
 import { usersRoutes } from "./modules/users/routes.ts";
 
-export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
+export async function buildApp(db: Db, opts: { mailer?: Mailer; payments?: PaymentProvider | null } = {}) {
   const app = Fastify({
     logger:
       env.NODE_ENV === "development"
@@ -39,6 +42,7 @@ export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
   app.setSerializerCompiler(serializerCompiler);
   app.decorate("db", db);
   app.decorate("mailer", opts.mailer ?? createMailer(app.log));
+  app.decorate("payments", opts.payments !== undefined ? opts.payments : createPaymentProvider());
 
   await app.register(cors, {
     origin: true,
@@ -94,6 +98,7 @@ export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
     async (v1) => {
       await v1.register(healthRoutes);
       await v1.register(configRoutes);
+      await v1.register(paymentsRoutes);
       await v1.register(catalogRoutes);
       await v1.register(bookingsRoutes);
       await v1.register(favoritesRoutes);
@@ -107,12 +112,33 @@ export async function buildApp(db: Db, opts: { mailer?: Mailer } = {}) {
     { prefix: "/v1" },
   );
 
+  if (app.payments) startPaymentSweeper(app);
+
   return app;
+}
+
+/**
+ * Сборщик неоплаченных броней. Отдельного планировщика (BullMQ) пока нет —
+ * для одной задачи с минутным горизонтом интервал в процессе дешевле и
+ * достаточен; при появлении второй фоновой задачи имеет смысл вынести.
+ */
+function startPaymentSweeper(app: Awaited<ReturnType<typeof buildApp>>): void {
+  const timer = setInterval(() => {
+    void expireStalePayments(app.db)
+      .then((n) => {
+        if (n > 0) app.log.info({ expired: n }, "неоплаченные брони сняты, места возвращены");
+      })
+      .catch((e: unknown) => app.log.error(e, "сборщик неоплаченных броней упал"));
+  }, 60_000);
+  timer.unref();
+  app.addHook("onClose", () => clearInterval(timer));
 }
 
 declare module "fastify" {
   interface FastifyInstance {
     db: Db;
     mailer: Mailer;
+    /** Провайдер эквайринга инсталляции; null — оплата не подключена */
+    payments: PaymentProvider | null;
   }
 }

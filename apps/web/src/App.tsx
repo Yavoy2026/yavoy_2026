@@ -18,6 +18,7 @@ import Auth from "./pages/Auth";
 import Partner from "./pages/Partner";
 import Backoffice from "./pages/Backoffice";
 import NotFound from "./pages/NotFound";
+import Legal from "./pages/Legal";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/partner" element={<Partner />} />
             <Route path="/backoffice" element={<Backoffice />} />
+            {/* обязательны для интернет-эквайринга: банк проверяет их наличие (YAV-21) */}
+            <Route path="/offer" element={<Legal doc="offer" />} />
+            <Route path="/privacy" element={<Legal doc="privacy" />} />
             {/* старые ссылки/закладки на /admin продолжают работать */}
             <Route path="/admin" element={<Navigate to="/backoffice" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

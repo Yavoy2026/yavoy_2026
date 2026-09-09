@@ -261,6 +261,8 @@ export const uz: Catalog = {
     sentTitle: "Soʻrov yuborildi!",
     sentText: "Bandlov kodi: {{code}}. Bandlovni tasdiqlab, siz bilan bogʻlanamiz.",
     failed: "Band qilib boʻlmadi",
+    redirecting: "Toʻlovga oʻtilmoqda…",
+    payFailed: "Toʻlov sahifasini ochib boʻlmadi. Bandlov saqlandi — profilingizdan ochib, qayta toʻlang.",
     leaveReview: "Sharh qoldirish",
     voucher: "Vaucher",
   },
@@ -785,6 +787,17 @@ export const uz: Catalog = {
     pickerTitle: "Davlatni tanlang",
     searchPlaceholder: "Davlat yoki kod boʻyicha qidirish",
     nothingFound: "Hech narsa topilmadi",
+  },
+
+  legal: {
+    offer: "Ommaviy oferta",
+    privacy: "Maxfiylik siyosati",
+    updatedAt: "{{date}} dagi tahrir",
+    draftNotice:
+      "Qoralama: hujjatda toʻldirilmagan rekvizitlar bor. Bankka topshirishdan oldin ularni toʻldirish va matnni yurist bilan kelishish kerak.",
+    acceptPrefix: "Men tanishib chiqdim va shartlarni qabul qilaman: ",
+    paymentsTitle: "Toʻlovga qabul qilamiz",
+    securityNote: "Toʻlov bankning himoyalangan sahifasida amalga oshiriladi. Karta rekvizitlarini biz olmaymiz va saqlamaymiz.",
   },
 
   errors: {

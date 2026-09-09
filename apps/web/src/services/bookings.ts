@@ -63,9 +63,18 @@ async function parseOrThrow(res: Response, fallbackCode: string): Promise<ApiBoo
   return res.json() as Promise<ApiBooking>;
 }
 
-export async function createBooking(payload: CreateBookingPayload): Promise<BookedTour> {
+/**
+ * Создаёт бронь. С подключённым эквайрингом бэкенд возвращает payment_url —
+ * ссылку на платёжную страницу банка, куда нужно отправить покупателя.
+ * Реквизиты карты вводятся там; наше приложение их не видит (YAV-21).
+ */
+export async function createBooking(
+  payload: CreateBookingPayload,
+): Promise<{ booking: BookedTour; paymentUrl: string | null }> {
   const res = await authFetch("/bookings", { method: "POST", body: JSON.stringify(payload) });
-  return adaptBooking(await parseOrThrow(res, "bookingCreateFailed"));
+  if (!res.ok) await parseOrThrow(res, "bookingCreateFailed");
+  const body = (await res.json()) as { booking: ApiBooking; payment_url: string | null };
+  return { booking: adaptBooking(body.booking), paymentUrl: body.payment_url };
 }
 
 export async function fetchMyBookings(): Promise<BookedTour[]> {

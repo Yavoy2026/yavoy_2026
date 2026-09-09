@@ -9,6 +9,7 @@
 apps/backend/        Бэкенд: Fastify 5 + Zod + Drizzle + PostgreSQL (основная разработка)
 packages/contracts/  Общие zod-схемы API (бэкенд + клиенты)
 packages/i18n/       Переводы ru/en/uz, плюрализация, форматы денег и дат (бэкенд + клиенты)
+packages/legal/      Публичная оферта и политика конфиденциальности (веб + Expo)
 apps/expo/           Мобильное приложение (Expo, iOS/Android; основной фронт)
 apps/web/            Веб-клиент (Vite + shadcn) — на том же API, паритет с приложением + бэкофис
                      (нативные ios/ и android/ — в ветке archive/native-apps)
@@ -74,6 +75,29 @@ pnpm test        # из корня; нужен Postgres на 5434
 Покрыто: auth-флоу с ротацией refresh, каталог с пагинацией, бронирования
 (конкуренция за места, RBAC, машина состояний), избранное, отзывы с модерацией,
 публичный конфиг и язык писем.
+
+### Эквайринг
+
+Локально оплата выключена: `PAYMENT_PROVIDER=none` — бронь создаётся в `requested`,
+как раньше. Чтобы погонять платёжный флоу, не подключаясь к банку, подставьте
+свой `PaymentProvider` в `createTestApp({ payments })` — так сделано в
+`test/payments.test.ts`.
+
+Для узбекской инсталляции:
+
+```bash
+PAYMENT_PROVIDER=octo CURRENCY=UZS \
+PUBLIC_API_URL=https://api.example.uz OCTO_SHOP_ID=... OCTO_SECRET=... \
+OCTO_NOTIFY_SECRET=... OCTO_TEST=true pnpm dev
+```
+
+`OCTO_NOTIFY_SECRET` — отдельный ключ подписи коллбэков, выдаётся техподдержкой
+OCTO, это **не** `OCTO_SECRET` из кабинета. Без любой из обязательных переменных
+бэкенд не стартует: полконфига хуже, чем её отсутствие — бронь ушла бы в
+`pending_payment`, а платёж создать было бы нечем.
+
+Коллбэк приходит на `PUBLIC_API_URL/v1/webhooks/octo`; этот же адрес надо
+прописать в личном кабинете магазина. Локально пробрасывается туннелем.
 
 ### Переводы
 

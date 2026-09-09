@@ -41,7 +41,7 @@ beforeAll(async () => {
     headers: authed(userToken),
     payload: { tour_date_id: date.id, tickets_count: 1, first_name: "Ф", last_name: "Т", contact: "fan@test.ru" },
   });
-  bookingId = booking.json().id;
+  bookingId = booking.json().booking.id;
 });
 
 afterAll(() => t.teardown());

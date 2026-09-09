@@ -54,6 +54,7 @@ import {
   Eye,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 import { useTheme } from "@/providers/ThemeProvider";
 import StarRating from "@/components/StarRating";
 import { useCatalog } from "@/services/catalog";
@@ -230,6 +231,8 @@ function BookingAuthModal({
   const [lastName, setLastName] = useState<string>("");
   const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
   const [tickets, setTickets] = useState<number>(1);
+  // акцепт оферты обязателен перед оплатой — требование банка, п.7 (YAV-21)
+  const [offerAccepted, setOfferAccepted] = useState<boolean>(false);
 
   const dates = tour?.dates ?? [];
   const selectedDate = dates.find((d) => d.id === selectedDateId) ?? dates[0] ?? null;
@@ -258,7 +261,7 @@ function BookingAuthModal({
       return;
     }
     try {
-      const booking = await createBooking({
+      const { booking, paymentUrl } = await createBooking({
         tour_date_id: selectedDate.id,
         tickets_count: Math.min(tickets, maxTickets),
         first_name: firstName.trim(),
@@ -266,6 +269,16 @@ function BookingAuthModal({
         contact: contact.trim(),
       });
       onBookingComplete(booking);
+
+      // с подключённым эквайрингом бронь ждёт оплату: открываем платёжную
+      // страницу банка во внешнем браузере — реквизиты карты вводятся там
+      if (paymentUrl) {
+        onClose();
+        await WebBrowser.openBrowserAsync(paymentUrl).catch(() => {
+          Alert.alert(t("common.error"), t("booking.payFailed"));
+        });
+        return;
+      }
       Alert.alert(t("booking.sentTitle"), t("booking.sentText", { code: booking.confirmationCode }));
       onClose();
       setPhoneValue("");
@@ -410,9 +423,37 @@ function BookingAuthModal({
               </View>
 
               <TouchableOpacity
-                style={[detailStyles.bookingSubmitBtn, { backgroundColor: colors.teal, opacity: isCreating ? 0.6 : 1 }]}
+                style={detailStyles.offerRow}
+                onPress={() => setOfferAccepted((v) => !v)}
+                activeOpacity={0.7}
+                testID="booking-accept-offer"
+              >
+                <View
+                  style={[
+                    detailStyles.offerCheckbox,
+                    { borderColor: offerAccepted ? colors.teal : colors.border, backgroundColor: offerAccepted ? colors.teal : "transparent" },
+                  ]}
+                >
+                  {offerAccepted ? <Check size={13} color="#FFFFFF" /> : null}
+                </View>
+                <Text style={[detailStyles.offerText, { color: colors.textMuted }]}>
+                  {t("legal.acceptPrefix")}
+                  <Text
+                    style={[detailStyles.offerLink, { color: colors.teal }]}
+                    onPress={() => { onClose(); router.push({ pathname: "/legal", params: { doc: "offer" } }); }}
+                  >
+                    {t("legal.offer")}
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  detailStyles.bookingSubmitBtn,
+                  { backgroundColor: colors.teal, opacity: isCreating || !offerAccepted ? 0.6 : 1 },
+                ]}
                 onPress={() => { void handleBook(); }}
-                disabled={isCreating}
+                disabled={isCreating || !offerAccepted}
                 activeOpacity={0.8}
                 testID="booking-submit"
               >
@@ -1159,6 +1200,18 @@ const detailStyles = StyleSheet.create({
     paddingVertical: 16, borderRadius: 14, alignItems: "center", marginTop: 8,
   },
   bookingSubmitText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" as const },
+  offerRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 12, paddingHorizontal: 2 },
+  offerCheckbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  offerText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  offerLink: { fontWeight: "600" as const, textDecorationLine: "underline" as const },
   bookingCancelBtn: { alignItems: "center", paddingVertical: 14 },
   bookingCancelText: { fontSize: 15, fontWeight: "500" as const },
 });
