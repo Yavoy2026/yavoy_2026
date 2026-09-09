@@ -32,7 +32,18 @@ const PARTNER_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = 
  * грузится заново, React стартует с чистого листа, и стейт предыдущего раздела
  * не переезжает в следующий (осознанное решение владельца, YAV-26).
  */
-export function AdminLayout({ section, children }: { section: AdminSection; children: React.ReactNode }) {
+export function AdminLayout({
+  section,
+  title,
+  action,
+  children,
+}: {
+  section: AdminSection;
+  title?: string;
+  /** Главное действие раздела — живёт в строке заголовка, а не над списком */
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const navigate = useNavigate();
   const { user, role, isLoading: authLoading, logout } = useAuth();
   const { isDark, setThemeMode } = useApp();
@@ -71,52 +82,50 @@ export function AdminLayout({ section, children }: { section: AdminSection; chil
     );
   }
 
+  const iconBtn =
+    "flex h-8 w-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+
   return (
     <div className="min-h-screen bg-background md:flex">
-      <aside className="border-b border-border/70 bg-card md:min-h-screen md:w-60 md:shrink-0 md:border-b-0 md:border-r">
-        <div className="flex items-center gap-2 px-4 py-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold/15">
-            <ShieldCheck size={20} className="text-gold" />
-          </div>
+      <aside className="border-b border-border bg-card md:min-h-screen md:w-56 md:shrink-0 md:border-b-0 md:border-r">
+        <div className="flex items-center gap-2 border-b border-border px-3 py-3">
+          <ShieldCheck size={18} className="shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <div className="truncate text-sm font-extrabold">
+            <div className="truncate text-sm font-semibold">
               {t(isPartner ? "backoffice.titlePartner" : "backoffice.title")}
             </div>
             <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
           </div>
         </div>
 
-        <nav className="flex gap-1 overflow-x-auto px-2 pb-2 md:flex-col md:overflow-visible">
+        <nav className="flex gap-0.5 overflow-x-auto p-2 md:flex-col md:overflow-visible">
           {nav.map((item) => (
             <a
               key={item.section}
               href={`/admin/${item.section}`}
               className={cn(
-                "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
-                section === item.section ? "bg-teal text-white" : "text-muted-foreground hover:bg-secondary",
+                "flex shrink-0 items-center gap-2 rounded px-2.5 py-1.5 text-sm transition-colors",
+                section === item.section
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60",
               )}
             >
-              <item.icon size={16} /> {t(item.label)}
+              <item.icon size={15} /> {t(item.label)}
             </a>
           ))}
         </nav>
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="flex items-center justify-end gap-2 border-b border-border/70 px-4 py-3">
-          <a
-            href="/"
-            className="mr-auto flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLink size={15} /> {t("backoffice.toStorefront")}
+        <header className="flex items-center gap-2 border-b border-border px-4 py-2">
+          <h1 className="mr-auto truncate text-sm font-semibold">{title}</h1>
+          {action}
+          <a href="/" className={iconBtn} aria-label={t("backoffice.toStorefront")} title={t("backoffice.toStorefront")}>
+            <ExternalLink size={15} />
           </a>
-          <LanguageMenu />
-          <button
-            onClick={() => setThemeMode(isDark ? "light" : "dark")}
-            aria-label={t("nav.theme")}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground transition-colors hover:bg-secondary/70"
-          >
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          <LanguageMenu className={`${iconBtn} w-auto gap-1 px-2 text-xs font-semibold`} />
+          <button onClick={() => setThemeMode(isDark ? "light" : "dark")} aria-label={t("nav.theme")} className={iconBtn}>
+            {isDark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
           <button
             onClick={async () => {
@@ -124,13 +133,13 @@ export function AdminLayout({ section, children }: { section: AdminSection; chil
               navigate("/");
             }}
             aria-label={t("common.logout")}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-muted-foreground transition-colors hover:text-foreground"
+            className={iconBtn}
           >
-            <LogOut size={18} />
+            <LogOut size={15} />
           </button>
         </header>
 
-        <main className="px-4 py-5 md:px-6">{children}</main>
+        <main className="p-4">{children}</main>
       </div>
     </div>
   );

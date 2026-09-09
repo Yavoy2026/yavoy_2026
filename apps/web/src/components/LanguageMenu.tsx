@@ -14,7 +14,8 @@ import { useI18n } from "@/i18n/I18nProvider";
  * Компактный: в строке шапки нет места на три полных названия, поэтому на кнопке
  * код языка, а полные подписи — в меню (в профиле остаётся развёрнутый вариант).
  */
-export default function LanguageMenu() {
+/** className — чтобы панель управления могла надеть свой, более компактный вид */
+export default function LanguageMenu({ className }: { className?: string } = {}) {
   const { locale, supported, setLocale, t } = useI18n();
   if (supported.length < 2) return null;
 
@@ -22,7 +23,10 @@ export default function LanguageMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={t("profile.language")}
-        className="flex h-10 items-center gap-1.5 rounded-xl bg-secondary px-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/70"
+        className={
+          className ??
+          "flex h-10 items-center gap-1.5 rounded-xl bg-secondary px-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/70"
+        }
       >
         <Globe size={18} />
         <span className="uppercase">{locale}</span>

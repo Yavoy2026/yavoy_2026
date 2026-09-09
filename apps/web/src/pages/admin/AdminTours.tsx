@@ -4,12 +4,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Queue } from "@/components/admin/Queue";
+import { Badge, Btn, Empty, Panel, Table, Td, Th, Thumb } from "@/components/admin/ui";
 import { TourEditor } from "@/components/backoffice/TourEditor";
 import { useAuth } from "@/context/AuthContext";
 import { translateError } from "@/i18n/errors";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/utils";
 import { fetchAdminTours, setTourStatus, type AdminTour } from "@/services/admin";
 import { useCatalog } from "@/services/catalog";
 
@@ -36,76 +35,84 @@ export default function AdminTours() {
   });
 
   return (
-    <AdminLayout section="tours">
-      <h1 className="mb-4 text-xl font-extrabold">{t(isPartner ? "backoffice.tabMyTours" : "backoffice.tabTours")}</h1>
+    <AdminLayout
+      section="tours"
+      title={t(isPartner ? "backoffice.tabMyTours" : "backoffice.tabTours")}
+      action={
+        <Btn variant="primary" onClick={() => setEditor({ open: true, tour: null })}>
+          <Plus size={14} /> {t("backoffice.createTour")}
+        </Btn>
+      }
+    >
+      {isPartner && (
+        <p className="mb-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          {t("backoffice.draftHint")}
+        </p>
+      )}
 
-      <div className="space-y-3">
-        {isPartner && (
-          <div className="rounded-2xl bg-card p-3 text-sm text-muted-foreground ring-1 ring-border/60">
-            {t("backoffice.draftHint")}
-          </div>
-        )}
-
-        <button
-          onClick={() => setEditor({ open: true, tour: null })}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-teal/40 py-3 font-semibold text-teal hover:bg-teal/5"
-        >
-          <Plus size={18} /> {t("backoffice.createTour")}
-        </button>
-
+      <Panel>
         {tours.isLoading ? (
-          <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-teal" /></div>
+          <div className="flex justify-center py-10"><Loader2 size={20} className="animate-spin text-muted-foreground" /></div>
+        ) : (tours.data ?? []).length === 0 ? (
+          <Empty text={t("backoffice.noTours")} />
         ) : (
-          <Queue empty={t("backoffice.noTours")} items={tours.data ?? []}>
-            {(tour) => (
-              <div key={tour.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                <img src={tour.image_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1">
+          <Table
+            head={
+              <tr>
+                <Th>{t("backoffice.colTour")}</Th>
+                <Th>{t("backoffice.colStatus")}</Th>
+                <Th>{t("backoffice.colCity")}</Th>
+                <Th>{t("backoffice.colPrice")}</Th>
+                <Th>{t("backoffice.colOrganizer")}</Th>
+                <Th className="w-0" />
+              </tr>
+            }
+          >
+            {(tours.data ?? []).map((tour) => (
+              <tr key={tour.id} className="hover:bg-muted/30">
+                <Td>
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{tour.title}</span>
-                    <span className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
-                      tour.status === "published" ? "bg-mint/15 text-mint" : "bg-gold/15 text-gold",
-                    )}>
-                      {tour.status === "published"
-                        ? t("enums.tourStatus.published")
-                        : isPartner
-                          ? t("backoffice.draftByManager")
-                          : t("enums.tourStatus.draft")}
-                    </span>
+                    <Thumb src={tour.image_url} />
+                    <span className="font-medium">{tour.title}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {tour.city_name} · {formatMoneyMinor(tour.price_kopeks)} · {tour.organizer.name}
-                  </div>
-                </div>
-                <button
-                  onClick={() => setEditor({ open: true, tour })}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground"
-                  title={t("common.edit")}
-                >
-                  <Pencil size={15} />
-                </button>
-                {isStaff && (
-                  <button
-                    onClick={() => statusAction.mutate({ id: tour.id, status: tour.status === "published" ? "draft" : "published" })}
-                    disabled={statusAction.isPending}
-                    className={cn(
-                      "rounded-xl px-3 py-2 text-xs font-bold",
-                      tour.status === "published" ? "bg-secondary text-muted-foreground" : "bg-teal text-white",
+                </Td>
+                <Td>
+                  <Badge tone={tour.status === "published" ? "ok" : "warn"}>
+                    {tour.status === "published"
+                      ? t("enums.tourStatus.published")
+                      : isPartner
+                        ? t("backoffice.draftByManager")
+                        : t("enums.tourStatus.draft")}
+                  </Badge>
+                </Td>
+                <Td className="text-muted-foreground">{tour.city_name}</Td>
+                <Td className="whitespace-nowrap">{formatMoneyMinor(tour.price_kopeks)}</Td>
+                <Td className="text-muted-foreground">{tour.organizer.name}</Td>
+                <Td>
+                  <div className="flex gap-1.5">
+                    <Btn variant="quiet" onClick={() => setEditor({ open: true, tour })} title={t("common.edit")}>
+                      <Pencil size={14} />
+                    </Btn>
+                    {isStaff && (
+                      <Btn
+                        variant={tour.status === "published" ? "default" : "primary"}
+                        onClick={() => statusAction.mutate({ id: tour.id, status: tour.status === "published" ? "draft" : "published" })}
+                        disabled={statusAction.isPending}
+                      >
+                        {t(tour.status === "published" ? "backoffice.unpublish" : "backoffice.publish")}
+                      </Btn>
                     )}
-                  >
-                    {t(tour.status === "published" ? "backoffice.unpublish" : "backoffice.publish")}
-                  </button>
-                )}
-              </div>
-            )}
-          </Queue>
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </Table>
         )}
+      </Panel>
 
-        {editor.open && (
-          <TourEditor tour={editor.tour} cities={cities} onClose={() => setEditor({ open: false, tour: null })} />
-        )}
-      </div>
+      {editor.open && (
+        <TourEditor tour={editor.tour} cities={cities} onClose={() => setEditor({ open: false, tour: null })} />
+      )}
     </AdminLayout>
   );
 }

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Actions, Queue } from "@/components/admin/Queue";
+import { Btn, Empty, Panel, Table, Td, Th, Thumb } from "@/components/admin/ui";
 import { translateError } from "@/i18n/errors";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cancelBookingAdmin, completeBooking, confirmBooking, fetchAdminBookings } from "@/services/admin";
@@ -26,47 +27,93 @@ export default function AdminBookings() {
   });
 
   return (
-    <AdminLayout section="bookings">
-      <h1 className="mb-4 text-xl font-extrabold">{t("backoffice.tabBookings")}</h1>
+    <AdminLayout section="bookings" title={t("backoffice.tabBookings")}>
+      <div className="space-y-5">
+        <Panel title={t("backoffice.newRequests")}>
+          {(requested.data ?? []).length === 0 ? (
+            <Empty text={t("backoffice.noRequests")} />
+          ) : (
+            <Table
+              head={
+                <tr>
+                  <Th>{t("backoffice.colTour")}</Th>
+                  <Th>{t("backoffice.colDate")}</Th>
+                  <Th>{t("backoffice.colGuest")}</Th>
+                  <Th>{t("backoffice.colAmount")}</Th>
+                  <Th>{t("backoffice.colCode")}</Th>
+                  <Th className="w-0" />
+                </tr>
+              }
+            >
+              {(requested.data ?? []).map((b) => (
+                <tr key={b.id} className="hover:bg-muted/30">
+                  <Td>
+                    <div className="flex items-center gap-2">
+                      <Thumb src={b.tourImage} />
+                      <span className="font-medium">{b.tourTitle}</span>
+                    </div>
+                  </Td>
+                  <Td className="whitespace-nowrap text-muted-foreground">
+                    {b.tourDate} · {t("units.people", { count: b.tickets })}
+                  </Td>
+                  <Td className="text-muted-foreground">
+                    <div>{b.guest}</div>
+                    <div className="text-xs">{b.contact}</div>
+                  </Td>
+                  <Td className="whitespace-nowrap font-medium">{formatMoney(b.amount)}</Td>
+                  <Td className="font-mono text-xs text-muted-foreground">{b.code}</Td>
+                  <Td>
+                    <div className="flex gap-1.5">
+                      <Btn variant="success" onClick={() => action.mutate({ id: b.id, action: "confirm" })}>
+                        <Check size={14} /> {t("backoffice.confirm")}
+                      </Btn>
+                      <Btn variant="danger" onClick={() => action.mutate({ id: b.id, action: "cancel" })}>
+                        <X size={14} />
+                      </Btn>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+          )}
+        </Panel>
 
-      <div className="space-y-6">
-        <section>
-          <h2 className="mb-2 font-bold">{t("backoffice.newRequests")}</h2>
-          <Queue empty={t("backoffice.noRequests")} items={requested.data ?? []}>
-            {(b) => (
-              <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{b.tourTitle}</div>
-                  <div className="text-xs text-muted-foreground">{b.tourDate} · {t("units.people", { count: b.tickets })} · {formatMoney(b.amount)} · {b.code}</div>
-                  <div className="text-xs text-muted-foreground">{b.guest} · {b.contact}</div>
-                </div>
-                <Actions
-                  onApprove={() => action.mutate({ id: b.id, action: "confirm" })}
-                  onReject={() => action.mutate({ id: b.id, action: "cancel" })}
-                />
-              </div>
-            )}
-          </Queue>
-        </section>
-
-        <section>
-          <h2 className="mb-2 font-bold">{t("backoffice.confirmedBookings")}</h2>
-          <Queue empty={t("backoffice.noConfirmed")} items={confirmed.data ?? []}>
-            {(b) => (
-              <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                <img src={b.tourImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{b.tourTitle}</div>
-                  <div className="text-xs text-muted-foreground">{b.tourDate} · {b.guest} · {b.code}</div>
-                </div>
-                <button onClick={() => action.mutate({ id: b.id, action: "complete" })} className="rounded-xl bg-teal px-3 py-2 text-xs font-bold text-white">
-                  {t("backoffice.complete")}
-                </button>
-              </div>
-            )}
-          </Queue>
-        </section>
+        <Panel title={t("backoffice.confirmedBookings")}>
+          {(confirmed.data ?? []).length === 0 ? (
+            <Empty text={t("backoffice.noConfirmed")} />
+          ) : (
+            <Table
+              head={
+                <tr>
+                  <Th>{t("backoffice.colTour")}</Th>
+                  <Th>{t("backoffice.colDate")}</Th>
+                  <Th>{t("backoffice.colGuest")}</Th>
+                  <Th>{t("backoffice.colCode")}</Th>
+                  <Th className="w-0" />
+                </tr>
+              }
+            >
+              {(confirmed.data ?? []).map((b) => (
+                <tr key={b.id} className="hover:bg-muted/30">
+                  <Td>
+                    <div className="flex items-center gap-2">
+                      <Thumb src={b.tourImage} />
+                      <span className="font-medium">{b.tourTitle}</span>
+                    </div>
+                  </Td>
+                  <Td className="whitespace-nowrap text-muted-foreground">{b.tourDate}</Td>
+                  <Td className="text-muted-foreground">{b.guest}</Td>
+                  <Td className="font-mono text-xs text-muted-foreground">{b.code}</Td>
+                  <Td>
+                    <Btn variant="primary" onClick={() => action.mutate({ id: b.id, action: "complete" })}>
+                      {t("backoffice.complete")}
+                    </Btn>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+          )}
+        </Panel>
       </div>
     </AdminLayout>
   );

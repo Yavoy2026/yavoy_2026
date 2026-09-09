@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Actions, Queue } from "@/components/admin/Queue";
+import { Btn, Empty, Panel, Thumb } from "@/components/admin/ui";
 import { translateError } from "@/i18n/errors";
 import { useI18n } from "@/i18n/I18nProvider";
 import { approveReview, fetchPendingReviews, rejectReview } from "@/services/admin";
@@ -25,25 +26,36 @@ export default function AdminReviews() {
   });
 
   return (
-    <AdminLayout section="reviews">
-      <h1 className="mb-4 text-xl font-extrabold">{t("backoffice.tabReviews")}</h1>
-
-      <Queue empty={t("backoffice.noReviews")} items={reviews.data ?? []}>
-        {(r) => (
-          <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-            <div className="mb-1 flex items-center gap-2">
-              <img src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
-              <div className="flex-1 text-sm font-semibold">{r.tourTitle}</div>
-              <span className="text-xs text-gold">{"★".repeat(r.rating)}</span>
-            </div>
-            <div className="mb-3 rounded-lg bg-secondary p-2 text-sm">{r.text}</div>
-            <Actions
-              onApprove={() => action.mutate({ id: r.id, approve: true })}
-              onReject={() => action.mutate({ id: r.id, approve: false })}
-            />
-          </div>
+    <AdminLayout section="reviews" title={t("backoffice.tabReviews")}>
+      {/* Отзыв — это текст произвольной длины, поэтому список, а не таблица */}
+      <Panel>
+        {(reviews.data ?? []).length === 0 ? (
+          <Empty text={t("backoffice.noReviews")} />
+        ) : (
+          <ul className="divide-y divide-border">
+            {(reviews.data ?? []).map((r) => (
+              <li key={r.id} className="flex gap-3 p-4">
+                <Thumb src={r.tourImage} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{r.tourTitle}</span>
+                    <span className="text-xs text-gold">{"★".repeat(r.rating)}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{r.text}</p>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  <Btn variant="success" onClick={() => action.mutate({ id: r.id, approve: true })}>
+                    <Check size={14} />
+                  </Btn>
+                  <Btn variant="danger" onClick={() => action.mutate({ id: r.id, approve: false })}>
+                    <X size={14} />
+                  </Btn>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
-      </Queue>
+      </Panel>
     </AdminLayout>
   );
 }

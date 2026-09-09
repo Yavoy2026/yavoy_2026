@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { useI18n } from "@/i18n/I18nProvider";
 import { translateError } from "@/i18n/errors";
 import type { TKey } from "@/i18n/keys";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type Section = "favorites" | "transactions" | "reviews" | "reels" | "promos" | null;
 
@@ -109,7 +108,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Вход в бэкофис — по ролям */}
+      {/* Партнёрские входы; в панель управления ведёт её собственный адрес */}
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {user?.role === "user" || !user ? (
           <button onClick={() => navigate("/partner")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
@@ -122,13 +121,6 @@ export default function Profile() {
           <button onClick={() => navigate("/admin")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal/10"><Building2 size={22} className="text-teal" /></div>
             <div className="flex-1"><div className="font-bold">{t("profile.partnerCabinet")}</div><div className="text-xs text-muted-foreground">{t("profile.partnerCabinetDesc")}</div></div>
-            <ChevronRight size={18} className="text-muted-foreground" />
-          </button>
-        )}
-        {(user?.role === "admin" || user?.role === "manager") && (
-          <button onClick={() => navigate("/admin")} className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15"><ShieldCheck size={22} className="text-gold" /></div>
-            <div className="flex-1"><div className="font-bold">{t("profile.backoffice")}</div><div className="text-xs text-muted-foreground">{t("profile.backofficeDesc")}</div></div>
             <ChevronRight size={18} className="text-muted-foreground" />
           </button>
         )}
@@ -236,8 +228,6 @@ export default function Profile() {
           ))}
         </div>
 
-        <h3 className="mb-3 mt-5 font-bold">{t("profile.language")}</h3>
-        <LanguageSwitcher />
       </div>
       {reviewBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setReviewBooking(null)}>
