@@ -224,8 +224,16 @@ ssh root@89.169.21.102 "docker exec yavoy-postgres-1 psql -U yavoy -d yavoy \
 ```
 
 Пропущенную миграцию доводят руками: `docker cp` файла в контейнер postgres и
-`psql -v ON_ERROR_STOP=1 -f`. Перезаписывать журнал в БД не нужно — drizzle
-сравнивает только с максимумом. Сид каталога (одноразово, стирает
+`psql -v ON_ERROR_STOP=1 -f`. После этого **дописать строку в журнал БД**, иначе
+счётчик разойдётся с числом файлов и следующего человека это собьёт:
+
+```sql
+insert into drizzle.__drizzle_migrations (hash, created_at)
+values ('<sha256 файла миграции>', <when из _journal.json>);
+```
+
+На поведение это не влияет (drizzle сравнивает только с максимумом), но запись
+становится честной. Сид каталога (одноразово, стирает
 каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
 
 **Стенд протухает примерно через месяц.** Сид раскладывает даты выездов относительно
