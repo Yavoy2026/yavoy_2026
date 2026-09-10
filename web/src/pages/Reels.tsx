@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Heart, MapPin, ChevronUp, ChevronDown, Play, Pause } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { LazyImage } from "@/components/LazyImage";
 
 export default function Reels() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function Reels() {
             onClick={() => setPlaying((p) => !p)}
           />
         ) : (
-          <img src={reel.coverImage} alt={reel.title} className="h-full w-full object-cover" />
+          <LazyImage src={reel.coverImage} alt={reel.title} eager className="h-full w-full object-cover" />
         )}
 
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />

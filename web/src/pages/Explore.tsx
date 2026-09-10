@@ -7,6 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { cities, cityNameMap } from "@/data/cities";
 import { tours } from "@/data/tours";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 
 export default function Explore() {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ export default function Explore() {
               onClick={() => navigate(`/?city=${city.id}`)}
               className="group relative h-44 overflow-hidden rounded-2xl text-left shadow-sm"
             >
-              <img src={city.image} alt={city.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+              <LazyImage src={city.image} alt={city.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/20 to-transparent" />
               <span
                 role="button"
@@ -96,7 +97,7 @@ export default function Explore() {
                 onClick={() => navigate(`/tour/${tour.id}`)}
                 className="flex items-center gap-3 rounded-2xl bg-card p-3 text-left ring-1 ring-border/60 transition-colors hover:ring-teal/40"
               >
-                <img src={tour.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                <LazyImage src={tour.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{tour.title}</div>
                   <div className="text-xs text-muted-foreground">{cityNameMap[tour.city]} · {tour.durationText}</div>
@@ -123,7 +124,7 @@ export default function Explore() {
               className="flex w-full items-center gap-3 py-3 text-left"
             >
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal/10 text-sm font-extrabold text-teal">{i + 1}</div>
-              <img src={tour.image} alt="" className="h-12 w-12 rounded-xl object-cover" />
+              <LazyImage src={tour.image} alt="" className="h-12 w-12 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{tour.title}</div>
                 <StarRating rating={tour.organizer.rating} size={12} showValue reviewCount={tour.organizer.reviewCount} />

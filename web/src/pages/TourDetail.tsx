@@ -11,6 +11,7 @@ import { useApp } from "@/context/AppContext";
 import { tours } from "@/data/tours";
 import { cityNameMap } from "@/data/cities";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/currency";
 
@@ -72,7 +73,7 @@ export default function TourDetail() {
         {/* Left: gallery + info */}
         <div>
           <div className="relative mb-3 h-72 overflow-hidden rounded-3xl md:h-96">
-            <img src={gallery[imgIndex]} alt={tour.title} className="h-full w-full object-cover" />
+            <LazyImage src={gallery[imgIndex]} alt={tour.title} eager className="h-full w-full object-cover" />
             <div className="absolute right-4 top-4 flex gap-2">
               <button onClick={() => toggleFavorite(tour.id)} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 backdrop-blur dark:bg-navy/80">
                 <Heart size={20} className={fav ? "text-coral" : "text-navy/70 dark:text-white"} fill={fav ? "#FF6B6B" : "transparent"} />
@@ -90,7 +91,7 @@ export default function TourDetail() {
             <div className="mb-6 flex gap-2">
               {gallery.map((g, i) => (
                 <button key={i} onClick={() => setImgIndex(i)} className={`h-16 w-20 overflow-hidden rounded-xl ring-2 transition-all ${i === imgIndex ? "ring-teal" : "ring-transparent opacity-70"}`}>
-                  <img src={g} alt="" className="h-full w-full object-cover" />
+                  <LazyImage src={g} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
@@ -114,7 +115,7 @@ export default function TourDetail() {
 
           {/* Organizer */}
           <div className="mb-6 flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
-            <img src={tour.organizer.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+            <LazyImage src={tour.organizer.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
             <div className="flex-1">
               <div className="flex items-center gap-1.5 font-bold">
                 {tour.organizer.name}
@@ -173,7 +174,7 @@ export default function TourDetail() {
               {tour.reviews.map((r) => (
                 <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
                   <div className="mb-2 flex items-center gap-3">
-                    <img src={r.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+                    <LazyImage src={r.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
                     <div className="flex-1">
                       <div className="text-sm font-semibold">{r.author}</div>
                       <div className="text-xs text-muted-foreground">{r.date}</div>

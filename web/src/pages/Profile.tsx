@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { tours, transactions } from "@/data/tours";
 import { cityNameMap } from "@/data/cities";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 import { toast } from "sonner";
 import { getPhotoUrl } from "@/services/api";
 
@@ -51,7 +52,7 @@ export default function Profile() {
           <>
             <div className="flex items-center gap-4">
               {user.photo ? (
-                <img src={getPhotoUrl(user.photo)} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-teal" />
+                <LazyImage src={getPhotoUrl(user.photo)} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-teal" />
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal/20 text-2xl font-extrabold text-teal-light ring-2 ring-teal">
                   {user.first_name?.[0] ?? "?"}
@@ -103,7 +104,7 @@ export default function Profile() {
             const cfg = statusCfg(tr.status);
             return (
               <div key={tr.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
-                <img src={tr.tourImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                <LazyImage src={tr.tourImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{tr.tourTitle}</div>
                   <div className="text-xs text-muted-foreground">{tr.date}</div>
@@ -121,7 +122,7 @@ export default function Profile() {
         <Row icon={Heart} iconBg="bg-coral/10" iconColor="text-coral" title="Избранные туры" count={`${favTours.length} экскурсий`} open={open === "favorites"} onClick={() => toggle("favorites")}>
           {favTours.length === 0 ? <p className="text-sm text-muted-foreground">Нет избранных экскурсий</p> : favTours.map((t) => (
             <button key={t.id} onClick={() => navigate(`/tour/${t.id}`)} className="flex w-full items-center gap-3 rounded-2xl bg-background p-3 text-left">
-              <img src={t.image} alt="" className="h-12 w-12 rounded-xl object-cover" />
+              <LazyImage src={t.image} alt="" className="h-12 w-12 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{t.title}</div>
                 <div className="text-xs text-muted-foreground">{cityNameMap[t.city]}</div>
@@ -135,7 +136,7 @@ export default function Profile() {
           {userReviews.map((r) => (
             <div key={r.id} className="rounded-2xl bg-background p-3">
               <div className="mb-1.5 flex items-center gap-2">
-                <img src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
+                <LazyImage src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
                 <div className="flex-1">
                   <div className="text-sm font-semibold">{r.tourTitle}</div>
                   <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={12} className={i < r.rating ? "text-gold" : "text-muted-foreground/30"} fill={i < r.rating ? "#E8B931" : "transparent"} />)}</div>
@@ -166,7 +167,7 @@ export default function Profile() {
           <button onClick={handleSubmitReel} className="w-full rounded-xl bg-coral py-3 font-bold text-white">Отправить на модерацию</button>
           {moderationReels.map((r) => (
             <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
-              <img src={r.coverImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
+              <LazyImage src={r.coverImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
               <div className="flex-1"><div className="font-semibold">{r.title}</div><div className="text-xs text-orange-500">На модерации администратора</div></div>
             </div>
           ))}

@@ -7,6 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { tours } from "@/data/tours";
 import { cities } from "@/data/cities";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 
 type Tab = "tours" | "cities";
 
@@ -61,7 +62,7 @@ export default function Favorites() {
               onClick={() => navigate(`/?city=${city.id}`)}
               className="group relative h-44 overflow-hidden rounded-2xl text-left shadow-sm"
             >
-              <img src={city.image} alt={city.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+              <LazyImage src={city.image} alt={city.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/20 to-transparent" />
               <span
                 role="button"

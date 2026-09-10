@@ -9,6 +9,7 @@ import { tours } from "@/data/tours";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 import { toast } from "sonner";
 import type { UserProfile } from "@/services/api";
 
@@ -92,7 +93,7 @@ export default function Admin() {
         <Queue empty="Нет туров на модерации" items={tourQueue}>
           {(t) => (
             <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <img src={t.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
+              <LazyImage src={t.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{t.title}</div>
                 <div className="text-xs text-muted-foreground">{t.partner} · {t.city} · {t.price.toLocaleString("ru-RU")} сум</div>
@@ -110,7 +111,7 @@ export default function Admin() {
         <Queue empty="Нет reels на модерации" items={moderationReels}>
           {(r) => (
             <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <img src={r.coverImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
+              <LazyImage src={r.coverImage} alt="" className="h-14 w-14 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{r.title}</div>
                 <div className="text-xs text-muted-foreground">{r.city} · {r.author}</div>

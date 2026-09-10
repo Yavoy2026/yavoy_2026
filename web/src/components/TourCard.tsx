@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Heart, MapPin, Clock, Zap, Flame, Share2 } from "lucide-react";
 import { StarRating } from "./StarRating";
+import { LazyImage } from "./LazyImage";
 import { useApp } from "@/context/AppContext";
 import { cityNameMap } from "@/data/cities";
 import { cn } from "@/lib/utils";
@@ -34,10 +35,9 @@ export function TourCard({ tour, compact = false }: TourCardProps) {
     >
       <div className="relative">
         <div className={cn("w-full overflow-hidden", compact ? "h-40" : "h-52")}>
-          <img
+          <LazyImage
             src={tour.image}
             alt={tour.title}
-            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </div>

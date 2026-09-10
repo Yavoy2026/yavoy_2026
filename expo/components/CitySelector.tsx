@@ -69,6 +69,7 @@ export default React.memo(function CitySelector({
                 source={{ uri: city.image }}
                 style={styles.cityImage}
                 contentFit="cover"
+                cachePolicy="memory-disk"
                 transition={200}
               />
               <View style={[styles.cityOverlay, isActive && styles.cityOverlayActive]} />

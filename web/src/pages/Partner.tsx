@@ -8,6 +8,7 @@ import { Layout } from "@/components/Layout";
 import { tours } from "@/data/tours";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 import { toast } from "sonner";
 import type { PartnerTourSubmission, PartnerGuest, PartnerTransaction } from "@/types";
 
@@ -224,7 +225,7 @@ export default function Partner() {
               )}
               {submissions.map((s) => (
                 <div key={s.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                  <img src={s.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                  <LazyImage src={s.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{s.title}</div>
                     <div className="text-xs text-muted-foreground">{s.city} · {s.price.toLocaleString("ru-RU")} сум · {s.submittedAt}</div>

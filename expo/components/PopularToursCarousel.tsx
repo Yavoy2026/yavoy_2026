@@ -50,7 +50,7 @@ const PopularTourItem = React.memo(function PopularTourItem({
         onPressOut={handlePressOut}
         activeOpacity={1}
       >
-        <Image source={{ uri: tour.image }} style={styles.cardImage} contentFit="cover" transition={200} />
+        <Image source={{ uri: tour.image }} style={styles.cardImage} contentFit="cover" cachePolicy="memory-disk" transition={200} />
         <View style={styles.cardGradient} />
         <View style={styles.topBadges}>
           {tour.isBestseller ? (

@@ -49,7 +49,7 @@ export default function ReelsSection({ reels }: ReelsSectionProps) {
             activeOpacity={0.85}
             testID={`reel-card-${index}`}
           >
-            <Image source={{ uri: item.coverImage }} style={styles.cover} contentFit="cover" />
+            <Image source={{ uri: item.coverImage }} style={styles.cover} contentFit="cover" cachePolicy="memory-disk" />
             <LinearGradient colors={["rgba(0,0,0,0.05)", "rgba(0,0,0,0.42)", "rgba(0,0,0,0.88)"]} style={styles.gradient} />
             <View style={styles.playWrap}>
               <View style={styles.playCircle}>

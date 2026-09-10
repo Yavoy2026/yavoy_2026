@@ -83,7 +83,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
         testID={`tour-card-${tour.id}`}
       >
         <View style={styles.imageContainer}>
-          <Image source={{ uri: tour.image }} style={styles.image} contentFit="cover" transition={200} />
+          <Image source={{ uri: tour.image }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={200} />
 
           <View style={styles.topLeftBadges}>
             {tour.isBestseller ? (
@@ -178,7 +178,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
 
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             <View style={styles.organizerSection}>
-              <Image source={{ uri: tour.organizer.avatar }} style={[styles.avatar, { backgroundColor: colors.surfaceSecondary }]} contentFit="cover" />
+              <Image source={{ uri: tour.organizer.avatar }} style={[styles.avatar, { backgroundColor: colors.surfaceSecondary }]} contentFit="cover" cachePolicy="memory-disk" />
               <View style={styles.organizerInfo}>
                 <Text style={[styles.organizerName, { color: colors.textSecondary }]} numberOfLines={1}>{tour.organizer.name}</Text>
                 <StarRating rating={tour.organizer.rating} reviewCount={tour.organizer.reviewCount} size={11} />

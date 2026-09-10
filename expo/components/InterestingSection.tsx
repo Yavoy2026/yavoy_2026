@@ -90,6 +90,7 @@ const CategoryCard = React.memo(function CategoryCard({
           source={{ uri: categoryImages[category] }}
           style={styles.cardImage}
           contentFit="cover"
+          cachePolicy="memory-disk"
           transition={200}
         />
         <View style={styles.cardGradient} />

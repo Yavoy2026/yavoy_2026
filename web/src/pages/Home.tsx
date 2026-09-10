@@ -8,6 +8,7 @@ import type { Currency } from "@/lib/currency";
 import { tours } from "@/data/tours";
 import { cities, cityNameMap } from "@/data/cities";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/LazyImage";
 import type { DurationType, TransportType, SortType, SeasonType } from "@/types";
 
 const durationOptions: { key: DurationType; label: string }[] = [
@@ -165,7 +166,7 @@ export default function Home() {
                   active ? "ring-teal" : "ring-transparent hover:ring-teal/40",
                 )}
               >
-                <img src={city.image} alt={city.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <LazyImage src={city.image} alt={city.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/20 to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3">
                   <div className="text-lg">{city.emoji}</div>
@@ -203,7 +204,7 @@ export default function Home() {
                 onClick={() => navigate("/reels")}
                 className="group relative h-56 w-36 shrink-0 overflow-hidden rounded-2xl"
               >
-                <img src={reel.coverImage} alt={reel.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <LazyImage src={reel.coverImage} alt={reel.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                 <div className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur">
                   <Play size={14} className="text-white" fill="white" />
