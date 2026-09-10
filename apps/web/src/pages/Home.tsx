@@ -116,32 +116,33 @@ export default function Home() {
   return (
     <Layout>
       {/* Hero */}
-      <section className="relative mb-8 overflow-hidden rounded-3xl bg-navy p-8 text-white shadow-xl md:p-12">
+      {/* герой следует теме: на светлой тёмная плита читалась как недоделка */}
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-card p-8 text-foreground shadow-xl ring-1 ring-border/60 dark:bg-navy dark:text-white md:p-12">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-teal/30 blur-3xl" />
         <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
         <div className="relative max-w-2xl">
-          <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-light">
+          <span className="mb-3 inline-block rounded-full bg-teal/10 px-3 py-1 text-xs font-semibold text-teal dark:bg-white/10 dark:text-teal-light">
             {t("home.heroBadge")}
           </span>
           <h1 className="mb-3 text-3xl font-extrabold leading-tight md:text-5xl">
             {withSlot(
               t("home.heroTitle", { accent: SLOT }),
-              <span className="text-teal-light">{t("home.heroTitleAccent")}</span>,
+              <span className="text-teal dark:text-teal-light">{t("home.heroTitleAccent")}</span>,
             )}
           </h1>
-          <p className="mb-6 max-w-lg text-sm text-white/70 md:text-base">
+          <p className="mb-6 max-w-lg text-sm text-muted-foreground dark:text-white/70 md:text-base">
             {t("home.heroSubtitle")}
           </p>
-          <div className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-lg">
+          <div className="flex items-center gap-2 rounded-2xl bg-background p-2 shadow-lg ring-1 ring-border/60 dark:bg-white dark:ring-0">
             <Search size={20} className="ml-2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("home.searchPlaceholder")}
-              className="flex-1 bg-transparent py-2 text-sm text-navy outline-none placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground dark:text-navy"
             />
             {search && (
-              <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-navy">
+              <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground dark:hover:text-navy">
                 <X size={18} />
               </button>
             )}

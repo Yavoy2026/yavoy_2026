@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useApp } from "@/context/AppContext";
+import { FEATURES } from "@/features";
 import { useAuth } from "@/context/AuthContext";
 import { useCatalog } from "@/services/catalog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -74,7 +75,8 @@ export default function Profile() {
   return (
     <Layout>
       {/* Header card */}
-      <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-6 text-white shadow-xl">
+      {/* карточка следует теме: на светлой тёмная плита читалась как артефакт */}
+      <div className="mb-6 overflow-hidden rounded-3xl bg-card p-6 text-foreground shadow-xl ring-1 ring-border/60 dark:bg-navy dark:text-white">
         {isLoading ? (
           <div className="flex items-center justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-2 border-teal border-t-transparent" /></div>
         ) : isAuthenticated && user ? (
@@ -89,23 +91,23 @@ export default function Profile() {
               )}
               <div>
                 <h1 className="text-xl font-extrabold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</h1>
-                <p className="text-sm text-white/60">{user.email}</p>
-                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "manager" ? "bg-mint/20 text-mint" : user.role === "partner" ? "bg-teal/20 text-teal-light" : "bg-white/10 text-white/70")}>
+                <p className="text-sm text-muted-foreground dark:text-white/60">{user.email}</p>
+                <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", user.role === "admin" ? "bg-gold/20 text-gold" : user.role === "manager" ? "bg-mint/20 text-mint" : user.role === "partner" ? "bg-teal/20 text-teal-light" : "bg-secondary text-muted-foreground dark:bg-white/10 dark:text-white/70")}>
                   {t(`enums.role.${user.role}` as TKey)}
                 </span>
               </div>
             </div>
-            <button onClick={async () => { await logout(); navigate("/"); }} className="mt-4 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition-colors hover:bg-white/20">
+            <button onClick={async () => { await logout(); navigate("/"); }} className="mt-4 flex items-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary/70 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20">
               <LogOut size={15} /> {t("common.logout")}
             </button>
           </>
         ) : (
           <div className="text-center py-4">
-            <p className="mb-3 text-white/70">{t("profile.signInPrompt")}</p>
+            <p className="mb-3 text-muted-foreground dark:text-white/70">{t("profile.signInPrompt")}</p>
             <button onClick={() => navigate("/auth")} className="rounded-xl bg-teal px-6 py-2.5 font-bold text-white">{t("common.loginOrRegister")}</button>
           </div>
         )}
-        <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-navy-light p-4">
+        <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-background p-4 dark:bg-navy-light">
           <Stat value={String(bookings.length)} label={t("profile.statTrips")} color="text-teal-light" />
           <Stat value={String(points)} label={t("profile.statPoints")} color="text-gold" />
           <Stat value={String(favorites.length)} label={t("profile.statFavorites")} color="text-teal-light" />
@@ -229,13 +231,15 @@ export default function Profile() {
           )}
         </Row>
 
-        <Row icon={Share2} iconBg="bg-mint/15" iconColor="text-mint" title={t("profile.myPromoCodes")} count={t("profile.promoSubtitle")} open={open === "promos"} onClick={() => toggle("promos")}>
-          <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Award size={16} /> {t("profile.promoInvite")}</div>
-          <div className="flex items-center justify-between rounded-2xl bg-background p-3">
-            <span className="rounded-lg bg-navy px-3 py-1.5 font-mono text-sm font-bold text-white">YAVOY-2026</span>
-            <span className="text-xs text-muted-foreground">{t("units.activations", { count: 3 })}</span>
-          </div>
-        </Row>
+        {FEATURES.promoCodes && (
+          <Row icon={Share2} iconBg="bg-mint/15" iconColor="text-mint" title={t("profile.myPromoCodes")} count={t("profile.promoSubtitle")} open={open === "promos"} onClick={() => toggle("promos")}>
+            <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Award size={16} /> {t("profile.promoInvite")}</div>
+            <div className="flex items-center justify-between rounded-2xl bg-background p-3">
+              <span className="rounded-lg bg-secondary px-3 py-1.5 font-mono text-sm font-bold text-foreground dark:bg-navy dark:text-white">YAVOY-2026</span>
+              <span className="text-xs text-muted-foreground">{t("units.activations", { count: 3 })}</span>
+            </div>
+          </Row>
+        )}
 
         <Row icon={Video} iconBg="bg-coral/15" iconColor="text-coral" title={t("profile.myReels")} count={t("profile.reelsCount", { count: moderationReels.length, points: 500 })} open={open === "reels"} onClick={() => toggle("reels")} last>
           <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Coins size={16} /> {t("profile.reelsReward", { points: 500 })}</div>
@@ -325,7 +329,7 @@ function Stat({ value, label, color }: { value: string; label: string; color: st
   return (
     <div className="text-center">
       <div className={cn("text-xl font-extrabold", color)}>{value}</div>
-      <div className="text-[11px] text-white/50">{label}</div>
+      <div className="text-[11px] text-muted-foreground dark:text-white/50">{label}</div>
     </div>
   );
 }

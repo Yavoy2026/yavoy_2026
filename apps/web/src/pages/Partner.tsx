@@ -53,9 +53,9 @@ export default function Partner() {
   }
 
   const hero = (
-    <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-8 text-white shadow-xl">
+    <div className="mb-6 overflow-hidden rounded-3xl bg-card p-8 text-foreground shadow-xl ring-1 ring-border/60 dark:bg-navy dark:text-white">
       <h1 className="text-2xl font-extrabold md:text-3xl">{t("partner.heroTitle")}</h1>
-      <p className="mt-2 max-w-xl text-white/70">{t("partner.heroSubtitle")}</p>
+      <p className="mt-2 max-w-xl text-muted-foreground dark:text-white/70">{t("partner.heroSubtitle")}</p>
     </div>
   );
 

@@ -62,6 +62,7 @@ import { useFavorites } from "@/providers/FavoritesProvider";
 import { useBookings } from "@/providers/BookingsProvider";
 import { fetchMyTransactions } from "@/services/bookings";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
+import { FEATURES } from "@/constants/features";
 import { useCertificates } from "@/providers/CertificatesProvider";
 import { usePromoCodes } from "@/providers/PromoCodesProvider";
 import { useReels } from "@/providers/ReelsProvider";
@@ -519,120 +520,127 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
-        <TouchableOpacity
-          style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
-          onPress={() => toggleSection("certificates")}
-          activeOpacity={0.7}
-          testID="section-certificates"
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <View style={[styles.sectionIcon, { backgroundColor: "rgba(232,185,49,0.1)" }]}>
-              <Gift size={20} color={colors.gold} />
-            </View>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myCertificates")}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.certificates", { count: certificates.length })}</Text>
-            </View>
-          </View>
-          {expandedSection === "certificates" ? (
-            <ChevronDown size={20} color={colors.textMuted} />
-          ) : (
-            <ChevronRight size={20} color={colors.textMuted} />
-          )}
-        </TouchableOpacity>
-        {expandedSection === "certificates" ? (
-          <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            {certificates.length === 0 ? (
-              <View>
-                <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noCertificates")}</Text>
-                <TouchableOpacity
-                  style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
-                  onPress={() => setCertModalVisible(true)}
-                  activeOpacity={0.7}
-                >
-                  <Gift size={14} color="#FFFFFF" />
-                  <Text style={styles.buyNewBtnText}>{t("profile.buyCertificate")}</Text>
-                </TouchableOpacity>
+        {FEATURES.giftCertificates ? (
+          <>
+          <TouchableOpacity
+            style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
+            onPress={() => toggleSection("certificates")}
+            activeOpacity={0.7}
+            testID="section-certificates"
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIcon, { backgroundColor: "rgba(232,185,49,0.1)" }]}>
+                <Gift size={20} color={colors.gold} />
               </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myCertificates")}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.certificates", { count: certificates.length })}</Text>
+              </View>
+            </View>
+            {expandedSection === "certificates" ? (
+              <ChevronDown size={20} color={colors.textMuted} />
             ) : (
-              <>
-                {certificates.map((cert) => (
+              <ChevronRight size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
+          {expandedSection === "certificates" ? (
+            <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
+              {certificates.length === 0 ? (
+                <View>
+                  <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noCertificates")}</Text>
                   <TouchableOpacity
-                    key={cert.id}
-                    style={[styles.certCard, { backgroundColor: colors.surface }]}
-                    onPress={() => setVoucherCert(cert)}
+                    style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
+                    onPress={() => setCertModalVisible(true)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.certIcon, { backgroundColor: colors.gold + "20" }]}>
-                      <Gift size={18} color={colors.gold} />
-                    </View>
-                    <View style={styles.certInfo}>
-                      <Text style={[styles.certNominal, { color: colors.text }]}>{formatMoney(cert.nominal)}</Text>
-                      <Text style={[styles.certTo, { color: colors.textMuted }]}>{t("certificate.forWhom", { name: cert.toName })}</Text>
-                    </View>
-                    <Text style={[styles.certCode, { color: colors.textMuted }]}>{cert.code}</Text>
+                    <Gift size={14} color="#FFFFFF" />
+                    <Text style={styles.buyNewBtnText}>{t("profile.buyCertificate")}</Text>
                   </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
-                  onPress={() => setCertModalVisible(true)}
-                  activeOpacity={0.7}
-                >
-                  <Gift size={14} color="#FFFFFF" />
-                  <Text style={styles.buyNewBtnText}>{t("profile.buyMore")}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+                </View>
+              ) : (
+                <>
+                  {certificates.map((cert) => (
+                    <TouchableOpacity
+                      key={cert.id}
+                      style={[styles.certCard, { backgroundColor: colors.surface }]}
+                      onPress={() => setVoucherCert(cert)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.certIcon, { backgroundColor: colors.gold + "20" }]}>
+                        <Gift size={18} color={colors.gold} />
+                      </View>
+                      <View style={styles.certInfo}>
+                        <Text style={[styles.certNominal, { color: colors.text }]}>{formatMoney(cert.nominal)}</Text>
+                        <Text style={[styles.certTo, { color: colors.textMuted }]}>{t("certificate.forWhom", { name: cert.toName })}</Text>
+                      </View>
+                      <Text style={[styles.certCode, { color: colors.textMuted }]}>{cert.code}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
+                    onPress={() => setCertModalVisible(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Gift size={14} color="#FFFFFF" />
+                    <Text style={styles.buyNewBtnText}>{t("profile.buyMore")}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : null}
+          </>
         ) : null}
-
-        <TouchableOpacity
-          style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
-          onPress={() => toggleSection("promos")}
-          activeOpacity={0.7}
-          testID="section-promos"
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.greenLight }]}>
-              <Share2 size={20} color={colors.green} />
-            </View>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myPromoCodes")}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${t("units.promoCodes", { count: promoCodes.length })} · ${t("profile.promoSubtitle")}`}</Text>
-            </View>
-          </View>
-          {expandedSection === "promos" ? (
-            <ChevronDown size={20} color={colors.textMuted} />
-          ) : (
-            <ChevronRight size={20} color={colors.textMuted} />
-          )}
-        </TouchableOpacity>
-        {expandedSection === "promos" ? (
-          <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            <View style={[styles.promoInfo, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}>
-              <Award size={16} color={colors.teal} />
-              <Text style={[styles.promoInfoText, { color: colors.teal }]}>{t("profile.promoInvite")}</Text>
-            </View>
-            {promoCodes.map((promo) => (
-              <View key={promo.id} style={[styles.promoCard, { backgroundColor: colors.surface }]}>
-                <View style={[styles.promoCodeBadge, { backgroundColor: colors.navy }]}>
-                  <Text style={styles.promoCodeText}>{promo.code}</Text>
-                </View>
-                <View style={styles.promoMeta}>
-                  <Text style={[styles.promoDate, { color: colors.textMuted }]}>{t("profile.promoCreated", { date: promo.createdAt })}</Text>
-                  <Text style={[styles.promoActivations, { color: colors.textSecondary }]}>{t("units.activations", { count: promo.activatedBy.length })}</Text>
-                </View>
+        {FEATURES.promoCodes ? (
+          <>
+          <TouchableOpacity
+            style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
+            onPress={() => toggleSection("promos")}
+            activeOpacity={0.7}
+            testID="section-promos"
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.greenLight }]}>
+                <Share2 size={20} color={colors.green} />
               </View>
-            ))}
-            <TouchableOpacity
-              style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
-              onPress={() => generateNewPromo()}
-              activeOpacity={0.7}
-            >
-              <Copy size={14} color="#FFFFFF" />
-              <Text style={styles.buyNewBtnText}>{t("profile.createPromo")}</Text>
-            </TouchableOpacity>
-          </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myPromoCodes")}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{`${t("units.promoCodes", { count: promoCodes.length })} · ${t("profile.promoSubtitle")}`}</Text>
+              </View>
+            </View>
+            {expandedSection === "promos" ? (
+              <ChevronDown size={20} color={colors.textMuted} />
+            ) : (
+              <ChevronRight size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
+          {expandedSection === "promos" ? (
+            <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
+              <View style={[styles.promoInfo, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}>
+                <Award size={16} color={colors.teal} />
+                <Text style={[styles.promoInfoText, { color: colors.teal }]}>{t("profile.promoInvite")}</Text>
+              </View>
+              {promoCodes.map((promo) => (
+                <View key={promo.id} style={[styles.promoCard, { backgroundColor: colors.surface }]}>
+                  <View style={[styles.promoCodeBadge, { backgroundColor: colors.navy }]}>
+                    <Text style={styles.promoCodeText}>{promo.code}</Text>
+                  </View>
+                  <View style={styles.promoMeta}>
+                    <Text style={[styles.promoDate, { color: colors.textMuted }]}>{t("profile.promoCreated", { date: promo.createdAt })}</Text>
+                    <Text style={[styles.promoActivations, { color: colors.textSecondary }]}>{t("units.activations", { count: promo.activatedBy.length })}</Text>
+                  </View>
+                </View>
+              ))}
+              <TouchableOpacity
+                style={[styles.buyNewBtn, { backgroundColor: colors.teal }]}
+                onPress={() => generateNewPromo()}
+                activeOpacity={0.7}
+              >
+                <Copy size={14} color="#FFFFFF" />
+                <Text style={styles.buyNewBtnText}>{t("profile.createPromo")}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          </>
         ) : null}
 
         <TouchableOpacity
@@ -1180,7 +1188,9 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      <CertificateModal visible={certModalVisible} onClose={() => setCertModalVisible(false)} />
+      {FEATURES.giftCertificates ? (
+        <CertificateModal visible={certModalVisible} onClose={() => setCertModalVisible(false)} />
+      ) : null}
 
       <View style={styles.footerSection}>
         <TouchableOpacity

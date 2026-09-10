@@ -39,10 +39,8 @@ const SKIP_DIRS = new Set(["node_modules", "dist", ".expo", "migrations", "compo
  */
 const CYRILLIC_ALLOWLIST: Record<string, string> = {
   "apps/web/src/data/reels.ts": "демо-контент ленты reels",
-  "apps/web/src/pages/Partner.tsx": "демо-данные кабинета партнёра (mock)",
-  "apps/expo/mocks/bookings.ts": "демо-данные",
+  "apps/web/src/pages/Partner.tsx": "черновик текста заявки на партнёрство",
   "apps/expo/mocks/reels.ts": "демо-контент ленты reels",
-  "apps/expo/providers/PartnersProvider.ts": "демо-данные партнёра + юридические тексты",
   "apps/expo/providers/SupportProvider.ts": "системный промпт AI-консультанта (не UI)",
   "apps/expo/app/(tabs)/profile/index.tsx": "юридические тексты (условия использования, о компании)",
   "apps/backend/src/db/seed-data.json": "демо-каталог туров",

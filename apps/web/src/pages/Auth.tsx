@@ -103,13 +103,13 @@ export default function Auth() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-navy px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 dark:bg-navy">
       <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-teal/30 blur-3xl" />
       <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
 
       <button
         onClick={() => (step === "code" ? setStep("email") : navigate("/"))}
-        className="absolute left-4 top-4 flex items-center gap-1.5 text-sm font-semibold text-white/70 hover:text-white"
+        className="absolute left-4 top-4 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground dark:text-white/70 dark:hover:text-white"
       >
         <ArrowLeft size={18} /> {step === "code" ? t("auth.changeEmail") : t("common.home")}
       </button>
