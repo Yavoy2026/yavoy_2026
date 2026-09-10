@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.rork.yavoytravelgroup.data.City
 import com.rork.yavoytravelgroup.data.MockData
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun ExploreScreen(
@@ -44,7 +44,7 @@ fun ExploreScreen(
     onTourClick: (String) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     val topRated = remember { MockData.tours.sortedByDescending { it.organizer.rating }.take(5) }
 
     LazyVerticalGrid(

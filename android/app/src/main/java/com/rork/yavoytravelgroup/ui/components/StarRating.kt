@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 import kotlin.math.floor
 
 @Composable
@@ -20,7 +20,7 @@ fun StarRating(
     modifier: Modifier = Modifier,
     size: Dp = 14.dp,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     val full = floor(rating).toInt()
     val hasHalf = rating - full >= 0.5
     Row(modifier = modifier) {

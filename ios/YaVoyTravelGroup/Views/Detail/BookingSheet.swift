@@ -33,7 +33,7 @@ struct BookingSheet: View {
                     .pickerStyle(.segmented)
 
                     if authMode == .phone {
-                        field(icon: "phone.fill", placeholder: "+7 (___) ___-__-__", text: $phone, keyboard: .phonePad)
+                        field(icon: "phone.fill", placeholder: "+998 (__) ___-__-__", text: $phone, keyboard: .phonePad)
                     } else {
                         field(icon: "envelope.fill", placeholder: "email@example.com", text: $email, keyboard: .emailAddress)
                     }

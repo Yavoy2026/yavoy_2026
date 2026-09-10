@@ -51,7 +51,7 @@ import com.rork.yavoytravelgroup.ui.components.AdvantagesBlock
 import com.rork.yavoytravelgroup.ui.components.FilterChip
 import com.rork.yavoytravelgroup.ui.components.SectionTitle
 import com.rork.yavoytravelgroup.ui.components.TourCard
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun HomeScreen(
@@ -62,7 +62,7 @@ fun HomeScreen(
     onOpenReels: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     var selectedCity by remember { mutableStateOf<String?>(null) }
     var search by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf<DurationType?>(null) }
@@ -297,7 +297,7 @@ private fun FilterRow(
     selectedKey: String?,
     onSelect: (String) -> Unit,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Text(
         text = title,
         color = colors.textSecondary,
@@ -317,7 +317,7 @@ private fun FilterRow(
 
 @Composable
 private fun CityChip(name: String, emoji: String, image: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(76.dp).clickable(onClick = onClick),
@@ -347,7 +347,7 @@ private fun CityChip(name: String, emoji: String, image: String, selected: Boole
 
 @Composable
 private fun PopularCard(tour: Tour, onClick: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),

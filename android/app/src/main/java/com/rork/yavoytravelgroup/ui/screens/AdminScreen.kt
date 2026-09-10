@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rork.yavoytravelgroup.network.UserProfile
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 /**
  * Admin panel: shows the current admin and key moderation stats.
@@ -44,7 +44,7 @@ fun AdminScreen(
     currentUser: UserProfile?,
     onBack: () -> Unit,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Scaffold(
         containerColor = colors.background,
         topBar = {
@@ -120,14 +120,14 @@ fun AdminScreen(
 }
 
 private val pendingTours = listOf(
-    "Гастротур по Сочи" to "Партнёр: ВкусЮга · 4500₽",
-    "Ночной Калининград" to "Партнёр: Янтарный Гид · 2800₽",
-    "Этнотур в Карелию" to "Партнёр: СеверТур · 12000₽",
+    "Гастротур по плов-центрам Ташкента" to "Партнёр: Вкус Ташкента · 450 000 сум",
+    "Ночная Бухара: легенды и мистика" to "Партнёр: Легенды Востока · 240 000 сум",
+    "Этнотур: шёлк Маргилана" to "Партнёр: Ферганские ремёсла · 750 000 сум",
 )
 
 @Composable
 private fun StatCard(label: String, value: String, accent: Color, modifier: Modifier = Modifier) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(color = colors.surface, shape = RoundedCornerShape(14.dp), modifier = modifier) {
         Column(Modifier.padding(14.dp)) {
             Text(value, color = accent, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)

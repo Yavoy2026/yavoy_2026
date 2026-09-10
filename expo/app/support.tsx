@@ -36,7 +36,7 @@ export default function SupportScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          title: "Поддержка YAVOY",
+          title: "Поддержка YAVAY",
           headerStyle: { backgroundColor: colors.headerBg },
           headerTintColor: "#FFFFFF",
           headerRight: () => (
@@ -50,7 +50,7 @@ export default function SupportScreen() {
       <View style={[styles.statusBanner, { backgroundColor: escalated ? colors.orangeLight : colors.tealSoft, borderColor: escalated ? colors.orange + "44" : colors.teal + "30" }]}>
         {escalated ? <UserCog size={16} color={colors.orange} /> : <Sparkles size={16} color={colors.teal} />}
         <Text style={[styles.statusText, { color: escalated ? colors.orange : colors.teal }]}>
-          {escalated ? "Чат переведён на менеджера YAVOY" : "AI-консультант поможет подобрать тур"}
+          {escalated ? "Чат переведён на менеджера YAVAY" : "AI-консультант поможет подобрать тур"}
         </Text>
       </View>
 
@@ -75,7 +75,7 @@ export default function SupportScreen() {
                     <View style={styles.bubbleHeader}>
                       {isAgent ? <UserCog size={12} color={colors.orange} /> : <Sparkles size={12} color={colors.teal} />}
                       <Text style={[styles.bubbleSender, { color: isAgent ? colors.orange : colors.teal }]}>
-                        {isAgent ? "Менеджер YAVOY" : "AI YAVOY"}
+                        {isAgent ? "Менеджер YAVAY" : "AI YAVAY"}
                       </Text>
                     </View>
                   ) : null}

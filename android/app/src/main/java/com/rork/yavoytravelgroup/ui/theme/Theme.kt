@@ -20,7 +20,7 @@ fun AppTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val yavoy = if (isDark) DarkYaVoyColors else LightYaVoyColors
+    val yavoy = if (isDark) DarkYAVAYColors else LightYAVAYColors
 
     val colorScheme = if (isDark) {
         darkColorScheme(
@@ -46,7 +46,7 @@ fun AppTheme(
         )
     }
 
-    CompositionLocalProvider(LocalYaVoyColors provides yavoy) {
+    CompositionLocalProvider(LocalYAVAYColors provides yavoy) {
         MaterialTheme(
             colorScheme = colorScheme,
             content = content

@@ -23,11 +23,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Text(
         text = text,
         color = colors.text,
@@ -39,7 +39,7 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(10.dp),
@@ -62,7 +62,7 @@ fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
 
 @Composable
 fun AdvantagesBlock(modifier: Modifier = Modifier) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     val items = listOf(
         Triple(Icons.Filled.Verified, "Проверенные гиды", "Рейтинговая система и модерация"),
         Triple(Icons.Filled.CheckCircle, "Мгновенное бронирование", "Подтверждение за секунды"),
@@ -70,7 +70,7 @@ fun AdvantagesBlock(modifier: Modifier = Modifier) {
         Triple(Icons.Filled.SupportAgent, "Поддержка 24/7", "Всегда на связи"),
     )
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
-        Text("Почему YaVoy?", color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+        Text("Почему YAVAY?", color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
         items.forEach { (icon, title, sub) ->
             AdvantageRow(icon, title, sub)
         }
@@ -79,7 +79,7 @@ fun AdvantagesBlock(modifier: Modifier = Modifier) {
 
 @Composable
 private fun AdvantageRow(icon: ImageVector, title: String, sub: String) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = colors.surface,

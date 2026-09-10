@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rork.yavoytravelgroup.ui.AuthViewModel
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun AuthScreen(
@@ -45,7 +45,7 @@ fun AuthScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     var isRegister by remember { mutableStateOf(false) }
     var firstName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -155,7 +155,7 @@ private fun AuthField(
     keyboardType: KeyboardType,
     isPassword: Boolean = false,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     OutlinedTextField(
         value = value,
         onValueChange = onChange,

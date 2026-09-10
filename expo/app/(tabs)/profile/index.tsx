@@ -106,7 +106,7 @@ interface UserReview {
 const userReviews: UserReview[] = [
   {
     id: "ur1",
-    tourTitle: "Обзорная экскурсия по Москве",
+    tourTitle: "Обзорная экскурсия по Ташкенту",
     tourImage: tours[0].image,
     rating: 5,
     text: "Потрясающая экскурсия! Гид был очень увлечённым, узнал много нового о столице.",
@@ -114,7 +114,7 @@ const userReviews: UserReview[] = [
   },
   {
     id: "ur2",
-    tourTitle: "Белые ночи Петербурга",
+    tourTitle: "Самарканд: Регистан, Гур-Эмир и Биби-Ханум",
     tourImage: tours[2].image,
     rating: 5,
     text: "Волшебная атмосфера белых ночей! Разводные мосты — невероятное зрелище.",
@@ -130,14 +130,14 @@ const userReviews: UserReview[] = [
   },
 ];
 
-const TERMS_CONTENT = `Условия использования сервиса YAVOY
+const TERMS_CONTENT = `Условия использования сервиса YAVAY
 
 1. Общие положения
-1.1. Настоящие Условия использования регулируют порядок пользования мобильным приложением YAVOY (далее — «Приложение»), разработанным и управляемым компанией YaVoy Travel Group (далее — «Компания»).
+1.1. Настоящие Условия использования регулируют порядок пользования мобильным приложением YAVAY (далее — «Приложение»), разработанным и управляемым компанией YAVAY Travel Group (далее — «Компания»).
 1.2. Используя Приложение, вы подтверждаете своё согласие с настоящими Условиями.
 
 2. Описание сервиса
-2.1. YAVOY — агрегатор туристических экскурсий и маршрутов, предоставляющий пользователям возможность поиска, бронирования и оплаты экскурсионных услуг.
+2.1. YAVAY — агрегатор туристических экскурсий и маршрутов, предоставляющий пользователям возможность поиска, бронирования и оплаты экскурсионных услуг.
 2.2. Компания не является организатором экскурсий, а выступает посредником между пользователями и организаторами.
 
 3. Регистрация и аккаунт
@@ -165,27 +165,27 @@ const TERMS_CONTENT = `Условия использования сервиса 
 
 Дата последнего обновления: 1 апреля 2026 г.`;
 
-const ABOUT_CONTENT = `О компании YAVOY Travel Group
+const ABOUT_CONTENT = `О компании YAVAY Travel Group
 
-YAVOY Travel Group — это современный агрегатор туристических экскурсий и маршрутов по России. Мы объединяем лучших гидов и организаторов, чтобы вы могли легко находить и бронировать уникальные экскурсии в любом городе страны.
+YAVAY Travel Group — это современный агрегатор туристических экскурсий и маршрутов по Узбекистану. Мы объединяем лучших гидов и организаторов, чтобы вы могли легко находить и бронировать уникальные экскурсии в любом городе страны.
 
 Наша миссия
-Сделать путешествия по России доступными, удобными и незабываемыми для каждого. Мы верим, что каждый город хранит свои секреты, и наша задача — помочь вам их раскрыть.
+Сделать путешествия по Узбекистану доступными, удобными и незабываемыми для каждого. Мы верим, что каждый город хранит свои секреты, и наша задача — помочь вам их раскрыть.
 
 Что мы предлагаем
-• Более 500 экскурсий в 50+ городах России
+• Более 500 экскурсий в 10 регионах Узбекистана
 • Проверенные организаторы с рейтинговой системой
 • Мгновенное бронирование и безопасная оплата
 • Бесплатная отмена на большинство экскурсий
 • Поддержка 24/7
 
 Наша команда
-Команда YAVOY — это увлечённые путешественники и IT-специалисты, которые создали платформу, объединяющую технологии и любовь к путешествиям. Мы тщательно отбираем каждого организатора и следим за качеством предоставляемых услуг.
+Команда YAVAY — это увлечённые путешественники и IT-специалисты, которые создали платформу, объединяющую технологии и любовь к путешествиям. Мы тщательно отбираем каждого организатора и следим за качеством предоставляемых услуг.
 
 Контакты
 Email: info@yavoy.ru
-Телефон: +7 (800) 555-00-00 (бесплатно по России)
-Адрес: Москва, ул. Тверская, 1
+Телефон: +998 (71) 200-00-00 (бесплатно по Узбекистану)
+Адрес: Ташкент, ул. Амира Темура, 1
 
 Социальные сети
 • Telegram: @yavoy_travel
@@ -930,7 +930,7 @@ export default function ProfileScreen() {
           testID="menu-support"
         >
           <Headphones size={20} color={colors.teal} />
-          <Text style={[styles.menuText, { color: colors.text }]}>{"Поддержка YAVOY"}</Text>
+          <Text style={[styles.menuText, { color: colors.text }]}>{"Поддержка YAVAY"}</Text>
           <View style={[styles.notifBadge, { backgroundColor: colors.teal }]}>
             <Text style={styles.notifBadgeText}>{"AI"}</Text>
           </View>
@@ -1005,7 +1005,7 @@ export default function ProfileScreen() {
                 <View style={[styles.voucherCardLarge, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.teal + "40" }]}>
                   <View style={[styles.voucherAccentBar, { backgroundColor: colors.teal }]} />
                   <View style={styles.voucherLargeHeader}>
-                    <Text style={[styles.voucherBrand, { color: colors.teal }]}>{"YAVOY"}</Text>
+                    <Text style={[styles.voucherBrand, { color: colors.teal }]}>{"YAVAY"}</Text>
                     <Ticket size={24} color={colors.gold} />
                   </View>
                   <Text style={[styles.voucherType, { color: colors.textMuted }]}>{"ВАУЧЕР НА ЭКСКУРСИЮ"}</Text>
@@ -1048,8 +1048,8 @@ export default function ProfileScreen() {
                     style={[styles.voucherActionBtn, { backgroundColor: colors.teal }]}
                     onPress={() => {
                       Share.share({
-                        message: `YAVOY Ваучер\n${voucherBooking.tourTitle}\nДата: ${voucherBooking.tourDate}\nВремя: ${voucherBooking.tourStartTime}\nКод: ${voucherBooking.confirmationCode}`,
-                        title: "Ваучер YAVOY",
+                        message: `YAVAY Ваучер\n${voucherBooking.tourTitle}\nДата: ${voucherBooking.tourDate}\nВремя: ${voucherBooking.tourStartTime}\nКод: ${voucherBooking.confirmationCode}`,
+                        title: "Ваучер YAVAY",
                       }).catch(() => {});
                     }}
                     activeOpacity={0.7}
@@ -1088,7 +1088,7 @@ export default function ProfileScreen() {
                 <View style={[styles.voucherCardLarge, { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.gold + "40" }]}>
                   <View style={[styles.voucherAccentBar, { backgroundColor: colors.gold }]} />
                   <View style={styles.voucherLargeHeader}>
-                    <Text style={[styles.voucherBrand, { color: colors.gold }]}>{"YAVOY"}</Text>
+                    <Text style={[styles.voucherBrand, { color: colors.gold }]}>{"YAVAY"}</Text>
                     <Gift size={24} color={colors.gold} />
                   </View>
                   <Text style={[styles.voucherType, { color: colors.textMuted }]}>{"ПОДАРОЧНЫЙ СЕРТИФИКАТ"}</Text>
@@ -1113,8 +1113,8 @@ export default function ProfileScreen() {
                     style={[styles.voucherActionBtn, { backgroundColor: colors.teal }]}
                     onPress={() => {
                       Share.share({
-                        message: `YAVOY Подарочный сертификат\nНоминал: ${voucherCert.nominal.toLocaleString()} ${voucherCert.currency}\nКому: ${voucherCert.toName}\nОт: ${voucherCert.fromName}\nКод: ${voucherCert.code}`,
-                        title: "Сертификат YAVOY",
+                        message: `YAVAY Подарочный сертификат\nНоминал: ${voucherCert.nominal.toLocaleString()} ${voucherCert.currency}\nКому: ${voucherCert.toName}\nОт: ${voucherCert.fromName}\nКод: ${voucherCert.code}`,
+                        title: "Сертификат YAVAY",
                       }).catch(() => {});
                     }}
                     activeOpacity={0.7}
@@ -1160,7 +1160,7 @@ export default function ProfileScreen() {
           <Info size={14} color={colors.textMuted} />
           <Text style={[styles.footerLinkText, { color: colors.textMuted }]}>{"О компании"}</Text>
         </TouchableOpacity>
-        <Text style={[styles.versionText, { color: colors.textMuted }]}>{`YAVOY v${APP_VERSION}`}</Text>
+        <Text style={[styles.versionText, { color: colors.textMuted }]}>{`YAVAY v${APP_VERSION}`}</Text>
       </View>
 
       <Modal visible={termsModalVisible} transparent animationType="slide" onRequestClose={() => setTermsModalVisible(false)}>

@@ -73,7 +73,7 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                 <ScrollView showsVerticalScrollIndicator={false}>
                   <View style={[styles.voucherCard, { backgroundColor: colors.navy }]}>
                     <View style={styles.voucherHeader}>
-                      <Text style={styles.voucherBrand}>{"YAVOY"}</Text>
+                      <Text style={styles.voucherBrand}>{"YAVAY"}</Text>
                       <Gift size={24} color={colors.gold} />
                     </View>
                     <Text style={styles.voucherLabel}>{"ПОДАРОЧНЫЙ СЕРТИФИКАТ"}</Text>
@@ -117,7 +117,7 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                           styles.nominalText,
                           { color: colors.textSecondary },
                           nominal === n && { color: "#FFFFFF" },
-                        ]}>{`${n.toLocaleString()} ₽`}</Text>
+                        ]}>{`${n.toLocaleString()} сум`}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -152,7 +152,7 @@ export default function CertificateModal({ visible, onClose }: CertificateModalP
                     activeOpacity={0.8}
                   >
                     <CreditCard size={18} color="#FFFFFF" />
-                    <Text style={styles.buyBtnText}>{`Купить за ${nominal.toLocaleString()} ₽`}</Text>
+                    <Text style={styles.buyBtnText}>{`Купить за ${nominal.toLocaleString()} сум`}</Text>
                   </TouchableOpacity>
                 </ScrollView>
               )}

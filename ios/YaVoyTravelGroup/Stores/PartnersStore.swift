@@ -56,7 +56,7 @@ final class PartnersStore {
             entityType: type,
             legalName: names[type] ?? "Организация",
             ceo: type == .company ? "Иванов И. И." : nil,
-            address: "Россия, г. Москва, ул. Тверская, 1",
+            address: "Узбекистан, г. Ташкент, ул. Амира Темура, 1",
             verifiedByFns: true,
             email: nil, phone: nil, telegram: nil,
             approvalStatus: .contactsRequired
@@ -77,7 +77,7 @@ final class PartnersStore {
 
     func approvePartner(_ inn: String) {
         if let target = pendingPartners.first(where: { $0.inn == inn }), let email = target.email {
-            emailNotifications.append(PartnerEmailNotification(id: "mail-\(UUID().uuidString)", email: email, subject: "Ваш партнёрский аккаунт YAVOY подтверждён", body: "Здравствуйте! Ваш аккаунт партнёра (ИНН \(inn)) успешно подтверждён администратором YAVOY.", sentAt: nowString()))
+            emailNotifications.append(PartnerEmailNotification(id: "mail-\(UUID().uuidString)", email: email, subject: "Ваш партнёрский аккаунт YAVAY подтверждён", body: "Здравствуйте! Ваш аккаунт партнёра (ИНН \(inn)) успешно подтверждён администратором YAVAY.", sentAt: nowString()))
         }
         pendingPartners.removeAll { $0.inn == inn }
         if profile?.inn == inn { profile?.approvalStatus = .approved }
@@ -85,7 +85,7 @@ final class PartnersStore {
 
     func rejectPartner(_ inn: String) {
         if let target = pendingPartners.first(where: { $0.inn == inn }), let email = target.email {
-            emailNotifications.append(PartnerEmailNotification(id: "mail-\(UUID().uuidString)", email: email, subject: "Заявка партнёра YAVOY отклонена", body: "Здравствуйте! К сожалению, ваша заявка партнёра (ИНН \(inn)) отклонена.", sentAt: nowString()))
+            emailNotifications.append(PartnerEmailNotification(id: "mail-\(UUID().uuidString)", email: email, subject: "Заявка партнёра YAVAY отклонена", body: "Здравствуйте! К сожалению, ваша заявка партнёра (ИНН \(inn)) отклонена.", sentAt: nowString()))
         }
         pendingPartners.removeAll { $0.inn == inn }
         if profile?.inn == inn { profile?.approvalStatus = .rejected }
@@ -112,7 +112,7 @@ final class PartnersStore {
     // MARK: Reviews
 
     var ownerReviews: [PartnerReview] {
-        let inn = profile?.inn ?? "7707123456"
+        let inn = profile?.inn ?? "301234567"
         return reviews.filter { $0.partnerInn == inn }
     }
 
@@ -151,7 +151,7 @@ final class PartnersStore {
         if notify {
             let recipients = ([profile].compactMap { $0 } + pendingPartners).filter { $0.email != nil }
             for r in recipients {
-                emailNotifications.append(PartnerEmailNotification(id: "mail-\(UUID().uuidString)-\(r.inn)", email: r.email!, subject: "Обновление документа: \(title)", body: "Здравствуйте! Документ «\(title)» был обновлён администратором YAVOY.", sentAt: nowString()))
+                emailNotifications.append(PartnerEmailNotification(id: "mail-\(UUID().uuidString)-\(r.inn)", email: r.email!, subject: "Обновление документа: \(title)", body: "Здравствуйте! Документ «\(title)» был обновлён администратором YAVAY.", sentAt: nowString()))
             }
         }
     }
@@ -187,4 +187,101 @@ final class PartnersStore {
     private func dateString() -> String {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f.string(from: Date())
     }
+
+    // MARK: Static demo data (mirrors expo PartnersProvider)
+
+    private static let defaultDocs: [LegalDocKey: LegalDocContent] = [
+        .terms: LegalDocContent(
+            title: "Пользовательское соглашение",
+            body: "1. ОБЩИЕ ПОЛОЖЕНИЯ\n\n1.1. Настоящее Пользовательское соглашение (далее — Соглашение) регулирует отношения между ООО «YAVAY» (далее — Платформа) и Партнёром при использовании сервиса YAVAY Travel Group.\n\n1.2. Регистрируясь в качестве Партнёра, вы подтверждаете, что ознакомились с условиями Соглашения и принимаете их в полном объёме.\n\n2. ПРЕДМЕТ СОГЛАШЕНИЯ\n\n2.1. Платформа предоставляет Партнёру технологический сервис для размещения и продажи экскурсий, а Партнёр обязуется размещать достоверную информацию и предоставлять услуги надлежащего качества.\n\n3. ПРАВА И ОБЯЗАННОСТИ СТОРОН\n\n3.1. Партнёр обязуется: предоставлять актуальную информацию, своевременно отвечать на запросы клиентов, соблюдать законодательство Республики Узбекистан.\n\n4. ОТВЕТСТВЕННОСТЬ\n\n4.1. Партнёр несёт ответственность за достоверность сведений о компании, ИНН/ОГРН и налоговом статусе.\n\n5. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ\n\n5.1. Соглашение вступает в силу с момента акцепта и действует бессрочно.\n\n5.2. Платформа вправе изменять условия с уведомлением Партнёра за 10 дней.",
+            updatedAt: "2026-05-01"
+        ),
+        .privacy: LegalDocContent(
+            title: "Политика конфиденциальности",
+            body: "1. Действуя свободно, своей волей и в своём интересе, Партнёр даёт согласие ООО «YAVAY» на обработку своих персональных данных в соответствии с Законом Республики Узбекистан «О персональных данных».\n\n2. Состав персональных данных: ФИО, ИНН, ОГРН, юридический и фактический адрес, контактные телефоны, адрес электронной почты, банковские реквизиты, сведения о государственной регистрации.\n\n3. Цели обработки: идентификация Партнёра, заключение и исполнение договора, проведение взаиморасчётов, маркетинговая аналитика, обеспечение работы сервиса, рассылка уведомлений.\n\n4. Партнёр согласен на передачу персональных данных третьим лицам, привлекаемым Платформой для оказания услуг (налоговые органы, банки-эквайеры, операторы фискальных данных, сервисы рассылок).\n\n5. Согласие действует с момента акцепта и до момента его отзыва Партнёром письменным заявлением.",
+            updatedAt: "2026-05-01"
+        ),
+        .offer: LegalDocContent(
+            title: "Договор оферты",
+            body: "1. ПРЕДМЕТ ДОГОВОРА\n\n1.1. ООО «YAVAY» (Платформа) предлагает Партнёру заключить договор на использование платформы YAVAY Travel Group для размещения и продажи экскурсий конечным клиентам.\n\n1.2. Настоящий документ является публичной офертой в соответствии с законодательством Республики Узбекистан.\n\n2. ПОРЯДОК АКЦЕПТА\n\n2.1. Акцептом оферты считается прохождение Партнёром процедуры регистрации, включая подтверждение настоящего согласия и проверку через налоговые органы.\n\n3. ВОЗНАГРАЖДЕНИЕ ПЛАТФОРМЫ\n\n3.1. Платформа удерживает комиссию в размере 15% от стоимости каждой оплаченной экскурсии.\n\n3.2. Выплаты Партнёру осуществляются раз в неделю на указанный расчётный счёт.\n\n4. ОБЯЗАННОСТИ ПАРТНЁРА\n\n4.1. Размещение достоверной информации об экскурсии.\n\n4.2. Своевременное проведение экскурсии в соответствии с расписанием.\n\n4.3. Реагирование на отзывы и обращения клиентов.\n\n5. СРОК ДЕЙСТВИЯ\n\n5.1. Договор заключается на неопределённый срок и действует до момента расторжения одной из сторон.",
+            updatedAt: "2026-05-01"
+        ),
+    ]
+
+    private static let initialTours: [PartnerTourSubmission] = [
+        PartnerTourSubmission(
+            id: "psub1",
+            title: "Гастротур по базарам и чайханам Бухары",
+            description: "Дегустации специй, мастер-класс по плову и виноделие региона Зарафшан.",
+            city: "Бухара",
+            price: 850000,
+            currency: "сум",
+            image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop",
+            duration: .oneDay,
+            transport: .auto,
+            interest: .city,
+            groupSize: "до 12 человек",
+            meetingPoint: "Бухара, ансамбль Ляби-Хауз, 1",
+            status: .published,
+            submittedAt: "2026-04-12",
+            partnerInn: "301234567"
+        ),
+        PartnerTourSubmission(
+            id: "psub2",
+            title: "Восхождение на Большой Чимган",
+            description: "Маршрут средней сложности с гидом и фотосессией на вершине.",
+            city: "Чимган и Чарвак",
+            price: 420000,
+            currency: "сум",
+            image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=400&fit=crop",
+            duration: .oneDay,
+            transport: .auto,
+            interest: .nature,
+            groupSize: "до 15 человек",
+            meetingPoint: "Чимган, у канатной дороги",
+            status: .pending,
+            submittedAt: "2026-05-18",
+            partnerInn: "301234567"
+        ),
+    ]
+
+    private static let initialGuests: [PartnerGuest] = [
+        PartnerGuest(id: "pg1", tourId: "psub1", firstName: "Анна", lastName: "Соколова", phone: "+998 (91) 222-08-91", tourDate: "2026-04-20", ticketCount: 2, status: "completed"),
+        PartnerGuest(id: "pg2", tourId: "psub1", firstName: "Дмитрий", lastName: "Кузнецов", phone: "+998 (93) 401-77-12", tourDate: "2026-05-04", ticketCount: 3, status: "completed"),
+        PartnerGuest(id: "pg3", tourId: "psub1", firstName: "Мария", lastName: "Орлова", phone: "+998 (94) 678-34-09", tourDate: "2026-06-12", ticketCount: 4, status: "upcoming"),
+        PartnerGuest(id: "pg4", tourId: "psub2", firstName: "Сергей", lastName: "Васильев", phone: "+998 (97) 999-12-77", tourDate: "2026-06-22", ticketCount: 2, status: "upcoming"),
+    ]
+
+    private static let initialTransactions: [PartnerTransaction] = [
+        PartnerTransaction(id: "ptr1", tourId: "psub1", tourTitle: "Гастротур по базарам и чайханам Бухары", amount: 1700000, currency: "сум", date: "2026-04-20", guestName: "Анна Соколова", status: "completed"),
+        PartnerTransaction(id: "ptr2", tourId: "psub1", tourTitle: "Гастротур по базарам и чайханам Бухары", amount: 2550000, currency: "сум", date: "2026-05-04", guestName: "Дмитрий Кузнецов", status: "completed"),
+        PartnerTransaction(id: "ptr3", tourId: "psub1", tourTitle: "Гастротур по базарам и чайханам Бухары", amount: 3400000, currency: "сум", date: "2026-05-20", guestName: "Мария Орлова", status: "pending"),
+        PartnerTransaction(id: "ptr4", tourId: "psub2", tourTitle: "Восхождение на Большой Чимган", amount: 840000, currency: "сум", date: "2026-05-22", guestName: "Сергей Васильев", status: "pending"),
+        PartnerTransaction(id: "ptr5", tourId: "psub1", tourTitle: "Гастротур по базарам и чайханам Бухары", amount: 850000, currency: "сум", date: "2026-03-12", guestName: "Игорь Лебедев", status: "completed"),
+        PartnerTransaction(id: "ptr6", tourId: "psub1", tourTitle: "Гастротур по базарам и чайханам Бухары", amount: 1700000, currency: "сум", date: "2025-12-10", guestName: "Наталья Котова", status: "completed"),
+    ]
+
+    private static let initialChat: [PartnerChatMessage] = [
+        PartnerChatMessage(id: "pcm1", tourId: "psub1", authorType: "client", authorName: "Анна Соколова", content: "Здравствуйте! А во сколько собираемся в субботу?", createdAt: "2026-04-18 14:21"),
+        PartnerChatMessage(id: "pcm2", tourId: "psub1", authorType: "partner", authorName: "Партнёр", content: "Добрый день! Сбор в 9:00 у бассейна Ляби-Хауз, у Надира Диван-беги.", createdAt: "2026-04-18 14:32"),
+        PartnerChatMessage(id: "pcm3", tourId: "psub1", authorType: "admin", authorName: "Администратор YAVAY", content: "Подключился к диалогу для контроля качества. Всё на связи.", createdAt: "2026-04-18 14:33"),
+    ]
+
+    private static let initialReviews: [PartnerReview] = [
+        PartnerReview(
+            id: "pr1", tourId: "psub1", partnerInn: "301234567", author: "Анна Соколова", rating: 5,
+            text: "Невероятно вкусно и познавательно! Базары Бухары — восторг.", createdAt: "2026-04-21",
+            reply: PartnerReviewReply(id: "prep1", reviewId: "pr1", content: "Спасибо, ждём вас снова на наших турах!", status: .approved, createdAt: "2026-04-22")
+        ),
+        PartnerReview(
+            id: "pr2", tourId: "psub1", partnerInn: "301234567", author: "Дмитрий Кузнецов", rating: 4,
+            text: "Отлично, но хотелось больше времени у каждого места.", createdAt: "2026-05-05",
+            reply: PartnerReviewReply(id: "prep2", reviewId: "pr2", content: "Благодарим за отзыв! Добавим свободное время в маршрут.", status: .pending, createdAt: "2026-05-06")
+        ),
+        PartnerReview(
+            id: "pr3", tourId: "psub1", partnerInn: "301234567", author: "Игорь Лебедев", rating: 5,
+            text: "Лучший плов в жизни. Гид — настоящий знаток города.", createdAt: "2026-03-13",
+            reply: nil
+        ),
+    ]
 }

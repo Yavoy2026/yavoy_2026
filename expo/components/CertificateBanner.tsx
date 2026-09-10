@@ -34,7 +34,7 @@ export default React.memo(function CertificateBanner({ onPress }: CertificateBan
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.title}>{"Подарите путешествие!"}</Text>
-          <Text style={styles.subtitle}>{"Купить подарочный сертификат YAVOY"}</Text>
+          <Text style={styles.subtitle}>{"Купить подарочный сертификат YAVAY"}</Text>
         </View>
         <Text style={styles.arrow}>{"→"}</Text>
       </TouchableOpacity>

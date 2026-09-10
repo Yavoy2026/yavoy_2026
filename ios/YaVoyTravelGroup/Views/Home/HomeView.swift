@@ -318,7 +318,7 @@ struct AdvantagesBlock: View {
     ]
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Почему YaVoy").font(.system(size: 18, weight: .bold)).foregroundStyle(palette.text)
+            Text("Почему YAVAY").font(.system(size: 18, weight: .bold)).foregroundStyle(palette.text)
             ForEach(items, id: \.0) { item in
                 HStack(spacing: 12) {
                     Image(systemName: item.0)

@@ -32,7 +32,7 @@ struct AddTourForm: View {
                     field("Название экскурсии", $title)
                     multilineField("Описание", $desc)
                     field("Город", $city)
-                    field("Цена, ₽", $price, keyboard: .numberPad)
+                    field("Цена, сум", $price, keyboard: .numberPad)
                     field("Размер группы", $groupSize)
                     field("Место сбора", $meeting)
 
@@ -121,7 +121,7 @@ struct AddTourForm: View {
         guard let priceInt = Int(price) else { return }
         let tour = PartnerTourSubmission(
             id: "psub-\(Int(Date().timeIntervalSince1970))",
-            title: title, description: desc, city: city, price: priceInt, currency: "₽",
+            title: title, description: desc, city: city, price: priceInt, currency: "сум",
             image: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=400&fit=crop",
             duration: duration, transport: transport, interest: interest,
             groupSize: groupSize.isEmpty ? "до 15 человек" : groupSize,

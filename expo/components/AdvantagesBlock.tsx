@@ -31,7 +31,7 @@ const advantages = [
   {
     icon: Globe,
     title: "1000+ экскурсий",
-    desc: "По всей России от проверенных гидов",
+    desc: "По всему Узбекистану от проверенных гидов",
     color: "#0FA3B1",
   },
   {
@@ -47,8 +47,8 @@ export default React.memo(function AdvantagesBlock() {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? colors.surfaceSecondary : colors.headerBg }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{"Почему YaVoy?"}</Text>
-        <Text style={[styles.subtitle, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{"Мы объединяем лучших организаторов туров по России"}</Text>
+        <Text style={styles.title}>{"Почему YAVAY?"}</Text>
+        <Text style={[styles.subtitle, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{"Мы объединяем лучших организаторов туров по Узбекистану"}</Text>
       </View>
       <View style={styles.grid}>
         {advantages.map((item, index) => {

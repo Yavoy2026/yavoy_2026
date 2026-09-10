@@ -306,7 +306,7 @@ function BookingAuthModal({
                   <Phone size={16} color={colors.textMuted} />
                   <TextInput
                     style={[detailStyles.inputField, { color: colors.text }]}
-                    placeholder="+7 (___) ___-__-__"
+                    placeholder="+998 (__) ___-__-__"
                     placeholderTextColor={colors.textMuted}
                     value={phoneValue}
                     onChangeText={setPhoneValue}
@@ -496,7 +496,7 @@ export default function TourDetailScreen() {
         "",
         `👤 Организатор: ${tour.organizer.name} (${tour.organizer.rating}⭐, ${tour.organizer.reviewCount} отзывов)`,
         "",
-        "YAVOY Travel Group",
+        "YAVAY Travel Group",
       ];
       const message = lines.filter(Boolean).join("\n");
       await Share.share({ message });

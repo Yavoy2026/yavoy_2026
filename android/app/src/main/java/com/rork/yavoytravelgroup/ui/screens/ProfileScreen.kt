@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.rork.yavoytravelgroup.data.MockData
 import com.rork.yavoytravelgroup.network.UserProfile
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 import com.rork.yavoytravelgroup.ui.theme.ThemeMode
 
 @Composable
@@ -67,7 +67,7 @@ fun ProfileScreen(
     onTourClick: (String) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     val isAuth = user != null && user.is_active
     var expanded by remember { mutableStateOf<String?>(null) }
 
@@ -226,7 +226,7 @@ fun ProfileScreen(
 
 @Composable
 private fun StatItem(value: String, label: String, valueColor: Color) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, color = valueColor, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
         Text(label, color = colors.textMuted, fontSize = 12.sp)
@@ -235,7 +235,7 @@ private fun StatItem(value: String, label: String, valueColor: Color) {
 
 @Composable
 private fun ThemeOption(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
@@ -254,7 +254,7 @@ private fun ThemeOption(label: String, icon: ImageVector, selected: Boolean, onC
 
 @Composable
 private fun ExpandableSection(title: String, subtitle: String, icon: ImageVector, iconColor: Color, expanded: Boolean, onClick: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Row(
         modifier = Modifier.fillMaxWidth().background(colors.surface).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -275,7 +275,7 @@ private fun ExpandableSection(title: String, subtitle: String, icon: ImageVector
 
 @Composable
 private fun MenuRow(title: String, icon: ImageVector, iconColor: Color, onClick: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Row(
         modifier = Modifier.fillMaxWidth().background(colors.surface).padding(14.dp).clip(RoundedCornerShape(0.dp)),
         verticalAlignment = Alignment.CenterVertically,
@@ -294,7 +294,7 @@ private fun MenuRow(title: String, icon: ImageVector, iconColor: Color, onClick:
 
 @Composable
 private fun MiniTourRow(image: String, title: String, sub: String, onClick: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(onClick = onClick, color = colors.surface, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(model = image, contentDescription = title, contentScale = ContentScale.Crop, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))

@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// Theme palette mirroring the React Native YaVoy design tokens.
+/// Theme palette mirroring the React Native YAVAY design tokens.
 struct ThemePalette {
     let navy: Color
     let navyLight: Color

@@ -5,11 +5,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * YaVoy brand color palette. Mirrors the React Native / web theme tokens:
+ * YAVAY brand color palette. Mirrors the React Native / web theme tokens:
  * navy #1B2838, teal #0FA3B1, gold #E8B931, coral #FF6B6B.
  */
 @Immutable
-data class YaVoyColors(
+data class YAVAYColors(
     val navy: Color,
     val navyLight: Color,
     val navyDark: Color,
@@ -43,7 +43,7 @@ data class YaVoyColors(
     val isDark: Boolean,
 )
 
-val LightYaVoyColors = YaVoyColors(
+val LightYAVAYColors = YAVAYColors(
     navy = Color(0xFF1B2838),
     navyLight = Color(0xFF243447),
     navyDark = Color(0xFF131E2B),
@@ -77,7 +77,7 @@ val LightYaVoyColors = YaVoyColors(
     isDark = false,
 )
 
-val DarkYaVoyColors = YaVoyColors(
+val DarkYAVAYColors = YAVAYColors(
     navy = Color(0xFFE8EDF2),
     navyLight = Color(0xFF1E2A3A),
     navyDark = Color(0xFF0D1520),
@@ -111,4 +111,4 @@ val DarkYaVoyColors = YaVoyColors(
     isDark = true,
 )
 
-val LocalYaVoyColors = staticCompositionLocalOf { LightYaVoyColors }
+val LocalYAVAYColors = staticCompositionLocalOf { LightYAVAYColors }

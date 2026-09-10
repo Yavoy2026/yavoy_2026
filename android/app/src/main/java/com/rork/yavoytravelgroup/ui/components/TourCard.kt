@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.rork.yavoytravelgroup.data.MockData
 import com.rork.yavoytravelgroup.data.Tour
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun TourCard(
@@ -46,7 +46,7 @@ fun TourCard(
     onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Card(
         modifier = modifier
             .fillMaxWidth()

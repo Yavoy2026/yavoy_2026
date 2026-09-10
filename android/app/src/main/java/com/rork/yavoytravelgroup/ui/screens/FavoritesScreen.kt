@@ -36,7 +36,7 @@ import coil3.compose.AsyncImage
 import com.rork.yavoytravelgroup.data.MockData
 import com.rork.yavoytravelgroup.ui.components.FilterChip
 import com.rork.yavoytravelgroup.ui.components.TourCard
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun FavoritesScreen(
@@ -48,7 +48,7 @@ fun FavoritesScreen(
     onCityClick: (String) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     var tab by remember { mutableStateOf("tours") }
 
     val favoriteTours = MockData.tours.filter { it.id in favoriteTourIds }
@@ -112,7 +112,7 @@ fun FavoritesScreen(
 
 @Composable
 private fun EmptyFavorites(title: String, sub: String) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(40.dp)) {
             Surface(shape = CircleShape, color = colors.surfaceSecondary, modifier = Modifier.size(80.dp)) {

@@ -46,8 +46,8 @@ export const [ReelsProvider, useReels] = createContextHook(() => {
     const newReel: TravelReel = hydrate({
       id: `user-reel-${Date.now()}`,
       title: params.title.trim() || "Мой reels из поездки",
-      city: params.city.trim() || "Россия",
-      tourTitle: params.tourTitle.trim() || "Экскурсия YAVOY",
+      city: params.city.trim() || "Узбекистан",
+      tourTitle: params.tourTitle.trim() || "Экскурсия YAVAY",
       coverImage: params.coverImage || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=600&h=900&fit=crop",
       videoUri: params.videoUri,
       author: "Иван Петров",

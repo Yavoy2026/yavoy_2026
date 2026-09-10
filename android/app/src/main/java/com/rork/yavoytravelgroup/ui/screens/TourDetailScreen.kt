@@ -46,7 +46,7 @@ import com.rork.yavoytravelgroup.data.MockData
 import com.rork.yavoytravelgroup.data.Tour
 import com.rork.yavoytravelgroup.data.TourReview
 import com.rork.yavoytravelgroup.ui.components.StarRating
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 @Composable
 fun TourDetailScreen(
@@ -55,7 +55,7 @@ fun TourDetailScreen(
     onBack: () -> Unit,
     onToggleFavorite: () -> Unit,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     val tour = MockData.tourById(tourId)
 
     if (tour == null) {
@@ -207,7 +207,7 @@ fun TourDetailScreen(
 
 @Composable
 private fun InfoBullet(text: String, dotColor: Color) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(dotColor))
         Text(text, color = colors.textSecondary, fontSize = 14.sp, modifier = Modifier.padding(start = 10.dp))
@@ -216,7 +216,7 @@ private fun InfoBullet(text: String, dotColor: Color) {
 
 @Composable
 private fun MetaChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(shape = RoundedCornerShape(10.dp), color = colors.surfaceSecondary) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = colors.teal, modifier = Modifier.size(15.dp))
@@ -227,7 +227,7 @@ private fun MetaChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text
 
 @Composable
 private fun ReviewCard(review: TourReview) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(shape = RoundedCornerShape(12.dp), color = colors.surfaceSecondary, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

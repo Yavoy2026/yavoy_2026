@@ -153,7 +153,7 @@ struct PartnerCabinetView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Итого за период").font(.system(size: 13)).foregroundStyle(palette.textMuted)
-                    Text("\(periodSum.formatted()) ₽").font(.system(size: 26, weight: .heavy)).foregroundStyle(palette.teal)
+                    Text("\(periodSum.formatted()) сум").font(.system(size: 26, weight: .heavy)).foregroundStyle(palette.teal)
                 }
                 Spacer()
                 Image(systemName: "wallet.bifold.fill").font(.system(size: 32)).foregroundStyle(palette.teal.opacity(0.5))

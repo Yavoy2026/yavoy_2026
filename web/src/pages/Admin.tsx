@@ -15,23 +15,23 @@ import type { UserProfile } from "@/services/api";
 type Tab = "tours" | "reels" | "partners" | "reviews" | "users" | "docs";
 
 const pendingTours = [
-  { id: "mt1", title: "Ночной джаз-квартал", partner: "ООО Джаз-Тур", city: "Санкт-Петербург", price: 2800, image: tours[2].image },
-  { id: "mt2", title: "Винный weekend", partner: "ИП Виноградов", city: "Сочи", price: 6200, image: tours[8].image },
+  { id: "mt1", title: "Ночная Бухара: легенды и мистика", partner: "Легенды Востока", city: "Бухара", price: 280000, image: tours[2].image },
+  { id: "mt2", title: "Винный тур: винодельня Ховренко", partner: "Зарафшан Вайн", city: "Самарканд", price: 620000, image: tours[8].image },
 ];
 
 const pendingPartners = [
-  { id: "pp1", name: "ООО «Гастро Москва»", inn: "7712345678", entity: "ООО", email: "info@gastro.ru" },
+  { id: "pp1", name: "ООО «Вкус Ташкента»", inn: "301234567", entity: "ООО", email: "info@gastro.uz" },
   { id: "pp2", name: "ИП Соколова А.В.", inn: "771234567890", entity: "ИП", email: "sokolova@mail.ru" },
 ];
 
 const pendingReplies = [
-  { id: "pr1", partner: "ООО «Гастро Москва»", review: "Невероятно вкусно!", reply: "Спасибо, ждём вас снова на наших турах!" },
+  { id: "pr1", partner: "ООО «Вкус Ташкента»", review: "Невероятно вкусно!", reply: "Спасибо, ждём вас снова на наших турах!" },
 ];
 
 const users = [
-  { id: "u1", name: "Александр Иванов", email: "alex@yavoy.ru", role: "user", city: "Москва", tours: 5 },
-  { id: "u2", name: "Мария Кузнецова", email: "maria@yavoy.ru", role: "user", city: "Санкт-Петербург", tours: 2 },
-  { id: "u3", name: "Дмитрий Орлов", email: "dmitry@yavoy.ru", role: "manager", city: "Казань", tours: 0 },
+  { id: "u1", name: "Александр Иванов", email: "alex@yavay.uz", role: "user", city: "Ташкент", tours: 5 },
+  { id: "u2", name: "Мария Кузнецова", email: "maria@yavay.uz", role: "user", city: "Самарканд", tours: 2 },
+  { id: "u3", name: "Дмитрий Орлов", email: "dmitry@yavay.uz", role: "manager", city: "Бухара", tours: 0 },
 ];
 
 export default function Admin() {
@@ -42,7 +42,7 @@ export default function Admin() {
   const [tourQueue, setTourQueue] = useState(pendingTours);
   const [partnerQueue, setPartnerQueue] = useState(pendingPartners);
   const [replyQueue, setReplyQueue] = useState(pendingReplies);
-  const [docText, setDocText] = useState("Условия использования сервиса YAVOY…");
+  const [docText, setDocText] = useState("Условия использования сервиса YAVAY…");
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const isAdmin = user?.role === "admin" || user?.role === "moderator";
@@ -95,7 +95,7 @@ export default function Admin() {
               <img src={t.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{t.title}</div>
-                <div className="text-xs text-muted-foreground">{t.partner} · {t.city} · {t.price.toLocaleString("ru-RU")}₽</div>
+                <div className="text-xs text-muted-foreground">{t.partner} · {t.city} · {t.price.toLocaleString("ru-RU")} сум</div>
               </div>
               <Actions
                 onApprove={() => { setTourQueue((q) => q.filter((x) => x.id !== t.id)); toast.success("Тур опубликован в общей ленте"); }}

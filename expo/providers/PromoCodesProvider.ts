@@ -8,7 +8,7 @@ const PROMOS_KEY = "yavoy_promo_codes";
 
 function generatePromoCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "YAVOY-";
+  let code = "YAVAY-";
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }

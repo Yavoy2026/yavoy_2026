@@ -68,7 +68,7 @@ data class Tour(
     val gallery: List<String> = emptyList(),
     val price: Int,
     val originalPrice: Int? = null,
-    val currency: String = "₽",
+    val currency: String = "сум",
     val duration: DurationType,
     val durationText: String,
     val transport: TransportType,

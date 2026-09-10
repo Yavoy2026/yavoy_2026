@@ -15,26 +15,26 @@ type Stage = "register" | "contacts" | "pending" | "cabinet";
 type Tab = "tours" | "guests" | "transactions" | "reviews";
 
 const initialSubmissions: PartnerTourSubmission[] = [
-  { id: "ps1", title: "Гастротур по рынкам Москвы", city: "Москва", price: 3500, image: tours[5].image, status: "published", submittedAt: "2026-05-10" },
-  { id: "ps2", title: "Ночной джаз-квартал", city: "Санкт-Петербург", price: 2800, image: tours[2].image, status: "pending", submittedAt: "2026-06-01" },
-  { id: "ps3", title: "Винный weekend", city: "Сочи", price: 6200, image: tours[8].image, status: "rejected", submittedAt: "2026-05-28" },
+  { id: "ps1", title: "Гастротур по базарам Ташкента", city: "Ташкент", price: 350000, image: tours[5].image, status: "published", submittedAt: "2026-05-10" },
+  { id: "ps2", title: "Ночная Бухара: легенды и мистика", city: "Бухара", price: 280000, image: tours[2].image, status: "pending", submittedAt: "2026-06-01" },
+  { id: "ps3", title: "Винный тур: винодельня Ховренко", city: "Самарканд", price: 620000, image: tours[8].image, status: "rejected", submittedAt: "2026-05-28" },
 ];
 
 const guests: PartnerGuest[] = [
-  { id: "g1", firstName: "Ольга", lastName: "Петрова", phone: "+7 921 555-12-34", tourTitle: "Гастротур по рынкам Москвы", tourDate: "2026-06-20", ticketCount: 2 },
-  { id: "g2", firstName: "Иван", lastName: "Сидоров", phone: "+7 916 222-88-90", tourTitle: "Гастротур по рынкам Москвы", tourDate: "2026-06-22", ticketCount: 4 },
-  { id: "g3", firstName: "Мария", lastName: "Кузнецова", phone: "+7 905 333-44-55", tourTitle: "Ночной джаз-квартал", tourDate: "2026-06-25", ticketCount: 1 },
+  { id: "g1", firstName: "Ольга", lastName: "Петрова", phone: "+998 90 555-12-34", tourTitle: "Гастротур по базарам Ташкента", tourDate: "2026-06-20", ticketCount: 2 },
+  { id: "g2", firstName: "Иван", lastName: "Сидоров", phone: "+998 91 222-88-90", tourTitle: "Гастротур по базарам Ташкента", tourDate: "2026-06-22", ticketCount: 4 },
+  { id: "g3", firstName: "Мария", lastName: "Кузнецова", phone: "+998 93 333-44-55", tourTitle: "Ночная Бухара: легенды и мистика", tourDate: "2026-06-25", ticketCount: 1 },
 ];
 
 const partnerTransactions: PartnerTransaction[] = [
-  { id: "pt1", tourTitle: "Гастротур по рынкам Москвы", amount: 7000, currency: "₽", date: "2026-06-12", guestName: "Ольга Петрова", status: "completed" },
-  { id: "pt2", tourTitle: "Гастротур по рынкам Москвы", amount: 14000, currency: "₽", date: "2026-06-14", guestName: "Иван Сидоров", status: "completed" },
-  { id: "pt3", tourTitle: "Ночной джаз-квартал", amount: 2800, currency: "₽", date: "2026-06-15", guestName: "Мария Кузнецова", status: "pending" },
+  { id: "pt1", tourTitle: "Гастротур по базарам Ташкента", amount: 700000, currency: "сум", date: "2026-06-12", guestName: "Ольга Петрова", status: "completed" },
+  { id: "pt2", tourTitle: "Гастротур по базарам Ташкента", amount: 1400000, currency: "сум", date: "2026-06-14", guestName: "Иван Сидоров", status: "completed" },
+  { id: "pt3", tourTitle: "Ночной джаз-квартал", amount: 280000, currency: "сум", date: "2026-06-15", guestName: "Мария Кузнецова", status: "pending" },
 ];
 
 const reviews = [
-  { id: "rv1", author: "Ольга П.", tourTitle: "Гастротур по рынкам Москвы", rating: 5, text: "Невероятно вкусно и познавательно!", reply: "Спасибо, ждём вас снова!" },
-  { id: "rv2", author: "Иван С.", tourTitle: "Гастротур по рынкам Москвы", rating: 4, text: "Отлично, но хотелось больше времени.", reply: undefined },
+  { id: "rv1", author: "Ольга П.", tourTitle: "Гастротур по базарам Ташкента", rating: 5, text: "Невероятно вкусно и познавательно!", reply: "Спасибо, ждём вас снова!" },
+  { id: "rv2", author: "Иван С.", tourTitle: "Гастротур по базарам Ташкента", rating: 4, text: "Отлично, но хотелось больше времени.", reply: undefined },
 ];
 
 export default function Partner() {
@@ -59,7 +59,7 @@ export default function Partner() {
     if (!innValid) { toast.error("Введите корректный ИНН (10 или 12 цифр)"); return; }
     if (!allAgreed) { toast.error("Примите все соглашения"); return; }
     setChecking(true);
-    setTimeout(() => { setChecking(false); setStage("contacts"); toast.success("Данные подтверждены через ФНС"); }, 1400);
+    setTimeout(() => { setChecking(false); setStage("contacts"); toast.success("Данные подтверждены налоговой службой"); }, 1400);
   };
 
   const submitContacts = () => {
@@ -117,8 +117,8 @@ export default function Partner() {
         <div className="mx-auto max-w-xl">
           <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-8 text-white">
             <Building2 size={36} className="mb-3 text-teal-light" />
-            <h1 className="mb-2 text-2xl font-extrabold">Станьте партнёром YaVoy</h1>
-            <p className="text-sm text-white/70">Добавляйте свои экскурсии, управляйте бронированиями и зарабатывайте с крупнейшим агрегатором туров России.</p>
+            <h1 className="mb-2 text-2xl font-extrabold">Станьте партнёром YAVAY</h1>
+            <p className="text-sm text-white/70">Добавляйте свои экскурсии, управляйте бронированиями и зарабатывайте с крупнейшим агрегатором туров Узбекистана.</p>
           </div>
 
           <div className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
@@ -153,7 +153,7 @@ export default function Partner() {
               disabled={checking || !innValid || !allAgreed}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform enabled:hover:scale-[1.02] disabled:opacity-50"
             >
-              {checking ? <><Loader2 size={18} className="animate-spin" /> Проверка через ФНС…</> : "Проверить и продолжить"}
+              {checking ? <><Loader2 size={18} className="animate-spin" /> Проверка в налоговой службе…</> : "Проверить и продолжить"}
             </button>
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function Partner() {
       {stage === "contacts" && (
         <div className="mx-auto max-w-xl">
           <div className="mb-4 flex items-center gap-2 rounded-2xl bg-mint/10 p-4 text-sm font-semibold text-mint">
-            <CheckCircle2 size={18} /> ООО «Ваша компания» подтверждена через ФНС
+            <CheckCircle2 size={18} /> ООО «Ваша компания» подтверждена налоговой службой
           </div>
           <div className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
             <h2 className="mb-1 font-bold">Контактные данные</h2>
@@ -195,7 +195,7 @@ export default function Partner() {
         <div>
           {/* Stats */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard icon={TrendingUp} label="Доход" value={`${revenue.toLocaleString("ru-RU")}₽`} />
+            <StatCard icon={TrendingUp} label="Доход" value={`${revenue.toLocaleString("ru-RU")} сум`} />
             <StatCard icon={Receipt} label="Транзакций" value={String(partnerTransactions.length)} />
             <StatCard icon={Users} label="Гостей" value={String(guests.reduce((s, g) => s + g.ticketCount, 0))} />
             <StatCard icon={Star} label="Рейтинг" value={avgRating.toFixed(1)} accent />
@@ -217,7 +217,7 @@ export default function Partner() {
                 <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
                   <input value={newTour.title} onChange={(e) => setNewTour((p) => ({ ...p, title: e.target.value }))} placeholder="Название экскурсии" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                   <input value={newTour.city} onChange={(e) => setNewTour((p) => ({ ...p, city: e.target.value }))} placeholder="Город" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder="Цена, ₽" inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder="Цена, сум" inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
                   <p className="text-xs text-muted-foreground">Добавьте фото/видео в мобильном приложении. После отправки экскурсия уходит администратору на модерацию.</p>
                   <button onClick={addTour} className="w-full rounded-xl bg-teal py-2.5 font-bold text-white">Отправить на модерацию</button>
                 </div>
@@ -227,7 +227,7 @@ export default function Partner() {
                   <img src={s.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{s.title}</div>
-                    <div className="text-xs text-muted-foreground">{s.city} · {s.price.toLocaleString("ru-RU")}₽ · {s.submittedAt}</div>
+                    <div className="text-xs text-muted-foreground">{s.city} · {s.price.toLocaleString("ru-RU")} сум · {s.submittedAt}</div>
                   </div>
                   <StatusBadge status={s.status} />
                 </div>
@@ -260,7 +260,7 @@ export default function Partner() {
               </div>
               <div className="mb-4 rounded-2xl bg-teal/10 p-4 text-center">
                 <div className="text-xs text-muted-foreground">Доход за период</div>
-                <div className="text-2xl font-extrabold text-teal">{revenue.toLocaleString("ru-RU")}₽</div>
+                <div className="text-2xl font-extrabold text-teal">{revenue.toLocaleString("ru-RU")} сум</div>
               </div>
               <div className="space-y-2.5">
                 {partnerTransactions.map((t) => (

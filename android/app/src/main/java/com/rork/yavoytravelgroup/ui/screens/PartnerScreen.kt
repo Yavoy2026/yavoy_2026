@@ -44,7 +44,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rork.yavoytravelgroup.ui.components.StarRating
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 /**
  * Partner cabinet: ИНН-based registration flow (FNS check), then dashboard with
@@ -53,7 +53,7 @@ import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PartnerScreen(onBack: () -> Unit) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     var verified by remember { mutableStateOf(false) }
     var inn by remember { mutableStateOf("") }
 
@@ -81,7 +81,7 @@ fun PartnerScreen(onBack: () -> Unit) {
             ) {
                 Text("Регистрация партнёра", color = colors.text, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Text(
-                    "Введите ИНН вашей организации или ИП. Мы проверим данные через ФНС.",
+                    "Введите ИНН вашей организации или ИП. Мы проверим данные через налоговую службу.",
                     color = colors.textSecondary,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
@@ -109,7 +109,7 @@ fun PartnerScreen(onBack: () -> Unit) {
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 ) {
-                    Text("Проверить в ФНС", color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 4.dp))
+                    Text("Проверить в налоговой", color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 4.dp))
                 }
             }
         } else {
@@ -120,7 +120,7 @@ fun PartnerScreen(onBack: () -> Unit) {
 
 @Composable
 private fun PartnerDashboard(padding: PaddingValues) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     LazyColumn(
         Modifier.fillMaxSize().background(colors.background).padding(padding),
         contentPadding = PaddingValues(16.dp),
@@ -136,7 +136,7 @@ private fun PartnerDashboard(padding: PaddingValues) {
                     }
                     Column(Modifier.padding(start = 12.dp)) {
                         Text("ООО «ЯВой Партнёр»", color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("Проверено ФНС · Активен", color = colors.green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Проверено налоговой · Активен", color = colors.green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -170,7 +170,7 @@ private fun PartnerDashboard(padding: PaddingValues) {
 
 @Composable
 private fun ReviewItem(author: String, rating: Int, text: String, replied: Boolean) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     Surface(color = colors.surface, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

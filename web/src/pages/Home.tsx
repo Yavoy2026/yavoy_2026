@@ -117,10 +117,10 @@ export default function Home() {
         <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
         <div className="relative max-w-2xl">
           <span className="mb-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-light">
-            500+ экскурсий · 50+ городов России
+            500+ экскурсий · 10 регионов Узбекистана
           </span>
           <h1 className="mb-3 text-3xl font-extrabold leading-tight md:text-5xl">
-            Откройте Россию <br className="hidden md:block" />через <span className="text-teal-light">впечатления</span>
+            Откройте Узбекистан <br className="hidden md:block" />через <span className="text-teal-light">впечатления</span>
           </h1>
           <p className="mb-6 max-w-lg text-sm text-white/70 md:text-base">
             Находите и бронируйте уникальные экскурсии с проверенными гидами. От обзорных прогулок до многодневных приключений.
@@ -296,7 +296,7 @@ export default function Home() {
 
       {/* Advantages */}
       <section className="mt-12 rounded-3xl bg-card p-6 ring-1 ring-border/60 md:p-8">
-        <h2 className="mb-6 text-center text-2xl font-extrabold">Почему YaVoy</h2>
+        <h2 className="mb-6 text-center text-2xl font-extrabold">Почему YAVAY</h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {advantages.map((a) => (
             <div key={a.title} className="flex flex-col items-center text-center">

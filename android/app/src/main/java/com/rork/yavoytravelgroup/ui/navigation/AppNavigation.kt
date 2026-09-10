@@ -35,7 +35,7 @@ import com.rork.yavoytravelgroup.ui.screens.PartnerScreen
 import com.rork.yavoytravelgroup.ui.screens.ProfileScreen
 import com.rork.yavoytravelgroup.ui.screens.ReelsScreen
 import com.rork.yavoytravelgroup.ui.screens.TourDetailScreen
-import com.rork.yavoytravelgroup.ui.theme.LocalYaVoyColors
+import com.rork.yavoytravelgroup.ui.theme.LocalYAVAYColors
 
 private data class TabItem(val route: String, val label: String, val icon: ImageVector)
 
@@ -51,7 +51,7 @@ fun AppNavigation(
     appViewModel: AppViewModel,
     authViewModel: AuthViewModel,
 ) {
-    val colors = LocalYaVoyColors.current
+    val colors = LocalYAVAYColors.current
     val navController = rememberNavController()
     val appState by appViewModel.uiState.collectAsStateWithLifecycle()
     val authState by authViewModel.state.collectAsStateWithLifecycle()

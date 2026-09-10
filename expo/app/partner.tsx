@@ -167,7 +167,7 @@ export default function PartnerScreen() {
       description: fDesc.trim(),
       city: fCity.trim(),
       price: priceNum,
-      currency: "₽",
+      currency: "сум",
       image: firstImage?.uri ?? DEFAULT_IMAGE,
       media: fMedia,
       duration: fDuration,
@@ -205,8 +205,8 @@ export default function PartnerScreen() {
               <View style={[styles.heroIcon, { backgroundColor: colors.teal + "30" }]}>
                 <Building2 size={36} color={colors.tealLight} />
               </View>
-              <Text style={styles.heroTitle}>Партнёрская программа YAVOY</Text>
-              <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>Размещайте свои экскурсии в одном из крупнейших агрегаторов России. Получайте бронирования, аналитику и поддержку.</Text>
+              <Text style={styles.heroTitle}>Партнёрская программа YAVAY</Text>
+              <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>Размещайте свои экскурсии в одном из крупнейших агрегаторов Узбекистана. Получайте бронирования, аналитику и поддержку.</Text>
               <View style={styles.heroBenefitsRow}>
                 <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>Без абон. платы</Text></View>
                 <View style={styles.heroBenefit}><CheckCircle size={14} color={colors.tealLight} /><Text style={styles.heroBenefitText}>Аналитика</Text></View>
@@ -217,7 +217,7 @@ export default function PartnerScreen() {
             <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <View style={styles.regHeader}>
                 <ShieldCheck size={20} color={colors.teal} />
-                <Text style={[styles.regHeaderText, { color: colors.text }]}>Регистрация через ФНС</Text>
+                <Text style={[styles.regHeaderText, { color: colors.text }]}>Регистрация через налоговую службу</Text>
               </View>
               <Text style={[styles.regDesc, { color: colors.textSecondary }]}>
                 {partners.registrationText}
@@ -275,7 +275,7 @@ export default function PartnerScreen() {
                 {partners.verifying ? (
                   <>
                     <ActivityIndicator color="#FFFFFF" size="small" />
-                    <Text style={styles.regSubmitText}>Проверка в ФНС…</Text>
+                    <Text style={styles.regSubmitText}>Проверка в налоговой службе…</Text>
                   </>
                 ) : (
                   <>
@@ -325,7 +325,7 @@ export default function PartnerScreen() {
             </View>
             <Text style={[styles.regHeaderText, { color: colors.text, textAlign: "center" as const, marginTop: 12 }]}>Заявка отправлена</Text>
             <Text style={[styles.regDesc, { color: colors.textSecondary, textAlign: "center" as const, marginTop: 8 }]}>
-              Данные ФНС подтверждены, контактная информация принята. Администратор проверит ваш профиль и пришлёт письмо на {partners.profile.email}.
+              Данные налоговой службы подтверждены, контактная информация принята. Администратор проверит ваш профиль и пришлёт письмо на {partners.profile.email}.
             </Text>
             <TouchableOpacity onPress={() => partners.logout()} style={[styles.regSubmitBtn, { backgroundColor: colors.surfaceSecondary, marginTop: 16 }]}>
               <LogOut size={16} color={colors.text} />
@@ -380,7 +380,7 @@ export default function PartnerScreen() {
             <Text style={styles.dashHeaderTitle}>Кабинет партнёра</Text>
             <View style={styles.dashVerifiedRow}>
               <ShieldCheck size={11} color={colors.tealLight} />
-              <Text style={[styles.dashVerifiedText, { color: colors.tealLight }]}>Подтверждён ФНС</Text>
+              <Text style={[styles.dashVerifiedText, { color: colors.tealLight }]}>Подтверждён налоговой службой</Text>
             </View>
           </View>
           <TouchableOpacity onPress={() => partners.logout()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -430,7 +430,7 @@ export default function PartnerScreen() {
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <Wallet size={18} color={colors.teal} />
-              <Text style={[styles.kpiValue, { color: colors.text }]}>{periodTotal.toLocaleString()} ₽</Text>
+              <Text style={[styles.kpiValue, { color: colors.text }]}>{periodTotal.toLocaleString()} сум</Text>
               <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Оборот · {periodLabels[period].toLowerCase()}</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
@@ -505,7 +505,7 @@ export default function PartnerScreen() {
                   <FormInput colors={colors} placeholder="Название" value={fTitle} onChangeText={setFTitle} />
                   <FormInput colors={colors} placeholder="Описание" value={fDesc} onChangeText={setFDesc} multiline />
                   <FormInput colors={colors} placeholder="Город" value={fCity} onChangeText={setFCity} />
-                  <FormInput colors={colors} placeholder="Цена, ₽" value={fPrice} onChangeText={setFPrice} keyboardType="number-pad" />
+                  <FormInput colors={colors} placeholder="Цена, сум" value={fPrice} onChangeText={setFPrice} keyboardType="number-pad" />
                   <FormInput colors={colors} placeholder="Размер группы" value={fGroupSize} onChangeText={setFGroupSize} />
                   <FormInput colors={colors} placeholder="Место сбора" value={fMeeting} onChangeText={setFMeeting} />
 
@@ -610,7 +610,7 @@ export default function PartnerScreen() {
             <View style={styles.tabContent}>
               <View style={[styles.totalCard, { backgroundColor: colors.headerBg }]}>
                 <Text style={styles.totalLabel}>Оборот за {periodLabels[period].toLowerCase()}</Text>
-                <Text style={styles.totalValue}>{periodTotal.toLocaleString()} ₽</Text>
+                <Text style={styles.totalValue}>{periodTotal.toLocaleString()} сум</Text>
                 <Text style={styles.totalSub}>Завершённых платежей: {partners.transactions.filter((t) => t.status === "completed").length}</Text>
               </View>
               {filteredTransactions.map((tr) => {
@@ -703,7 +703,7 @@ export default function PartnerScreen() {
 
           {activeTab === "chat" ? (
             <View style={styles.tabContent}>
-              <Text style={[styles.chatHint, { color: colors.textMuted }]}>Чат доступен клиентам, купившим тур. Администратор YAVOY автоматически подключается третьей стороной при поступлении сообщений.</Text>
+              <Text style={[styles.chatHint, { color: colors.textMuted }]}>Чат доступен клиентам, купившим тур. Администратор YAVAY автоматически подключается третьей стороной при поступлении сообщений.</Text>
               {!chatTourId ? (
                 <View style={{ gap: 8 }}>
                   {partners.tours.map((t) => {
@@ -1122,8 +1122,8 @@ interface Country {
 }
 
 const COUNTRIES: Country[] = [
-  { code: "RU", dial: "+7", flag: "🇦🇦", name: "Россия" },
-  { code: "KZ", dial: "+7", flag: "🇦🇦", name: "Казахстан" },
+  { code: "UZ", dial: "+998", flag: "🇺🇿", name: "Узбекистан" },
+  { code: "KZ", dial: "+7", flag: "🇰🇿", name: "Казахстан" },
   { code: "BY", dial: "+375", flag: "🇦🇦", name: "Беларусь" },
   { code: "UA", dial: "+380", flag: "🇦🇦", name: "Украина" },
   { code: "UZ", dial: "+998", flag: "🇦🇦", name: "Узбекистан" },
@@ -1256,7 +1256,7 @@ function ContactsForm({ colors, legalName, onSubmit, onLogout }: ContactsFormPro
               <ShieldCheck size={36} color={colors.tealLight} />
             </View>
             <Text style={styles.heroTitle}>Шаг 2 · Контакты</Text>
-            <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>ФНС подтвердила {legalName}. Заполните контактные данные — после проверки администратором вы получите доступ к кабинету.</Text>
+            <Text style={[styles.heroSub, { color: "rgba(255,255,255,0.75)" }]}>Налоговая служба подтвердила {legalName}. Заполните контактные данные — после проверки администратором вы получите доступ к кабинету.</Text>
           </View>
 
           <View style={[styles.regCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>

@@ -271,14 +271,14 @@ private struct TourDetailPage: View {
     }
 
     private var shareText: String {
-        "🏷 \(tour.title)\n📍 \(MockData.cityName(tour.city))\n💰 \(tour.price.formatted()) \(tour.currency)\n\(tour.description)\n\nYAVOY Travel Group"
+        "🏷 \(tour.title)\n📍 \(MockData.cityName(tour.city))\n💰 \(tour.price.formatted()) \(tour.currency)\n\(tour.description)\n\nYAVAY Travel Group"
     }
 
     private var stickyBar: some View {
         HStack {
             VStack(alignment: .leading, spacing: 1) {
                 if tour.hasDiscount, let original = tour.originalPrice {
-                    Text("\(original.formatted())₽").font(.system(size: 13)).strikethrough().foregroundStyle(palette.textMuted)
+                    Text("\(original.formatted()) \(tour.currency)").font(.system(size: 13)).strikethrough().foregroundStyle(palette.textMuted)
                 }
                 Text("\(tour.price.formatted()) \(tour.currency)").font(.system(size: 20, weight: .heavy)).foregroundStyle(palette.text)
                 Text("за человека").font(.system(size: 11)).foregroundStyle(palette.textMuted)

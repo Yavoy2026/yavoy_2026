@@ -70,7 +70,7 @@ private struct PartnerRegistrationView: View {
                 Button(action: verify) {
                     HStack {
                         if partners.verifying { ProgressView().tint(.white) }
-                        Text(partners.verifying ? "Проверка в ФНС..." : "Проверить")
+                        Text(partners.verifying ? "Проверка..." : "Проверить")
                             .font(.system(size: 16, weight: .bold))
                     }
                     .foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -89,7 +89,7 @@ private struct PartnerRegistrationView: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: "briefcase.fill").font(.system(size: 32)).foregroundStyle(.white)
-            Text("Станьте партнёром YaVoy").font(.system(size: 22, weight: .heavy)).foregroundStyle(.white)
+            Text("Станьте партнёром YAVAY").font(.system(size: 22, weight: .heavy)).foregroundStyle(.white)
             Text("Размещайте свои экскурсии, принимайте бронирования и получайте выплаты раз в неделю.")
                 .font(.system(size: 14)).foregroundStyle(.white.opacity(0.85))
         }
@@ -159,9 +159,9 @@ private struct PartnerContactsView: View {
     @State private var email = ""
     @State private var phone = ""
     @State private var telegram = ""
-    @State private var countryCode = "+7"
+    @State private var countryCode = "+998"
 
-    private let codes = ["+7", "+375", "+1", "+44", "+49", "+90", "+86"]
+    private let codes = ["+998", "+7", "+375", "+1", "+44", "+49", "+90"]
 
     var body: some View {
         ScrollView {
@@ -212,7 +212,7 @@ private struct PartnerContactsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.seal.fill").foregroundStyle(palette.green)
-                Text("Проверено в ФНС").font(.system(size: 13, weight: .bold)).foregroundStyle(palette.green)
+                Text("Проверено").font(.system(size: 13, weight: .bold)).foregroundStyle(palette.green)
             }
             infoLine("Тип", p.entityType.label)
             infoLine("Наименование", p.legalName)
@@ -261,7 +261,7 @@ private struct PartnerStatusView: View {
                 .font(.system(size: 22, weight: .bold)).foregroundStyle(palette.text)
             Text(rejected
                  ? "К сожалению, ваша заявка отклонена администратором. Свяжитесь с поддержкой."
-                 : "Данные проверены в ФНС. Администратор подтвердит ваш аккаунт в ближайшее время.")
+                 : "Данные проверены налоговой службой. Администратор подтвердит ваш аккаунт в ближайшее время.")
                 .font(.system(size: 14)).foregroundStyle(palette.textSecondary).multilineTextAlignment(.center)
             Button("Выйти") { partners.logout() }
                 .font(.system(size: 15, weight: .semibold)).foregroundStyle(palette.teal)

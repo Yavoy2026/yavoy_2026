@@ -17,8 +17,8 @@ import { getPhotoUrl } from "@/services/api";
 type Section = "favorites" | "transactions" | "reviews" | "reels" | "promos" | null;
 
 const userReviews = [
-  { id: "ur1", tourTitle: "Обзорная экскурсия по Москве", tourImage: tours[0].image, rating: 5, text: "Потрясающая экскурсия! Гид был очень увлечённым.", date: "2026-03-20" },
-  { id: "ur2", tourTitle: "Белые ночи Петербурга", tourImage: tours[2].image, rating: 5, text: "Волшебная атмосфера белых ночей!", date: "2026-02-18" },
+  { id: "ur1", tourTitle: "Обзорная экскурсия по Ташкенту", tourImage: tours[0].image, rating: 5, text: "Потрясающая экскурсия! Гид был очень увлечённым.", date: "2026-03-20" },
+  { id: "ur2", tourTitle: "Самарканд: Регистан, Гур-Эмир и Биби-Ханум", tourImage: tours[2].image, rating: 5, text: "Волшебная атмосфера белых ночей!", date: "2026-02-18" },
 ];
 
 export default function Profile() {
@@ -115,7 +115,7 @@ export default function Profile() {
               </div>
             );
           })}
-          <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">Всего потрачено: {totalSpent.toLocaleString("ru-RU")}₽</div>
+          <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">Всего потрачено: {totalSpent.toLocaleString("ru-RU")} сум</div>
         </Row>
 
         <Row icon={Heart} iconBg="bg-coral/10" iconColor="text-coral" title="Избранные туры" count={`${favTours.length} экскурсий`} open={open === "favorites"} onClick={() => toggle("favorites")}>
@@ -149,7 +149,7 @@ export default function Profile() {
         <Row icon={Share2} iconBg="bg-mint/15" iconColor="text-mint" title="Промокоды" count="2000 баллов за друга" open={open === "promos"} onClick={() => toggle("promos")}>
           <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Award size={16} /> Пригласите друга — получите 2000 баллов за каждый активированный промокод!</div>
           <div className="flex items-center justify-between rounded-2xl bg-background p-3">
-            <span className="rounded-lg bg-navy px-3 py-1.5 font-mono text-sm font-bold text-white">YAVOY-2026</span>
+            <span className="rounded-lg bg-navy px-3 py-1.5 font-mono text-sm font-bold text-white">YAVAY-2026</span>
             <span className="text-xs text-muted-foreground">Активаций: 3</span>
           </div>
         </Row>

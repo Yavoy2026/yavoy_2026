@@ -63,7 +63,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `${tour.title} — от ${tour.price.toLocaleString()}${tour.currency}\n\nОрганизатор: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYaVoy Travel Group`,
+        message: `${tour.title} — от ${tour.price.toLocaleString()}${tour.currency}\n\nОрганизатор: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYAVAY Travel Group`,
       });
     } catch (e) {
       console.log("Share error:", e);
@@ -190,7 +190,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
             <View style={styles.priceContainer}>
               <Text style={[styles.priceLabel, { color: colors.textMuted }]}>от</Text>
               {hasDiscount ? (
-                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{`${tour.originalPrice!.toLocaleString()}₽`}</Text>
+                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{`${tour.originalPrice!.toLocaleString()} ${tour.currency}`}</Text>
               ) : null}
               <Text style={[styles.price, { color: colors.teal }]}>{`${tour.price.toLocaleString()}${tour.currency}`}</Text>
             </View>

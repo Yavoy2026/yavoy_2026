@@ -310,7 +310,7 @@ export default function AdminScreen() {
                 <View style={styles.partnerBody}>
                   <Text style={[styles.partnerTitle, { color: colors.text }]} numberOfLines={2}>{t.title}</Text>
                   <Text style={[styles.partnerMeta, { color: colors.textMuted }]}>{`${t.partner} · ${t.city}`}</Text>
-                  <Text style={[styles.partnerMeta, { color: colors.textMuted }]}>{`Цена: ${t.price.toLocaleString()} ₽`}</Text>
+                  <Text style={[styles.partnerMeta, { color: colors.textMuted }]}>{`Цена: ${t.price.toLocaleString()} сум`}</Text>
                   <View style={[styles.partnerStatusPill, {
                     backgroundColor: t.status === "published" ? colors.greenLight : t.status === "rejected" ? "rgba(231,76,60,0.12)" : colors.orangeLight,
                   }]}>
@@ -395,7 +395,7 @@ export default function AdminScreen() {
         {tab === "partnerApprovals" ? (
           <View>
             <Text style={[styles.h1, { color: colors.text }]}>{"Анкеты партнёров на проверке"}</Text>
-            <Text style={[styles.helper, { color: colors.textMuted }]}>{"Проверьте данные ФНС и контакты, затем подтвердите или отклоните регистрацию"}</Text>
+            <Text style={[styles.helper, { color: colors.textMuted }]}>{"Проверьте данные налоговой службы и контакты, затем подтвердите или отклоните регистрацию"}</Text>
             {partners.pendingPartners.length === 0 ? (
               <Text style={[styles.empty, { color: colors.textMuted }]}>{"Нет анкет на проверке"}</Text>
             ) : (
@@ -418,7 +418,7 @@ export default function AdminScreen() {
                     {pp.ogrn ? <ApprovalField colors={colors} label="ОГРН" value={pp.ogrn} /> : null}
                     {pp.ceo ? <ApprovalField colors={colors} label="Руководитель" value={pp.ceo} /> : null}
                     <ApprovalField colors={colors} label="Адрес" value={pp.address} />
-                    <ApprovalField colors={colors} label="Дата в ФНС" value={pp.taxRegistrationDate ?? "—"} />
+                    <ApprovalField colors={colors} label="Дата регистрации в налоговой" value={pp.taxRegistrationDate ?? "—"} />
                     <ApprovalField colors={colors} label="Email" value={pp.email ?? "—"} />
                     <ApprovalField colors={colors} label="Телефон" value={pp.phone ?? "—"} />
                     <ApprovalField colors={colors} label="Telegram" value={pp.telegram ? `@${pp.telegram}` : "—"} />
