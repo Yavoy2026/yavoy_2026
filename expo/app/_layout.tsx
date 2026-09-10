@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { FavoritesProvider } from "@/providers/FavoritesProvider";
 import { FavoriteCitiesProvider } from "@/providers/FavoriteCitiesProvider";
 import { ThemeProvider, useTheme } from "@/providers/ThemeProvider";
+import { CurrencyProvider } from "@/providers/CurrencyProvider";
 import { LocationProvider } from "@/providers/LocationProvider";
 import { ViewedToursProvider } from "@/providers/ViewedToursProvider";
 import { ScrollToTopProvider } from "@/providers/ScrollToTopProvider";
@@ -75,6 +76,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
+          <CurrencyProvider>
           <AuthProvider>
             <FavoritesProvider>
               <FavoriteCitiesProvider>
@@ -105,6 +107,7 @@ export default function RootLayout() {
               </FavoriteCitiesProvider>
             </FavoritesProvider>
           </AuthProvider>
+        </CurrencyProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>

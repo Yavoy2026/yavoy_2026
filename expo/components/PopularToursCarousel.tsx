@@ -11,6 +11,7 @@ import {
 import { Image } from "expo-image";
 import { Star, Flame, Clock } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useCurrency } from "@/providers/CurrencyProvider";
 import { Tour } from "@/types/tour";
 
 const CARD_WIDTH = Dimensions.get("window").width * 0.65;
@@ -29,6 +30,7 @@ const PopularTourItem = React.memo(function PopularTourItem({
   onPress: () => void;
 }) {
   const { colors } = useTheme();
+  const { formatPrice } = useCurrency();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
@@ -78,9 +80,9 @@ const PopularTourItem = React.memo(function PopularTourItem({
           </View>
           <View style={styles.priceRow}>
             {tour.originalPrice ? (
-              <Text style={styles.originalPrice}>{`${tour.originalPrice.toLocaleString()}\u20BD`}</Text>
+              <Text style={styles.originalPrice}>{formatPrice(tour.originalPrice)}</Text>
             ) : null}
-            <Text style={[styles.price, { color: colors.tealLight }]}>{`от ${tour.price.toLocaleString()}\u20BD`}</Text>
+            <Text style={[styles.price, { color: colors.tealLight }]}>{`от ${formatPrice(tour.price)}`}</Text>
           </View>
         </View>
       </TouchableOpacity>

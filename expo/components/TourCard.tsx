@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Share,
   Platform,
 } from "react-native";
 import { Image } from "expo-image";
@@ -16,6 +15,8 @@ import StarRating from "@/components/StarRating";
 import { Tour } from "@/types/tour";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useViewedTours } from "@/providers/ViewedToursProvider";
+import { useCurrency } from "@/providers/CurrencyProvider";
+import { shareTourViaTelegram, buildTourShareMessage } from "@/services/share";
 import { cityNameMap } from "@/mocks/cities";
 
 const transportLabels: Record<string, string> = {
@@ -36,6 +37,7 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
   const { colors } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isViewed } = useViewedTours();
+  const { formatPrice } = useCurrency();
   const viewed = isViewed(tour.id);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
@@ -61,14 +63,9 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
   }, [heartScale, toggleFavorite, tour.id]);
 
   const handleShare = useCallback(async () => {
-    try {
-      await Share.share({
-        message: `${tour.title} — от ${tour.price.toLocaleString()}${tour.currency}\n\nОрганизатор: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYAVAY Travel Group`,
-      });
-    } catch (e) {
-      console.log("Share error:", e);
-    }
-  }, [tour]);
+    const message = buildTourShareMessage(tour, cityNameMap[tour.city] || tour.city, formatPrice(tour.price));
+    await shareTourViaTelegram(tour, message);
+  }, [tour, formatPrice]);
 
   const hasDiscount = tour.originalPrice && tour.originalPrice > tour.price;
   const discountPercent = hasDiscount
@@ -190,9 +187,9 @@ export default React.memo(function TourCard({ tour, onPress, compact = false }: 
             <View style={styles.priceContainer}>
               <Text style={[styles.priceLabel, { color: colors.textMuted }]}>от</Text>
               {hasDiscount ? (
-                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{`${tour.originalPrice!.toLocaleString()} ${tour.currency}`}</Text>
+                <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{formatPrice(tour.originalPrice!)}</Text>
               ) : null}
-              <Text style={[styles.price, { color: colors.teal }]}>{`${tour.price.toLocaleString()}${tour.currency}`}</Text>
+              <Text style={[styles.price, { color: colors.teal }]}>{formatPrice(tour.price)}</Text>
             </View>
           </View>
         </View>

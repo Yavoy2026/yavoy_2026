@@ -11,6 +11,8 @@ import { categoryTours } from "@/mocks/categoryTours";
 import { cities } from "@/mocks/cities";
 import { DurationType, TransportType, InterestType, SortType, CategoryType, SeasonType } from "@/types/tour";
 import CitySelector from "@/components/CitySelector";
+import CityFilterChips from "@/components/CityFilterChips";
+import CurrencyToggle from "@/components/CurrencyToggle";
 import FilterDropdown from "@/components/FilterDropdown";
 import SearchBar from "@/components/SearchBar";
 import PopularToursCarousel from "@/components/PopularToursCarousel";
@@ -250,6 +252,8 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <CityFilterChips cities={cities} selectedCity={selectedCity} onSelectCity={setSelectedCity} />
+
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{"Куда поедем?"}</Text>
       </View>
@@ -280,6 +284,8 @@ export default function HomeScreen() {
         <View style={styles.sortRow}>
           <ArrowDownNarrowWide size={14} color={colors.textMuted} />
           <Text style={[styles.sortLabel, { color: colors.textMuted }]}>{"Сортировка:"}</Text>
+          <View style={styles.sortSpacer} />
+          <CurrencyToggle />
         </View>
         <View style={styles.sortChips}>
           {sortOptions.map((opt) => {
@@ -489,6 +495,9 @@ const styles = StyleSheet.create({
     alignItems: "center" as const,
     gap: 6,
     marginBottom: 8,
+  },
+  sortSpacer: {
+    flex: 1,
   },
   sortLabel: {
     fontSize: 13,

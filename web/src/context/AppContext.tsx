@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { initialReels } from "@/data/reels";
+import { formatPriceWith, type Currency } from "@/lib/currency";
 import type { TravelReel } from "@/types";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -20,6 +21,10 @@ interface AppContextValue {
   moderationReels: TravelReel[];
   submitReel: (input: { title: string; tourTitle: string; city: string }) => number;
   toggleReelLike: (id: string) => void;
+  currency: Currency;
+  setCurrency: (c: Currency) => void;
+  toggleCurrency: () => void;
+  formatPrice: (amountUzs: number) => string;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -28,6 +33,7 @@ const FAV_KEY = "yavoy_favorites";
 const FAV_CITY_KEY = "yavoy_favorite_cities";
 const POINTS_KEY = "yavoy_points";
 const THEME_KEY = "yavoy_theme";
+const CURRENCY_KEY = "yavoy_currency";
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -45,6 +51,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => load<ThemeMode>(THEME_KEY, "dark"));
   const [systemDark, setSystemDark] = useState<boolean>(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
   const [reels, setReels] = useState<TravelReel[]>(initialReels);
+  const [currency, setCurrencyState] = useState<Currency>(() => load<Currency>(CURRENCY_KEY, "UZS"));
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -63,6 +70,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { localStorage.setItem(FAV_CITY_KEY, JSON.stringify(favoriteCities)); }, [favoriteCities]);
   useEffect(() => { localStorage.setItem(POINTS_KEY, JSON.stringify(points)); }, [points]);
   useEffect(() => { localStorage.setItem(THEME_KEY, JSON.stringify(themeMode)); }, [themeMode]);
+  useEffect(() => { localStorage.setItem(CURRENCY_KEY, JSON.stringify(currency)); }, [currency]);
 
   const toggleFavorite = useCallback((id: string) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -112,6 +120,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const setCurrency = useCallback((c: Currency) => setCurrencyState(c), []);
+
+  const toggleCurrency = useCallback(() => {
+    setCurrencyState((c) => (c === "UZS" ? "USD" : "UZS"));
+  }, []);
+
+  const formatPrice = useCallback((amountUzs: number) => formatPriceWith(amountUzs, currency), [currency]);
+
   const publishedReels = useMemo(() => reels.filter((r) => r.status === "published"), [reels]);
   const moderationReels = useMemo(() => reels.filter((r) => r.status === "moderation"), [reels]);
 
@@ -122,8 +138,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       points, addPoints,
       themeMode, setThemeMode, isDark,
       reels, publishedReels, moderationReels, submitReel, toggleReelLike,
+      currency, setCurrency, toggleCurrency, formatPrice,
     }),
-    [favorites, toggleFavorite, isFavorite, favoriteCities, toggleFavoriteCity, points, addPoints, themeMode, setThemeMode, isDark, reels, publishedReels, moderationReels, submitReel, toggleReelLike],
+    [favorites, toggleFavorite, isFavorite, favoriteCities, toggleFavoriteCity, points, addPoints, themeMode, setThemeMode, isDark, reels, publishedReels, moderationReels, submitReel, toggleReelLike, currency, setCurrency, toggleCurrency, formatPrice],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

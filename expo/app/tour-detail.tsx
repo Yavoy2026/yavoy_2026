@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  Share,
   Platform,
   FlatList,
   Animated,
@@ -63,6 +62,10 @@ import { useFavorites } from "@/providers/FavoritesProvider";
 import { useViewedTours } from "@/providers/ViewedToursProvider";
 import { useBookings } from "@/providers/BookingsProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
+import { useCurrency, formatPriceWith } from "@/providers/CurrencyProvider";
+import { shareTourViaTelegram, buildTourShareMessage } from "@/services/share";
+import CurrencyToggle from "@/components/CurrencyToggle";
+import TourRouteMap from "@/components/TourRouteMap";
 import { Tour, TourReview, BookedTour } from "@/types/tour";
 
 const allTours = [...tours, ...categoryTours];
@@ -222,6 +225,7 @@ function BookingAuthModal({
   onBookingComplete: (booking: BookedTour) => void;
 }) {
   const { colors } = useTheme();
+  const { formatPrice } = useCurrency();
   const [authMode, setAuthMode] = useState<"phone" | "email">("phone");
   const [phoneValue, setPhoneValue] = useState<string>("");
   const [emailValue, setEmailValue] = useState<string>("");
@@ -354,6 +358,16 @@ function BookingAuthModal({
                 />
               </View>
 
+              <View style={[detailStyles.bookingTotalRow, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}>
+                <Text style={[detailStyles.bookingTotalLabel, { color: colors.textSecondary }]}>"Итого за 1 гостя"</Text>
+                <Text style={[detailStyles.bookingTotalValue, { color: colors.teal }]}>{tour ? formatPrice(tour.price) : ""}</Text>
+              </View>
+
+              <View style={detailStyles.currencyRow}>
+                <Text style={[detailStyles.currencyLabel, { color: colors.textMuted }]}>"Валюта:"</Text>
+                <CurrencyToggle compact />
+              </View>
+
               <TouchableOpacity
                 style={[detailStyles.bookingSubmitBtn, { backgroundColor: colors.teal }]}
                 onPress={handleBook}
@@ -376,6 +390,7 @@ function BookingAuthModal({
 
 function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void }) {
   const { colors } = useTheme();
+  const { formatPrice } = useCurrency();
   return (
     <TouchableOpacity
       style={[detailStyles.similarCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}
@@ -389,7 +404,7 @@ function SimilarTourCard({ tour, onPress }: { tour: Tour; onPress: () => void })
           <MapPin size={11} color={colors.teal} />
           <Text style={[detailStyles.similarCity, { color: colors.textMuted }]}>{cityNameMap[tour.city] || tour.city}</Text>
         </View>
-        <Text style={[detailStyles.similarPrice, { color: colors.teal }]}>{`${tour.price.toLocaleString()} ${tour.currency}`}</Text>
+        <Text style={[detailStyles.similarPrice, { color: colors.teal }]}>{formatPrice(tour.price)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -428,6 +443,7 @@ export default function TourDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { formatPrice } = useCurrency();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { markViewed } = useViewedTours();
   const [mapModalVisible, setMapModalVisible] = useState<boolean>(false);
@@ -469,40 +485,9 @@ export default function TourDetailScreen() {
   }, [toggleFavorite]);
 
   const handleShare = useCallback(async (tour: Tour) => {
-    try {
-      const lines: string[] = [
-        `🏷 ${tour.title}`,
-        `📍 ${cityNameMap[tour.city] || tour.city}`,
-        `💰 ${tour.price.toLocaleString()} ${tour.currency} за человека`,
-        tour.originalPrice ? `🔥 Скидка! Было ${tour.originalPrice.toLocaleString()} ${tour.currency}` : "",
-        `⏱ ${tour.durationText}`,
-        tour.startTime ? `🕐 Начало: ${tour.startTime}` : "",
-        `👥 ${tour.groupSize}`,
-        `🗣 ${tour.languages.join(", ")}`,
-        `📅 ${tour.schedule}`,
-        "",
-        tour.description,
-        "",
-        tour.highlights.length > 0 ? `✨ ${tour.highlights.join(", ")}` : "",
-        "",
-        `✅ Включено: ${tour.includes.join(", ")}`,
-        `❌ Не включено: ${tour.excludes.join(", ")}`,
-        "",
-        tour.meetingPoint ? `📌 Место встречи: ${tour.meetingPoint}` : "",
-        tour.whatToBring && tour.whatToBring.length > 0 ? `🎒 Что взять: ${tour.whatToBring.join(", ")}` : "",
-        tour.bookingConditions ? `📋 Условия: ${tour.bookingConditions}` : "",
-        tour.prepayment ? `💳 Предоплата: ${tour.prepayment}` : "",
-        tour.cancellationPolicy ? `🔄 Отмена: ${tour.cancellationPolicy}` : "",
-        "",
-        `👤 Организатор: ${tour.organizer.name} (${tour.organizer.rating}⭐, ${tour.organizer.reviewCount} отзывов)`,
-        "",
-        "YAVAY Travel Group",
-      ];
-      const message = lines.filter(Boolean).join("\n");
-      await Share.share({ message });
-    } catch (e) {
-      console.log("Share error:", e);
-    }
+    const priceText = formatPriceWith(tour.price, "UZS");
+    const message = buildTourShareMessage(tour, cityNameMap[tour.city] || tour.city, priceText);
+    await shareTourViaTelegram(tour, message);
   }, []);
 
   const handleMeetingPointPress = useCallback((meetingPoint: string, coords?: { lat: number; lng: number }) => {
@@ -706,6 +691,14 @@ export default function TourDetailScreen() {
               ) : null}
             </View>
 
+            <View style={[detailStyles.mapSection, { backgroundColor: colors.tealSoft + "55", borderColor: colors.teal + "25" }]}>
+              <View style={detailStyles.mapSectionHeader}>
+                <Navigation size={16} color={colors.teal} />
+                <Text style={[detailStyles.mapSectionTitle, { color: colors.text }]}>"Маршрут и точки интереса"</Text>
+              </View>
+              <TourRouteMap cityId={tour.city} highlight={tour.meetingPointCoords ?? null} />
+            </View>
+
             {(tour.bookingConditions || tour.prepayment || tour.cancellationPolicy || tour.groupJoiningConditions) ? (
               <View style={detailStyles.policiesSection}>
                 <Text style={[detailStyles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>{"Условия и политика"}</Text>
@@ -819,9 +812,9 @@ export default function TourDetailScreen() {
         <View style={[detailStyles.stickyBar, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.surface, borderTopColor: colors.border, shadowColor: colors.cardShadow }]}>
           <View style={detailStyles.stickyPriceSection}>
             {hasDiscount ? (
-              <Text style={[detailStyles.stickyOriginalPrice, { color: colors.textMuted }]}>{`${tour.originalPrice!.toLocaleString()}\u20BD`}</Text>
+              <Text style={[detailStyles.stickyOriginalPrice, { color: colors.textMuted }]}>{formatPrice(tour.originalPrice!)}</Text>
             ) : null}
-            <Text style={[detailStyles.stickyPrice, { color: colors.text }]}>{`${tour.price.toLocaleString()} ${tour.currency}`}</Text>
+            <Text style={[detailStyles.stickyPrice, { color: colors.text }]}>{formatPrice(tour.price)}</Text>
             <Text style={[detailStyles.stickyPriceNote, { color: colors.textMuted }]}>{"за человека"}</Text>
           </View>
           <TouchableOpacity
@@ -840,7 +833,7 @@ export default function TourDetailScreen() {
         </View>
       </View>
     );
-  }, [isFavorite, handleFavorite, handleShare, handleMeetingPointPress, handleBookPress, handleSimilarTourPress, insets.bottom, colors]);
+  }, [isFavorite, handleFavorite, handleShare, handleMeetingPointPress, handleBookPress, handleSimilarTourPress, insets.bottom, colors, formatPrice]);
 
   if (tourList.length === 0) {
     return (
@@ -1079,6 +1072,51 @@ const detailStyles = StyleSheet.create({
     borderWidth: 1, marginBottom: 12,
   },
   inputField: { flex: 1, fontSize: 15, padding: 0 },
+  mapSection: {
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  mapSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  mapSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+  },
+  bookingTotalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  bookingTotalLabel: {
+    fontSize: 13,
+    fontWeight: "500" as const,
+  },
+  bookingTotalValue: {
+    fontSize: 17,
+    fontWeight: "800" as const,
+  },
+  currencyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  currencyLabel: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+  },
   bookingSubmitBtn: {
     paddingVertical: 16, borderRadius: 14, alignItems: "center", marginTop: 8,
   },

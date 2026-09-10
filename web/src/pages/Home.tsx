@@ -4,6 +4,7 @@ import { Search, X, Play, ChevronRight, ShieldCheck, Headphones, Wallet, BadgeCh
 import { Layout } from "@/components/Layout";
 import { TourCard } from "@/components/TourCard";
 import { useApp } from "@/context/AppContext";
+import type { Currency } from "@/lib/currency";
 import { tours } from "@/data/tours";
 import { cities, cityNameMap } from "@/data/cities";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,9 @@ function Chip({ active, label, onClick }: { active: boolean; label: string; onCl
 
 export default function Home() {
   const navigate = useNavigate();
-  const { publishedReels, favoriteCities, toggleFavoriteCity } = useApp();
+  const { publishedReels, favoriteCities, toggleFavoriteCity, currency, setCurrency } = useApp();
+
+  const setCurrencySafe = (c: Currency) => setCurrency(c);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [duration, setDuration] = useState<DurationType | null>(null);
   const [transport, setTransport] = useState<TransportType | null>(null);
@@ -229,6 +232,21 @@ export default function Home() {
         </section>
       )}
 
+      {/* City quick filters */}
+      <section className="mb-6">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          <Chip active={selectedCity === null} label="Все" onClick={() => setSelectedCity(null)} />
+          {cities.map((city) => (
+            <Chip
+              key={city.id}
+              active={selectedCity === city.id}
+              label={`${city.emoji} ${city.name}`}
+              onClick={() => setSelectedCity(selectedCity === city.id ? null : city.id)}
+            />
+          ))}
+        </div>
+      </section>
+
       {/* Filters */}
       <section className="mb-6 space-y-3">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
@@ -270,6 +288,20 @@ export default function Home() {
                 )}
               >
                 {o.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center overflow-hidden rounded-lg border border-border">
+            {(["UZS", "USD"] as Currency[]).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCurrencySafe(c)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-bold transition-colors",
+                  currency === c ? "bg-teal text-white" : "bg-secondary text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {c === "UZS" ? "сум" : "$"}
               </button>
             ))}
           </div>

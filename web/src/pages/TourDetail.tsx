@@ -6,15 +6,18 @@ import {
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { StarRating } from "@/components/StarRating";
+import { TourMap } from "@/components/TourMap";
 import { useApp } from "@/context/AppContext";
 import { tours } from "@/data/tours";
 import { cityNameMap } from "@/data/cities";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { Currency } from "@/lib/currency";
 
 export default function TourDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isFavorite, toggleFavorite } = useApp();
+  const { isFavorite, toggleFavorite, currency, setCurrency, formatPrice } = useApp();
   const [imgIndex, setImgIndex] = useState(0);
   const [booking, setBooking] = useState(false);
   const [tickets, setTickets] = useState(1);
@@ -36,12 +39,14 @@ export default function TourDetail() {
   const fav = isFavorite(tour.id);
   const gallery = tour.gallery.length ? tour.gallery : [tour.image];
 
-  const share = async () => {
+  const share = () => {
     const url = window.location.href;
-    try {
-      if (navigator.share) await navigator.share({ title: tour.title, url });
-      else { await navigator.clipboard.writeText(url); toast.success("Ссылка скопирована"); }
-    } catch { /* cancelled */ }
+    const message = `${tour.title} — от ${formatPrice(tour.price)} · ${cityNameMap[tour.city]}, Узбекистан\n\nОрганизатор: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYAVAY Travel Group`;
+    window.open(
+      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   const goPrev = () => { if (index > 0) navigate(`/tour/${tours[index - 1].id}`); };
@@ -100,6 +105,12 @@ export default function TourDetail() {
 
           <h1 className="mb-4 text-3xl font-extrabold leading-tight">{tour.title}</h1>
           <p className="mb-6 leading-relaxed text-muted-foreground">{tour.description}</p>
+
+          {/* Route map */}
+          <Section title="Маршрут и точки интереса">
+            <TourMap cityId={tour.city} highlight={null} />
+            <p className="mt-2 text-xs text-muted-foreground">Карта интерактивная: приближайте, нажимайте на точки — названия достопримечательностей Узбекистана</p>
+          </Section>
 
           {/* Organizer */}
           <div className="mb-6 flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
@@ -179,10 +190,26 @@ export default function TourDetail() {
         {/* Right: sticky booking */}
         <div>
           <div className="sticky top-24 rounded-3xl bg-card p-6 shadow-lg ring-1 ring-border/60">
-            <div className="mb-4 flex items-end gap-2">
-              <span className="text-3xl font-extrabold text-teal">{tour.price.toLocaleString("ru-RU")}{tour.currency}</span>
-              {tour.originalPrice && <span className="mb-1 text-sm text-muted-foreground line-through">{tour.originalPrice.toLocaleString("ru-RU")}{tour.currency}</span>}
-              <span className="mb-1 text-xs text-muted-foreground">/ чел.</span>
+            <div className="mb-4 flex items-end justify-between gap-2">
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-extrabold text-teal">{formatPrice(tour.price)}</span>
+                {tour.originalPrice && <span className="mb-1 text-sm text-muted-foreground line-through">{formatPrice(tour.originalPrice)}</span>}
+                <span className="mb-1 text-xs text-muted-foreground">/ чел.</span>
+              </div>
+              <div className="flex items-center overflow-hidden rounded-lg border border-border">
+                {(["UZS", "USD"] as Currency[]).map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCurrency(c)}
+                    className={cn(
+                      "px-2.5 py-1 text-xs font-bold transition-colors",
+                      currency === c ? "bg-teal text-white" : "bg-secondary text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {c === "UZS" ? "сум" : "$"}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mb-4 space-y-2 text-sm">
@@ -207,13 +234,13 @@ export default function TourDetail() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Итого</span>
-                  <span className="text-xl font-extrabold text-teal">{(tour.price * tickets).toLocaleString("ru-RU")}{tour.currency}</span>
+                  <span className="text-xl font-extrabold text-teal">{formatPrice(tour.price * tickets)}</span>
                 </div>
                 <button
                   onClick={() => { setBooking(false); toast.success("Бронирование подтверждено! Ваучер в личном кабинете."); }}
                   className="w-full rounded-2xl bg-gold py-3.5 font-bold text-navy transition-transform hover:scale-[1.02]"
                 >
-                  Оплатить {(tour.price * tickets).toLocaleString("ru-RU")}{tour.currency}
+                  Оплатить {formatPrice(tour.price * tickets)}
                 </button>
               </div>
             )}

@@ -5,6 +5,9 @@ import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Относительные пути — чтобы сборку можно было выгрузить на любой внешний
+  // сервер (в корень или подкаталог) без перенастройки.
+  base: "./",
   server: {
     host: "::",
     port: 8080,

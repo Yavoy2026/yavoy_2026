@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Heart, MapPin, Clock, Zap, Flame } from "lucide-react";
+import { Heart, MapPin, Clock, Zap, Flame, Share2 } from "lucide-react";
 import { StarRating } from "./StarRating";
 import { useApp } from "@/context/AppContext";
 import { cityNameMap } from "@/data/cities";
@@ -13,8 +13,19 @@ interface TourCardProps {
 
 export function TourCard({ tour, compact = false }: TourCardProps) {
   const navigate = useNavigate();
-  const { isFavorite, toggleFavorite } = useApp();
+  const { isFavorite, toggleFavorite, formatPrice } = useApp();
   const fav = isFavorite(tour.id);
+
+  const shareToTelegram = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = window.location.href;
+    const message = `${tour.title} — от ${formatPrice(tour.price)} · ${cityNameMap[tour.city] ?? tour.city}, Узбекистан\n\nОрганизатор: ${tour.organizer.name} (${tour.organizer.rating}⭐)\n\nYAVAY Travel Group`;
+    window.open(
+      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
 
   return (
     <button
@@ -54,6 +65,18 @@ export function TourCard({ tour, compact = false }: TourCardProps) {
           <Heart size={18} className={fav ? "text-coral" : "text-navy/60 dark:text-white/70"} fill={fav ? "#FF6B6B" : "transparent"} />
         </span>
 
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={shareToTelegram}
+          onKeyDown={(e) => { if (e.key === "Enter") shareToTelegram(e as unknown as React.MouseEvent); }}
+          aria-label="Поделиться в Telegram"
+          title="Поделиться в Telegram"
+          className="absolute right-14 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform hover:scale-110 dark:bg-navy/80"
+        >
+          <Share2 size={16} className="text-navy/60 dark:text-white/70" />
+        </span>
+
         {tour.originalPrice && (
           <span className="absolute bottom-3 right-3 rounded-lg bg-coral px-2 py-1 text-[11px] font-bold text-white shadow">
             -{Math.round((1 - tour.price / tour.originalPrice) * 100)}%
@@ -86,10 +109,10 @@ export function TourCard({ tour, compact = false }: TourCardProps) {
         <div className="flex items-end justify-between">
           <div>
             <span className="text-xs text-muted-foreground">от </span>
-            <span className="text-lg font-extrabold text-teal">{tour.price.toLocaleString("ru-RU")}{tour.currency}</span>
+            <span className="text-lg font-extrabold text-teal">{formatPrice(tour.price)}</span>
             {tour.originalPrice && (
               <span className="ml-1.5 text-xs text-muted-foreground line-through">
-                {tour.originalPrice.toLocaleString("ru-RU")}{tour.currency}
+                {formatPrice(tour.originalPrice)}
               </span>
             )}
           </div>
