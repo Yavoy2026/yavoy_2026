@@ -10,12 +10,16 @@ import { useT } from "@/i18n/I18nProvider";
  * Пока файла нет, показываем подписанную плашку: страница не выглядит сломанной,
  * но и за настоящую марку её не примешь.
  */
+/**
+ * Файлы лежат в public/payment-systems/ (см. README там же). Расширение задаётся
+ * явно: Humo официально отдаёт марку картинкой, а не вектором.
+ */
 const SYSTEMS = [
-  { id: "visa", label: "Visa" },
-  { id: "mastercard", label: "Mastercard" },
-  { id: "unionpay", label: "UnionPay" },
-  { id: "uzcard", label: "Uzcard" },
-  { id: "humo", label: "Humo" },
+  { id: "visa", label: "Visa", file: "visa.svg" },
+  { id: "mastercard", label: "Mastercard", file: "mastercard.svg" },
+  { id: "unionpay", label: "UnionPay", file: "unionpay.svg" },
+  { id: "uzcard", label: "Uzcard", file: "uzcard.svg" },
+  { id: "humo", label: "Humo", file: "humo.png" },
 ] as const;
 
 export function PaymentSystems({ className = "" }: { className?: string }) {
@@ -40,7 +44,7 @@ export function PaymentSystems({ className = "" }: { className?: string }) {
               <span className="text-[11px] font-semibold text-navy/70">{system.label}</span>
             ) : (
               <img
-                src={`/payment-systems/${system.id}.svg`}
+                src={`/payment-systems/${system.file}`}
                 alt={system.label}
                 className="h-5 w-auto object-contain"
                 loading="lazy"
