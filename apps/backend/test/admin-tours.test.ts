@@ -255,3 +255,146 @@ describe("бэкофис: CRUD туров", () => {
     expect(res.json().items[0].id).toBe(tourId);
   });
 });
+
+/**
+ * Модерация правок (YAV-28). Главное, что здесь проверяется: опубликованный
+ * тур продолжает работать на витрине, пока его правка ждёт решения менеджера.
+ */
+describe("модерация правок тура", () => {
+  let partnerToken: string;
+  let tourId: string;
+
+  beforeAll(async () => {
+    // назначение партнёра — операция админа, менеджеру она закрыта
+    const adminToken = (await signupWithRole(t, "root@test.ru", "admin")).token;
+    const partnerUserId = (await signupWithRole(t, "org2@test.ru", "user", "Организатор")).id;
+    const assigned = await call({
+      method: "POST",
+      url: "/v1/admin/partners",
+      headers: authed(adminToken),
+      payload: { user_id: partnerUserId, org_name: "ООО Ревизии" },
+    });
+    expect(assigned.statusCode).toBe(200);
+    partnerToken = (await signupWithRole(t, "org2@test.ru", "partner")).token;
+
+    const created = await call({
+      method: "POST",
+      url: "/v1/admin/tours",
+      headers: authed(partnerToken),
+      payload: { ...tourPayload, title: "Тур под модерацию" },
+    });
+    expect(created.statusCode).toBe(200);
+    tourId = created.json().id;
+  });
+
+  const publishedTitle = async () => {
+    const res = await call({ method: "GET", url: `/v1/admin/tours/${tourId}`, headers: authed(managerToken) });
+    return res.json() as { title: string; status: string };
+  };
+
+  it("новый тур проходит путь черновик → модерация → публикация", async () => {
+    expect((await publishedTitle()).status).toBe("draft");
+
+    const submitted = await call({
+      method: "POST",
+      url: `/v1/admin/tours/${tourId}/submit`,
+      headers: authed(partnerToken),
+    });
+    expect(submitted.statusCode).toBe(200);
+    expect(submitted.json().status).toBe("pending");
+
+    const queue = await call({ method: "GET", url: "/v1/admin/revisions?status=pending", headers: authed(managerToken) });
+    const revisionId = queue.json().items[0].id;
+
+    const approved = await call({
+      method: "POST",
+      url: `/v1/admin/revisions/${revisionId}/approve`,
+      headers: authed(managerToken),
+    });
+    expect(approved.statusCode).toBe(200);
+    expect((await publishedTitle()).status).toBe("published");
+  });
+
+  it("правка опубликованного тура не снимает его с витрины", async () => {
+    const edit = await call({
+      method: "PATCH",
+      url: `/v1/admin/tours/${tourId}`,
+      headers: authed(partnerToken),
+      payload: { title: "Новое название, ещё не одобрено" },
+    });
+    expect(edit.statusCode).toBe(200);
+
+    // на витрине всё по-прежнему: и статус, и старое название
+    const live = await publishedTitle();
+    expect(live.status).toBe("published");
+    expect(live.title).toBe("Тур под модерацию");
+  });
+
+  it("после одобрения правка становится туром", async () => {
+    await call({ method: "POST", url: `/v1/admin/tours/${tourId}/submit`, headers: authed(partnerToken) });
+    const queue = await call({ method: "GET", url: "/v1/admin/revisions?status=pending", headers: authed(managerToken) });
+    const revisionId = queue.json().items[0].id;
+
+    await call({
+      method: "POST",
+      url: `/v1/admin/revisions/${revisionId}/approve`,
+      headers: authed(managerToken),
+    });
+    expect((await publishedTitle()).title).toBe("Новое название, ещё не одобрено");
+  });
+
+  it("отказ приходит с комментарием, тур остаётся опубликованным", async () => {
+    await call({
+      method: "PATCH",
+      url: `/v1/admin/tours/${tourId}`,
+      headers: authed(partnerToken),
+      payload: { title: "Спорное название" },
+    });
+    await call({ method: "POST", url: `/v1/admin/tours/${tourId}/submit`, headers: authed(partnerToken) });
+    const queue = await call({ method: "GET", url: "/v1/admin/revisions?status=pending", headers: authed(managerToken) });
+    const revisionId = queue.json().items[0].id;
+
+    const rejected = await call({
+      method: "POST",
+      url: `/v1/admin/revisions/${revisionId}/reject`,
+      headers: authed(managerToken),
+      payload: { comment: "Название вводит в заблуждение" },
+    });
+    expect(rejected.statusCode).toBe(200);
+    expect(rejected.json().comment).toBe("Название вводит в заблуждение");
+
+    const live = await publishedTitle();
+    expect(live.status).toBe("published");
+    expect(live.title).toBe("Новое название, ещё не одобрено"); // прошлая одобренная версия
+  });
+
+  it("вторая правка не уходит, пока первая на модерации", async () => {
+    await call({
+      method: "PATCH",
+      url: `/v1/admin/tours/${tourId}`,
+      headers: authed(partnerToken),
+      payload: { title: "Ещё вариант" },
+    });
+    await call({ method: "POST", url: `/v1/admin/tours/${tourId}/submit`, headers: authed(partnerToken) });
+
+    const again = await call({
+      method: "PATCH",
+      url: `/v1/admin/tours/${tourId}`,
+      headers: authed(partnerToken),
+      payload: { title: "И ещё один" },
+    });
+    expect(again.statusCode).toBe(409);
+    expect(again.json().error.code).toBe("revision_on_moderation");
+  });
+
+  it("менеджер правит опубликованный тур напрямую, без модерации", async () => {
+    const res = await call({
+      method: "PATCH",
+      url: `/v1/admin/tours/${tourId}`,
+      headers: authed(managerToken),
+      payload: { description: "Правка менеджера" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().description).toBe("Правка менеджера");
+  });
+});

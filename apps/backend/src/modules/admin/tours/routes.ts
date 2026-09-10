@@ -7,6 +7,11 @@ import {
   AdminTourSchema,
   CreateTourDatePayloadSchema,
   ErrorEnvelopeSchema,
+  RejectRevisionPayloadSchema,
+  RevisionStatusSchema,
+  TourRevisionDetailSchema,
+  TourRevisionListResponseSchema,
+  TourRevisionSchema,
   TourWritePayloadSchema,
   UpdateTourDatePayloadSchema,
   UpdateTourPayloadSchema,
@@ -14,9 +19,14 @@ import {
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { requirePartnerProfile } from "../partners/service.ts";
+import { getRevisionDetail, listRevisions } from "./revisions.ts";
 import {
   addTourDate,
+  approveRevision,
   createTour,
+  rejectRevision,
+  submitTourForModeration,
   deleteTourDate,
   getAdminTour,
   listAdminTours,
@@ -158,5 +168,91 @@ export async function adminToursRoutes(fastify: FastifyInstance) {
       await deleteTourDate(app.db, actor(req), req.params.id, req.params.dateId);
       return { ok: true as const };
     },
+  );
+
+  // ─── Модерация правок (YAV-28) ──────────────────────────────
+
+  /** Партнёр отправляет тур или накопленную правку на проверку */
+  app.post(
+    "/admin/tours/:id/submit",
+    {
+      ...staff,
+      schema: {
+        tags: ["admin"],
+        params: IdParams,
+        response: {
+          200: TourRevisionSchema,
+          400: ErrorEnvelopeSchema,
+          404: ErrorEnvelopeSchema,
+          409: ErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (req) => submitTourForModeration(app.db, actor(req), req.params.id),
+  );
+
+  /** Очередь модерации; партнёр видит только свои правки */
+  app.get(
+    "/admin/revisions",
+    {
+      ...staff,
+      schema: {
+        tags: ["admin"],
+        querystring: z.object({ status: RevisionStatusSchema.default("pending") }),
+        response: { 200: TourRevisionListResponseSchema, 403: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => {
+      const scope = req.user!.role === "partner"
+        ? (await requirePartnerProfile(app.db, req.user!.sub)).id
+        : undefined;
+      return { items: await listRevisions(app.db, req.query.status, scope) };
+    },
+  );
+
+  /** Содержимое правки: менеджер смотрит, что предлагают опубликовать */
+  app.get(
+    "/admin/revisions/:id",
+    {
+      ...staff,
+      schema: {
+        tags: ["admin"],
+        params: IdParams,
+        response: { 200: TourRevisionDetailSchema, 404: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => {
+      const scope = req.user!.role === "partner"
+        ? (await requirePartnerProfile(app.db, req.user!.sub)).id
+        : undefined;
+      return getRevisionDetail(app.db, req.params.id, scope);
+    },
+  );
+
+  app.post(
+    "/admin/revisions/:id/approve",
+    {
+      preHandler: [app.requireRole("manager", "admin")],
+      schema: {
+        tags: ["admin"],
+        params: IdParams,
+        response: { 200: AdminTourSchema, 400: ErrorEnvelopeSchema, 403: ErrorEnvelopeSchema, 404: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => approveRevision(app.db, actor(req), req.params.id),
+  );
+
+  app.post(
+    "/admin/revisions/:id/reject",
+    {
+      preHandler: [app.requireRole("manager", "admin")],
+      schema: {
+        tags: ["admin"],
+        params: IdParams,
+        body: RejectRevisionPayloadSchema,
+        response: { 200: TourRevisionSchema, 400: ErrorEnvelopeSchema, 403: ErrorEnvelopeSchema, 404: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => rejectRevision(app.db, actor(req), req.params.id, req.body.comment),
   );
 }

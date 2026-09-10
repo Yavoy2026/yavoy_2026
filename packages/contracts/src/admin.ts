@@ -119,6 +119,42 @@ export type TourWritePayload = z.infer<typeof TourWritePayloadSchema>;
 export const UpdateTourPayloadSchema = TourWritePayloadSchema.partial();
 export type UpdateTourPayload = z.infer<typeof UpdateTourPayloadSchema>;
 
+/**
+ * Правка тура на модерации (YAV-28). Опубликованный тур продолжает работать,
+ * пока правка не одобрена, поэтому её содержимое живёт отдельно от тура.
+ */
+export const RevisionStatusSchema = z.enum(["draft", "pending", "approved", "rejected"]);
+export type RevisionStatus = z.infer<typeof RevisionStatusSchema>;
+
+export const TourRevisionSchema = z.object({
+  id: z.string().uuid(),
+  tour_id: z.string().uuid(),
+  tour_title: z.string(),
+  /** Статус самого тура: показывает, правка это нового тура или уже опубликованного */
+  tour_status: TourStatusSchema,
+  organizer_name: z.string(),
+  status: RevisionStatusSchema,
+  /** Причина отказа — партнёр видит её и правит */
+  comment: z.string().nullable(),
+  created_at: z.string(),
+  reviewed_at: z.string().nullable(),
+});
+export type TourRevision = z.infer<typeof TourRevisionSchema>;
+
+/** Ревизия вместе с содержимым: менеджер смотрит, что именно предлагают опубликовать */
+export const TourRevisionDetailSchema = TourRevisionSchema.extend({
+  payload: TourWritePayloadSchema,
+});
+export type TourRevisionDetail = z.infer<typeof TourRevisionDetailSchema>;
+
+export const RejectRevisionPayloadSchema = z.object({
+  comment: z.string().min(1).max(2000),
+});
+export type RejectRevisionPayload = z.infer<typeof RejectRevisionPayloadSchema>;
+
+export const TourRevisionListResponseSchema = z.object({ items: z.array(TourRevisionSchema) });
+export type TourRevisionListResponse = z.infer<typeof TourRevisionListResponseSchema>;
+
 export const AdminSetTourStatusPayloadSchema = z.object({
   status: z.enum(["draft", "published"]),
 });

@@ -4,6 +4,7 @@ import type {
   AdminTourDate,
   AdminTourListQuery,
   CreateTourDatePayload,
+  TourRevision,
   TourWritePayload,
   UpdateTourDatePayload,
   UpdateTourPayload,
@@ -12,6 +13,13 @@ import type { UserRole } from "@yavoy/contracts";
 import type { Db } from "../../../db/client.ts";
 import type { tours } from "../../../db/schema.ts";
 import { env } from "../../../env.ts";
+import {
+  closeRevision,
+  getOpenRevision,
+  getRevisionDetail,
+  saveDraftRevision,
+  submitRevision,
+} from "./revisions.ts";
 import { badRequest, conflict, notFound } from "../../../errors.ts";
 import { countPartnerTours, getProfileRowById, type PartnerRow } from "../partners/repo.ts";
 import { organizerFromProfile, requirePartnerProfile } from "../partners/service.ts";
@@ -174,6 +182,45 @@ async function resolveOwnership(
   return { partnerId: null, organizer: payload.organizer };
 }
 
+/** Снимок тура в формате правки: с него начинается ревизия опубликованного тура */
+function toWritePayload(row: TourRow): TourWritePayload {
+  return {
+    city_id: row.cityId,
+    title: row.title,
+    description: row.description,
+    image_url: row.imageUrl,
+    gallery: row.gallery,
+    price_kopeks: row.priceKopeks,
+    original_price_kopeks: row.originalPriceKopeks,
+    duration_type: row.durationType,
+    duration_text: row.durationText,
+    transport: row.transport,
+    interest: row.interest,
+    category: row.category,
+    season: row.season,
+    highlights: row.highlights,
+    includes: row.includes,
+    excludes: row.excludes,
+    what_to_bring: row.whatToBring,
+    languages: row.languages,
+    schedule: row.schedule,
+    group_size: row.groupSize,
+    meeting_point: row.meetingPoint,
+    meeting_lat: row.meetingLat,
+    meeting_lng: row.meetingLng,
+    start_time: row.startTime,
+    booking_conditions: row.bookingConditions,
+    prepayment: row.prepayment,
+    cancellation_policy: row.cancellationPolicy,
+    group_joining_conditions: row.groupJoiningConditions,
+    is_instant_confirmation: row.isInstantConfirmation,
+    is_free_cancellation: row.isFreeCancellation,
+    is_bestseller: row.isBestseller,
+    is_likely_to_sell_out: row.isLikelyToSellOut,
+    popularity: row.popularity,
+  };
+}
+
 export async function createTour(db: Db, actor: Actor, payload: TourWritePayload): Promise<AdminTour> {
   const scope = await partnerScope(db, actor);
   if (!(await cityExists(db, payload.city_id))) {
@@ -200,12 +247,18 @@ export async function updateTour(db: Db, actor: Actor, id: string, payload: Upda
     throw badRequest("city_not_found", "Такого города нет в каталоге");
   }
 
+  // Опубликованный тур правится только через ревизию: сама строка остаётся
+  // на витрине, пока менеджер не одобрит правку (YAV-28). Расписание и места
+  // сюда не относятся — они меняются отдельными эндпоинтами и сразу.
+  if (scope && existing.tour.status === "published") {
+    await saveDraftRevision(db, id, actor.sub, { ...toWritePayload(existing.tour), ...payload });
+    return getAdminTour(db, actor, id);
+  }
+
   const patch = payloadToPatch(payload);
   if (scope) {
-    // партнёр не распоряжается владельцем и витринным organizer (синхронизируется из профиля),
-    // а правка тура снимает его с витрины до ре-публикации менеджером
+    // партнёр не распоряжается владельцем и витринным organizer (синхронизируется из профиля)
     delete patch.organizer;
-    patch.status = "draft";
   } else if (payload.partner_id !== undefined) {
     if (payload.partner_id) {
       const row = await getProfileRowById(db, payload.partner_id);
@@ -311,4 +364,53 @@ export async function deleteTourDate(db: Db, actor: Actor, tourId: string, dateI
   if (!deleted) {
     throw conflict("tour_date_has_bookings", "На дату есть брони — удалить нельзя");
   }
+}
+
+/**
+ * Отправка на модерацию. У неопубликованного тура на проверку уходит он сам —
+ * снимком, чтобы автор не правил его под модератором; у опубликованного —
+ * накопленный черновик правки.
+ */
+export async function submitTourForModeration(db: Db, actor: Actor, id: string): Promise<TourRevision> {
+  const scope = await partnerScope(db, actor);
+  const existing = await getAdminTourRow(db, id);
+  if (!existing) throw notFound("tour_not_found", "Тур не найден");
+  assertOwn(scope, existing);
+
+  if (existing.tour.status === "published") {
+    const open = await getOpenRevision(db, id);
+    if (!open) throw badRequest("nothing_to_moderate", "Нет изменений для отправки на модерацию");
+    return submitRevision(db, id, actor.sub, open.payload as TourWritePayload);
+  }
+  return submitRevision(db, id, actor.sub, toWritePayload(existing.tour));
+}
+
+/** Одобрение: содержимое правки становится туром, тур уходит на витрину */
+export async function approveRevision(db: Db, actor: Actor, revisionId: string): Promise<AdminTour> {
+  const revision = await closeRevision(db, revisionId, "approved", actor.sub);
+  const patch = payloadToPatch(revision.payload as UpdateTourPayload);
+  // published_at обновляем только при первом выходе на витрину, иначе
+  // сортировка «новые» будет поднимать давно опубликованный тур после правки
+  const existing = await getAdminTourRow(db, revision.tourId);
+  await updateTourRow(db, revision.tourId, {
+    ...patch,
+    status: "published",
+    ...(existing?.tour.status === "published" ? {} : { publishedAt: new Date() }),
+  });
+  return getAdminTour(db, actor, revision.tourId);
+}
+
+/**
+ * Отказ с комментарием. Опубликованный тур остаётся на витрине — партнёр
+ * правит отклонённую версию и отправляет заново.
+ */
+export async function rejectRevision(db: Db, actor: Actor, revisionId: string, comment: string): Promise<TourRevision> {
+  const revision = await closeRevision(db, revisionId, "rejected", actor.sub, comment);
+  const existing = await getAdminTourRow(db, revision.tourId);
+  if (existing && existing.tour.status !== "published") {
+    // неопубликованный тур возвращается автору в черновик
+    await updateTourRow(db, revision.tourId, { status: "draft" });
+  }
+  const detail = await getRevisionDetail(db, revisionId);
+  return detail;
 }

@@ -57,6 +57,8 @@ export const paymentStatusEnum = pgEnum("payment_status", [
 ]);
 export const favoriteEntityEnum = pgEnum("favorite_entity", ["tour", "city"]);
 export const reviewStatusEnum = pgEnum("review_status", ["pending", "published", "rejected"]);
+/** Жизненный цикл правки тура: draft → pending → approved | rejected (YAV-28) */
+export const revisionStatusEnum = pgEnum("revision_status", ["draft", "pending", "approved", "rejected"]);
 
 // ─── Каталог (M1) ────────────────────────────────────────────
 
@@ -138,6 +140,42 @@ export const tours = pgTable(
     index("tours_partner_idx").on(t.partnerId),
     index("tours_popularity_idx").on(t.popularity),
     index("tours_price_idx").on(t.priceKopeks),
+  ],
+);
+
+/**
+ * Правки тура, ждущие модерации (YAV-28).
+ *
+ * Опубликованный тур трогать нельзя, пока правку не одобрили, — иначе он
+ * пропадёт с витрины. Поэтому изменения живут здесь, а не в строке тура:
+ * payload — это то, чем тур станет после одобрения.
+ *
+ * Расписание и места сюда не попадают: закрыть дату или добавить мест —
+ * операционная задача, партнёр делает это сразу (решение владельца).
+ */
+export const tourRevisions = pgTable(
+  "tour_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tourId: uuid("tour_id").notNull().references(() => tours.id, { onDelete: "cascade" }),
+    status: revisionStatusEnum("status").notNull().default("draft"),
+    /** Содержимое тура целиком — снимок на момент отправки, чтобы автор не правил его под модератором */
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    /** Причина отказа; относится к попытке, а не к туру, поэтому живёт здесь */
+    comment: text("comment"),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("tour_revisions_tour_idx").on(t.tourId, t.createdAt),
+    index("tour_revisions_status_idx").on(t.status),
+    // незакрытая правка у тура может быть только одна: две параллельные
+    // гонялись бы за одну и ту же строку тура при одобрении
+    uniqueIndex("tour_revisions_open_idx")
+      .on(t.tourId)
+      .where(sql`${t.status} in ('draft', 'pending')`),
   ],
 );
 

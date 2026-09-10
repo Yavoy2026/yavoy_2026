@@ -160,7 +160,7 @@ describe("бэкофис: партнёры", () => {
     expect(publicView.json().organizer.name).toBe("ООО Тестовые туры");
   });
 
-  it("правка опубликованного тура партнёром снимает его с витрины (draft)", async () => {
+  it("правка опубликованного тура партнёром не снимает его с витрины (YAV-28)", async () => {
     const own = (await t.app.db.select().from(schema.tours).where(eq(schema.tours.title, "Партнёрский тур")))[0]!;
 
     const res = await call({
@@ -170,18 +170,13 @@ describe("бэкофис: партнёры", () => {
       payload: { title: "Партнёрский тур (обновлён)" },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().status).toBe("draft");
+    // правка ушла в ревизию: тур остался опубликованным со старым названием
+    expect(res.json().status).toBe("published");
+    expect(res.json().title).toBe("Партнёрский тур");
 
     const publicView = await call({ method: "GET", url: `/v1/tours/${own.id}` });
-    expect(publicView.statusCode).toBe(404);
-
-    // менеджер ре-публикует для следующего теста
-    await call({
-      method: "PATCH",
-      url: `/v1/admin/tours/${own.id}/status`,
-      headers: authed(managerToken),
-      payload: { status: "published" },
-    });
+    expect(publicView.statusCode).toBe(200);
+    expect(publicView.json().title).toBe("Партнёрский тур");
   });
 
   it("verified от менеджера синхронизируется в organizer публичного тура", async () => {
