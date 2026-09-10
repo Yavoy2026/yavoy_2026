@@ -7,11 +7,13 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useI18n } from "@/providers/I18nProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 
-const isDocId = (v: unknown): v is LegalDocId => v === "offer" || v === "privacy";
+const isDocId = (v: unknown): v is LegalDocId =>
+  v === "offer" || v === "partner_offer" || v === "privacy";
 
 /**
- * Публичная оферта и политика конфиденциальности (YAV-21, требование банка п.8).
- * Текст берётся из общего пакета @yavoy/legal — тот же, что на вебе.
+ * Юридические документы: покупательская оферта, оферта для организаторов
+ * и политика конфиденциальности. Текст берётся из общего пакета @yavoy/legal —
+ * тот же, что на вебе, чтобы редакции не разъезжались между платформами.
  */
 export default function LegalScreen() {
   const { colors } = useTheme();

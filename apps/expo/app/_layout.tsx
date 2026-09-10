@@ -16,7 +16,6 @@ import { CertificatesProvider } from "@/providers/CertificatesProvider";
 import { PromoCodesProvider } from "@/providers/PromoCodesProvider";
 import { ReelsProvider } from "@/providers/ReelsProvider";
 import { SupportProvider } from "@/providers/SupportProvider";
-import { PartnersProvider } from "@/providers/PartnersProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { I18nProvider, useI18n, useT } from "@/providers/I18nProvider";
 
@@ -98,12 +97,10 @@ export default function RootLayout() {
                           <PromoCodesProvider>
                             <ReelsProvider>
                               <SupportProvider>
-                                <PartnersProvider>
-                                  <ScrollToTopProvider>
-                                    <ThemedStatusBar />
-                                    <RootLayoutNav />
-                                  </ScrollToTopProvider>
-                                </PartnersProvider>
+                                <ScrollToTopProvider>
+                                  <ThemedStatusBar />
+                                  <RootLayoutNav />
+                                </ScrollToTopProvider>
                               </SupportProvider>
                             </ReelsProvider>
                           </PromoCodesProvider>
