@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Pencil, Plus, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,7 +9,7 @@ import { TourEditor } from "@/components/backoffice/TourEditor";
 import { useAuth } from "@/context/AuthContext";
 import { translateError } from "@/i18n/errors";
 import { useI18n } from "@/i18n/I18nProvider";
-import { fetchAdminTours, setTourStatus, type AdminTour } from "@/services/admin";
+import { fetchAdminTours, fetchRevisions, setTourStatus, submitTourForModeration, type AdminTour } from "@/services/admin";
 import { useCatalog } from "@/services/catalog";
 
 export default function AdminTours() {
@@ -22,7 +22,30 @@ export default function AdminTours() {
   const isStaff = role === "admin" || role === "manager";
 
   const tours = useQuery({ queryKey: ["admin-tours"], queryFn: () => fetchAdminTours() });
+  // свои правки: по ним партнёр видит, что уже на модерации и что отклонили
+  const pending = useQuery({
+    queryKey: ["my-revisions", "pending"],
+    queryFn: () => fetchRevisions("pending"),
+    enabled: isPartner,
+  });
+  const rejected = useQuery({
+    queryKey: ["my-revisions", "rejected"],
+    queryFn: () => fetchRevisions("rejected"),
+    enabled: isPartner,
+  });
+  const onModeration = new Set((pending.data ?? []).map((r) => r.tour_id));
+  const lastRejection = new Map((rejected.data ?? []).map((r) => [r.tour_id, r.comment]));
   const [editor, setEditor] = useState<{ open: boolean; tour: AdminTour | null }>({ open: false, tour: null });
+
+  const submit = useMutation({
+    mutationFn: (id: string) => submitTourForModeration(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["my-revisions"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-tours"] });
+      toast.success(t("backoffice.tourSubmitted"));
+    },
+    onError: (e: unknown) => toast.error(translateError(e, t)),
+  });
 
   const statusAction = useMutation({
     mutationFn: (vars: { id: string; status: "draft" | "published" }) => setTourStatus(vars.id, vars.status),
@@ -75,6 +98,11 @@ export default function AdminTours() {
                     <Thumb src={tour.image_url} />
                     <span className="font-medium">{tour.title}</span>
                   </div>
+                  {isPartner && !onModeration.has(tour.id) && lastRejection.get(tour.id) && (
+                    <div className="mt-1 text-xs text-coral">
+                      {t("backoffice.rejectReason")}: {lastRejection.get(tour.id)}
+                    </div>
+                  )}
                 </Td>
                 <Td>
                   <Badge tone={tour.status === "published" ? "ok" : "warn"}>
@@ -93,6 +121,15 @@ export default function AdminTours() {
                     <Btn variant="quiet" onClick={() => setEditor({ open: true, tour })} title={t("common.edit")}>
                       <Pencil size={14} />
                     </Btn>
+                    {isPartner && (
+                      onModeration.has(tour.id) ? (
+                        <Badge tone="warn">{t("enums.tourStatus.pending")}</Badge>
+                      ) : (
+                        <Btn variant="primary" onClick={() => submit.mutate(tour.id)} disabled={submit.isPending}>
+                          <Send size={13} /> {t("backoffice.submitForModeration")}
+                        </Btn>
+                      )
+                    )}
                     {isStaff && (
                       <Btn
                         variant={tour.status === "published" ? "default" : "primary"}

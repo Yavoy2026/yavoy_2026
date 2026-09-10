@@ -295,3 +295,76 @@ export async function updateMyPartnerProfile(payload: {
   const res = await authFetch("/admin/partners/me", { method: "PATCH", body: JSON.stringify(payload) });
   return ensureOk<PartnerProfile>(res, "orgProfileSaveFailed");
 }
+
+// ─── Модерация правок туров (YAV-28) ─────────────────────────
+
+export interface TourRevision {
+  id: string;
+  tour_id: string;
+  tour_title: string;
+  tour_status: string;
+  organizer_name: string;
+  status: "draft" | "pending" | "approved" | "rejected";
+  comment: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+export async function fetchRevisions(status = "pending"): Promise<TourRevision[]> {
+  const res = await authFetch(`/admin/revisions?status=${status}`);
+  const body = await ensureOk<{ items: TourRevision[] }>(res, "revisionsLoadFailed");
+  return body.items;
+}
+
+export async function approveRevision(id: string): Promise<void> {
+  await ensureOk(await authFetch(`/admin/revisions/${id}/approve`, { method: "POST" }), "revisionApproveFailed");
+}
+
+export async function rejectRevision(id: string, comment: string): Promise<void> {
+  await ensureOk(
+    await authFetch(`/admin/revisions/${id}/reject`, { method: "POST", body: JSON.stringify({ comment }) }),
+    "revisionRejectFailed",
+  );
+}
+
+/** Партнёр отправляет тур или накопленную правку на проверку */
+export async function submitTourForModeration(tourId: string): Promise<void> {
+  await ensureOk(await authFetch(`/admin/tours/${tourId}/submit`, { method: "POST" }), "tourSubmitFailed");
+}
+
+// ─── Заявки на партнёрство (YAV-29) ──────────────────────────
+
+export interface AdminApplication {
+  id: string;
+  status: "pending" | "approved" | "rejected";
+  user_email: string;
+  user_name: string;
+  org_name: string;
+  inn: string;
+  phone: string;
+  description: string;
+  offer_version: number;
+  offer_accepted_at: string;
+  comment: string | null;
+  created_at: string;
+}
+
+export async function fetchApplications(status = "pending"): Promise<AdminApplication[]> {
+  const res = await authFetch(`/admin/partner-applications?status=${status}`);
+  const body = await ensureOk<{ items: AdminApplication[] }>(res, "applicationsLoadFailed");
+  return body.items;
+}
+
+export async function approveApplication(id: string): Promise<void> {
+  await ensureOk(
+    await authFetch(`/admin/partner-applications/${id}/approve`, { method: "POST" }),
+    "applicationApproveFailed",
+  );
+}
+
+export async function rejectApplication(id: string, comment: string): Promise<void> {
+  await ensureOk(
+    await authFetch(`/admin/partner-applications/${id}/reject`, { method: "POST", body: JSON.stringify({ comment }) }),
+    "applicationRejectFailed",
+  );
+}

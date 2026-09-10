@@ -1,345 +1,173 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft, Building2, CheckCircle2, Plus, Users, Receipt, Star,
-  ShieldCheck, Loader2, MessageSquare, TrendingUp, LogOut,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { partnerOffer } from "@yavoy/legal";
+import { Building2, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import type { PartnerTourSubmission, PartnerGuest, PartnerTransaction } from "@/types";
-import { CURRENCY_SYMBOL } from "@yavoy/i18n";
-import { useI18n, useT } from "@/i18n/I18nProvider";
-import type { TKey } from "@/i18n/keys";
+import { translateError } from "@/i18n/errors";
+import { useI18n } from "@/i18n/I18nProvider";
+import { SLOT, withSlot } from "@/i18n/slot";
+import { fetchMyApplication, submitApplication, type ApplicationForm } from "@/services/partners";
 
-type Stage = "register" | "contacts" | "pending" | "cabinet";
-type Tab = "tours" | "guests" | "transactions" | "reviews";
+const EMPTY: ApplicationForm = { org_name: "", inn: "", phone: "", description: "" };
 
-// демо-данные кабинета: контент, не интерфейс — переводу не подлежат (YAV-25)
-const initialSubmissions: PartnerTourSubmission[] = [
-  { id: "ps1", title: "Гастротур по рынкам Москвы", city: "Москва", price: 3500, image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop", status: "published", submittedAt: "2026-05-10" },
-  { id: "ps2", title: "Ночной джаз-квартал", city: "Санкт-Петербург", price: 2800, image: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&h=300&fit=crop", status: "pending", submittedAt: "2026-06-01" },
-  { id: "ps3", title: "Винный weekend", city: "Сочи", price: 6200, image: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=400&h=300&fit=crop", status: "rejected", submittedAt: "2026-05-28" },
-];
-
-const guests: PartnerGuest[] = [
-  { id: "g1", firstName: "Ольга", lastName: "Петрова", phone: "+7 921 555-12-34", tourTitle: "Гастротур по рынкам Москвы", tourDate: "2026-06-20", ticketCount: 2 },
-  { id: "g2", firstName: "Иван", lastName: "Сидоров", phone: "+7 916 222-88-90", tourTitle: "Гастротур по рынкам Москвы", tourDate: "2026-06-22", ticketCount: 4 },
-  { id: "g3", firstName: "Мария", lastName: "Кузнецова", phone: "+7 905 333-44-55", tourTitle: "Ночной джаз-квартал", tourDate: "2026-06-25", ticketCount: 1 },
-];
-
-const partnerTransactions: PartnerTransaction[] = [
-  { id: "pt1", tourTitle: "Гастротур по рынкам Москвы", amount: 7000, date: "2026-06-12", guestName: "Ольга Петрова", status: "completed" },
-  { id: "pt2", tourTitle: "Гастротур по рынкам Москвы", amount: 14000, date: "2026-06-14", guestName: "Иван Сидоров", status: "completed" },
-  { id: "pt3", tourTitle: "Ночной джаз-квартал", amount: 2800, date: "2026-06-15", guestName: "Мария Кузнецова", status: "pending" },
-];
-
-const reviews = [
-  { id: "rv1", author: "Ольга П.", tourTitle: "Гастротур по рынкам Москвы", rating: 5, text: "Невероятно вкусно и познавательно!", reply: "Спасибо, ждём вас снова!" },
-  { id: "rv2", author: "Иван С.", tourTitle: "Гастротур по рынкам Москвы", rating: 4, text: "Отлично, но хотелось больше времени.", reply: undefined },
-];
-
+/**
+ * Заявка на партнёрство (YAV-29). Раньше здесь жил демо-кабинет на моках —
+ * фейковые заявки, гости и выручка; настоящий кабинет партнёра находится
+ * в панели управления, а витрине нужна именно форма подачи.
+ */
 export default function Partner() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const [stage, setStage] = useState<Stage>("register");
-  const [tab, setTab] = useState<Tab>("tours");
-  const [inn, setInn] = useState("");
-  const [checking, setChecking] = useState(false);
-  const [agree, setAgree] = useState({ terms: false, privacy: false, offer: false });
-  const [contacts, setContacts] = useState({ email: "", phone: "", telegram: "" });
-  const [submissions, setSubmissions] = useState(initialSubmissions);
-  const [period, setPeriod] = useState<"week" | "month" | "halfYear" | "year">("month");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTour, setNewTour] = useState({ title: "", city: "", price: "" });
-  const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
-  const { t, formatNumber, formatMoney, currency } = useI18n();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, role, isLoading: authLoading } = useAuth();
+  const { t, formatDate } = useI18n();
 
-  const allAgreed = agree.terms && agree.privacy && agree.offer;
-  const innValid = /^\d{10}$|^\d{12}$/.test(inn);
+  const application = useQuery({
+    queryKey: ["my-application"],
+    queryFn: fetchMyApplication,
+    enabled: isAuthenticated,
+  });
 
-  const checkFns = () => {
-    if (!innValid) { toast.error(t("partner.innInvalid")); return; }
-    if (!allAgreed) { toast.error(t("partner.agreementsRequired")); return; }
-    setChecking(true);
-    setTimeout(() => { setChecking(false); setStage("contacts"); toast.success(t("partner.fnsConfirmed")); }, 1400);
-  };
+  const [form, setForm] = useState<ApplicationForm>(EMPTY);
+  const [accepted, setAccepted] = useState(false);
+  const set = (k: keyof ApplicationForm, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
-  const submitContacts = () => {
-    if (!contacts.email.trim() || !contacts.phone.trim() || !contacts.telegram.trim()) {
-      toast.error(t("partner.contactsRequired")); return;
-    }
-    setStage("pending");
-    toast.success(t("partner.profileSent"));
-  };
+  const submit = useMutation({
+    mutationFn: () => submitApplication(form),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["my-application"] });
+      toast.success(t("partner.applicationSent"));
+    },
+    onError: (e: unknown) => toast.error(translateError(e, t)),
+  });
 
-  const addTour = () => {
-    if (!newTour.title.trim() || !newTour.city.trim() || !newTour.price.trim()) { toast.error(t("partner.tourFieldsRequired")); return; }
-    const sub: PartnerTourSubmission = {
-      id: `ps-${Date.now()}`, title: newTour.title, city: newTour.city, price: Number(newTour.price) || 0,
-      image: "https://images.unsplash.com/photo-1513326738677-b964603b136d?w=400&h=300&fit=crop", status: "pending", submittedAt: new Date().toISOString().slice(0, 10),
-    };
-    setSubmissions((p) => [sub, ...p]);
-    setNewTour({ title: "", city: "", price: "" });
-    setShowAddForm(false);
-    toast.success(t("partner.tourSentWeb"));
-  };
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-teal" /></div>
+      </Layout>
+    );
+  }
 
-  const revenue = useMemo(() => partnerTransactions.filter((t) => t.status === "completed").reduce((s, t) => s + t.amount, 0), []);
-  const avgRating = useMemo(() => reviews.reduce((s, r) => s + r.rating, 0) / reviews.length, []);
+  const hero = (
+    <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-8 text-white shadow-xl">
+      <h1 className="text-2xl font-extrabold md:text-3xl">{t("partner.heroTitle")}</h1>
+      <p className="mt-2 max-w-xl text-white/70">{t("partner.heroSubtitle")}</p>
+    </div>
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <Layout>
+        {hero}
+        <div className="rounded-2xl bg-card p-6 text-center ring-1 ring-border/60">
+          <p className="mb-3 text-muted-foreground">{t("partner.authRequiredText")}</p>
+          <button onClick={() => navigate("/auth")} className="rounded-xl bg-teal px-6 py-2.5 font-bold text-white">
+            {t("common.loginOrRegister")}
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // уже партнёр — форма ему не нужна, ему нужен кабинет
+  if (role === "partner") {
+    return (
+      <Layout>
+        {hero}
+        <div className="rounded-2xl bg-card p-6 text-center ring-1 ring-border/60">
+          <CheckCircle size={36} className="mx-auto mb-3 text-mint" />
+          <p className="mb-3 font-semibold">{t("partner.alreadyPartner")}</p>
+          <Link to="/admin" className="inline-block rounded-xl bg-teal px-6 py-2.5 font-bold text-white">
+            {t("partner.goToCabinet")}
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  const current = application.data;
+
+  if (current?.status === "pending") {
+    return (
+      <Layout>
+        {hero}
+        <div className="rounded-2xl bg-card p-6 ring-1 ring-border/60">
+          <div className="mb-2 flex items-center gap-2 font-semibold text-gold">
+            <Clock size={18} /> {t("partner.statusPending")}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t("partner.statusPendingText", { org: current.org_name, date: formatDate(current.created_at) })}
+          </p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={18} /> {t("common.back")}
-      </button>
+      {hero}
 
-      {authLoading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 size={32} className="animate-spin text-teal" /></div>
-      ) : !isAuthenticated ? (
-        <div className="mx-auto max-w-xl rounded-3xl bg-card py-16 text-center ring-1 ring-border/60">
-          <Building2 size={48} className="mx-auto mb-4 text-muted-foreground" />
-          <h2 className="mb-2 text-xl font-extrabold">{t("partner.authRequired")}</h2>
-          <p className="mb-4 text-sm text-muted-foreground">{t("partner.authRequiredText")}</p>
-          <button onClick={() => navigate("/auth")} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">{t("common.loginOrRegister")}</button>
-        </div>
-      ) : (
-        <>
-          {isAuthenticated && user && (
-            <div className="mb-4 flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{user.first_name?.[0] ?? "?"}</div>
-              <div className="flex-1">
-                <div className="font-semibold">{user.first_name}{user.last_name ? ` ${user.last_name}` : ""}</div>
-                <div className="text-xs text-muted-foreground">{user.email} · {t(`enums.role.${user.role}` as TKey)}</div>
-              </div>
-              <button onClick={async () => { await logout(); navigate("/"); }} className="rounded-lg bg-coral/10 p-2 text-coral transition-colors hover:bg-coral/20"><LogOut size={16} /></button>
-            </div>
-          )}
-
-      {stage === "register" && (
-        <div className="mx-auto max-w-xl">
-          <div className="mb-6 overflow-hidden rounded-3xl bg-navy p-8 text-white">
-            <Building2 size={36} className="mb-3 text-teal-light" />
-            <h1 className="mb-2 text-2xl font-extrabold">{t("partner.heroTitle")}</h1>
-            <p className="text-sm text-white/70">{t("partner.heroSubtitle")}</p>
+      {current?.status === "rejected" && (
+        <div className="mb-4 rounded-2xl bg-coral/10 p-4 ring-1 ring-coral/30">
+          <div className="mb-1 flex items-center gap-2 font-semibold text-coral">
+            <XCircle size={18} /> {t("partner.statusRejected")}
           </div>
-
-          <div className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="mb-1 font-bold">{t("partner.registration")}</h2>
-            <p className="mb-4 text-sm text-muted-foreground">{t("partner.registrationHint")}</p>
-            <input
-              value={inn}
-              onChange={(e) => setInn(e.target.value.replace(/\D/g, ""))}
-              placeholder={t("partner.innPlaceholder")}
-              inputMode="numeric"
-              className="mb-4 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal"
-            />
-            <div className="mb-4 space-y-2">
-              {([
-                { k: "terms", l: "partner.agreeTerms" },
-                { k: "privacy", l: "partner.agreePrivacy" },
-                { k: "offer", l: "partner.agreeOffer" },
-              ] as const).map((c) => (
-                <label key={c.k} className="flex cursor-pointer items-start gap-2.5 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={agree[c.k]}
-                    onChange={(e) => setAgree((p) => ({ ...p, [c.k]: e.target.checked }))}
-                    className="mt-0.5 h-4 w-4 accent-teal"
-                  />
-                  <span className="text-muted-foreground">{t(c.l)}</span>
-                </label>
-              ))}
-            </div>
-            <button
-              onClick={checkFns}
-              disabled={checking || !innValid || !allAgreed}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal py-3.5 font-bold text-white transition-transform enabled:hover:scale-[1.02] disabled:opacity-50"
-            >
-              {checking ? <><Loader2 size={18} className="animate-spin" /> {t("partner.checkingFns")}</> : t("partner.checkAndContinue")}
-            </button>
-          </div>
+          {/* причина обязательна на бэкенде — партнёр должен знать, что исправлять */}
+          <p className="text-sm text-muted-foreground">{current.comment}</p>
         </div>
       )}
 
-      {stage === "contacts" && (
-        <div className="mx-auto max-w-xl">
-          <div className="mb-4 flex items-center gap-2 rounded-2xl bg-mint/10 p-4 text-sm font-semibold text-mint">
-            <CheckCircle2 size={18} /> {t("partner.fnsCompanyConfirmed")}
-          </div>
-          <div className="rounded-3xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="mb-1 font-bold">{t("partner.contactsTitle")}</h2>
-            <p className="mb-4 text-sm text-muted-foreground">{t("partner.contactsHint")}</p>
-            <div className="space-y-3">
-              <input value={contacts.email} onChange={(e) => setContacts((p) => ({ ...p, email: e.target.value }))} placeholder="Email" type="email" className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
-              <input value={contacts.phone} onChange={(e) => setContacts((p) => ({ ...p, phone: e.target.value }))} placeholder={t("partner.phonePlaceholder")} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
-              <input value={contacts.telegram} onChange={(e) => setContacts((p) => ({ ...p, telegram: e.target.value }))} placeholder={t("partner.telegramPlaceholder")} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-teal" />
-            </div>
-            <button onClick={submitContacts} className="mt-4 w-full rounded-2xl bg-teal py-3.5 font-bold text-white">{t("partner.submitForApproval")}</button>
-          </div>
+      <div className="space-y-3 rounded-2xl bg-card p-6 ring-1 ring-border/60">
+        <div className="flex items-center gap-2 font-bold">
+          <Building2 size={18} className="text-teal" /> {t("partner.formTitle")}
         </div>
-      )}
 
-      {stage === "pending" && (
-        <div className="mx-auto max-w-xl rounded-3xl bg-card p-8 text-center ring-1 ring-border/60">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gold/15"><ShieldCheck size={32} className="text-gold" /></div>
-          <h2 className="mb-2 text-xl font-extrabold">{t("partner.pendingTitle")}</h2>
-          <p className="mb-6 text-sm text-muted-foreground">{t("partner.pendingText")}</p>
-          <button onClick={() => { setStage("cabinet"); toast.success(t("partner.demoApproved")); }} className="rounded-2xl bg-teal px-6 py-3 font-bold text-white">
-            {t("partner.demoEnterCabinet")}
-          </button>
-        </div>
-      )}
+        <label className="block text-xs font-semibold text-muted-foreground">
+          {t("partner.fieldOrg")}
+          <input value={form.org_name} onChange={(e) => set("org_name", e.target.value)} className="input-base mt-1" />
+        </label>
+        <label className="block text-xs font-semibold text-muted-foreground">
+          {t("partner.fieldTaxId")}
+          <input value={form.inn} onChange={(e) => set("inn", e.target.value)} className="input-base mt-1" inputMode="numeric" />
+        </label>
+        <label className="block text-xs font-semibold text-muted-foreground">
+          {t("partner.fieldPhone")}
+          <input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="input-base mt-1" />
+        </label>
+        <label className="block text-xs font-semibold text-muted-foreground">
+          {t("partner.fieldAbout")}
+          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={3} className="input-base mt-1" />
+        </label>
 
-        </>
-      )}
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-1 h-4 w-4 accent-teal" />
+          <span className="text-muted-foreground">
+            {withSlot(
+              `${t("partner.acceptOfferPrefix")}${SLOT}`,
+              <Link to="/partner-offer" target="_blank" className="font-semibold text-teal hover:underline">
+                {t("partner.offerDocName")}
+              </Link>,
+            )}
+          </span>
+        </label>
 
-      {stage === "cabinet" && (
-        <div>
-          {/* Stats */}
-          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard icon={TrendingUp} label={t("partner.kpiIncome")} value={formatMoney(revenue)} />
-            <StatCard icon={Receipt} label={t("partner.kpiTransactions")} value={String(partnerTransactions.length)} />
-            <StatCard icon={Users} label={t("partner.kpiGuestsShort")} value={String(guests.reduce((sum, g) => sum + g.ticketCount, 0))} />
-            <StatCard icon={Star} label={t("partner.kpiRating")} value={avgRating.toFixed(1)} accent />
-          </div>
+        <button
+          onClick={() => submit.mutate()}
+          disabled={!accepted || !form.org_name.trim() || form.inn.trim().length < 4 || submit.isPending}
+          className="flex items-center gap-2 rounded-2xl bg-teal px-6 py-3 font-bold text-white disabled:opacity-50"
+        >
+          {submit.isPending && <Loader2 size={16} className="animate-spin" />}
+          {t("partner.submitApplication")}
+        </button>
 
-          {/* Tabs */}
-          <div className="no-scrollbar mb-5 flex gap-2 overflow-x-auto">
-            {([["tours", "partner.tabTours"], ["guests", "partner.tabGuests"], ["transactions", "partner.tabTransactions"], ["reviews", "partner.tabReviews"]] as const).map(([k, l]) => (
-              <button key={k} onClick={() => setTab(k)} className={cn("shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors", tab === k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>{t(l)}</button>
-            ))}
-          </div>
-
-          {tab === "tours" && (
-            <div className="space-y-3">
-              <button onClick={() => setShowAddForm((s) => !s)} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-teal/50 bg-teal/5 py-3 font-semibold text-teal">
-                <Plus size={18} /> {t("partner.addTour")}
-              </button>
-              {showAddForm && (
-                <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
-                  <input value={newTour.title} onChange={(e) => setNewTour((p) => ({ ...p, title: e.target.value }))} placeholder={t("partner.fieldTitlePlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <input value={newTour.city} onChange={(e) => setNewTour((p) => ({ ...p, city: e.target.value }))} placeholder={t("partner.fieldCity")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <input value={newTour.price} onChange={(e) => setNewTour((p) => ({ ...p, price: e.target.value.replace(/\D/g, "") }))} placeholder={t("partner.fieldPrice", { currency: CURRENCY_SYMBOL[currency] })} inputMode="numeric" className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-                  <p className="text-xs text-muted-foreground">{t("partner.mediaWebHint")}</p>
-                  <button onClick={addTour} className="w-full rounded-xl bg-teal py-2.5 font-bold text-white">{t("partner.submitTour")}</button>
-                </div>
-              )}
-              {submissions.map((s) => (
-                <div key={s.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                  <img src={s.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{s.title}</div>
-                    <div className="text-xs text-muted-foreground">{s.city} · {formatMoney(s.price)} · {s.submittedAt}</div>
-                  </div>
-                  <StatusBadge status={s.status} />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {tab === "guests" && (
-            <div className="space-y-3">
-              {guests.map((g) => (
-                <div key={g.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/60">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/10 font-bold text-teal">{g.firstName[0]}{g.lastName[0]}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold">{g.firstName} {g.lastName}</div>
-                    <div className="text-xs text-muted-foreground">{g.phone}</div>
-                    <div className="text-xs text-muted-foreground">{g.tourTitle} · {g.tourDate}</div>
-                  </div>
-                  <div className="rounded-lg bg-secondary px-2.5 py-1 text-xs font-semibold">{g.ticketCount} 👤</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {tab === "transactions" && (
-            <div>
-              <div className="no-scrollbar mb-4 flex gap-2 overflow-x-auto">
-                {([["week", "partner.periodWeek"], ["month", "partner.periodMonth"], ["halfYear", "partner.periodHalfYear"], ["year", "partner.periodYear"]] as const).map(([k, l]) => (
-                  <button key={k} onClick={() => setPeriod(k)} className={cn("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", period === k ? "bg-teal text-white" : "bg-secondary text-muted-foreground")}>{t(l)}</button>
-                ))}
-              </div>
-              <div className="mb-4 rounded-2xl bg-teal/10 p-4 text-center">
-                <div className="text-xs text-muted-foreground">{t("partner.revenueForPeriodWeb")}</div>
-                <div className="text-2xl font-extrabold text-teal">{formatMoney(revenue)}</div>
-              </div>
-              <div className="space-y-2.5">
-                {partnerTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border/60">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold">{tx.tourTitle}</div>
-                      <div className="text-xs text-muted-foreground">{tx.guestName} · {tx.date}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-teal">+{formatMoney(tx.amount)}</div>
-                      <StatusBadge status={tx.status === "completed" ? "published" : "pending"} small />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tab === "reviews" && (
-            <div className="space-y-3">
-              <div className="rounded-2xl bg-card p-4 text-center ring-1 ring-border/60">
-                <div className="text-3xl font-extrabold text-gold">{avgRating.toFixed(1)}</div>
-                <div className="flex justify-center">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={16} className={i < Math.round(avgRating) ? "text-gold" : "text-muted-foreground/30"} fill={i < Math.round(avgRating) ? "#E8B931" : "transparent"} />)}</div>
-                <div className="text-xs text-muted-foreground">{t("partner.ratingWithCount", { reviews: t("units.reviews", { count: reviews.length }) })}</div>
-              </div>
-              {reviews.map((r) => (
-                <div key={r.id} className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="font-semibold">{r.author}</span>
-                    <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={13} className={i < r.rating ? "text-gold" : "text-muted-foreground/30"} fill={i < r.rating ? "#E8B931" : "transparent"} />)}</div>
-                  </div>
-                  <div className="mb-1 text-xs text-muted-foreground">{r.tourTitle}</div>
-                  <p className="text-sm text-muted-foreground">{r.text}</p>
-                  {r.reply ? (
-                    <div className="mt-2 rounded-xl bg-teal/10 p-2.5 text-sm">
-                      <div className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold text-teal"><MessageSquare size={12} /> {t("partner.yourReply")}</div>
-                      {r.reply}
-                    </div>
-                  ) : (
-                    <div className="mt-2 flex gap-2">
-                      <input
-                        value={replyDraft[r.id] ?? ""}
-                        onChange={(e) => setReplyDraft((p) => ({ ...p, [r.id]: e.target.value }))}
-                        placeholder={t("partner.replyPlaceholder")}
-                        className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-teal"
-                      />
-                      <button onClick={() => { setReplyDraft((p) => ({ ...p, [r.id]: "" })); toast.success(t("partner.replySent")); }} className="rounded-xl bg-teal px-4 text-sm font-semibold text-white">{t("common.send")}</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        <p className="text-xs text-muted-foreground">
+          {t("partner.offerVersionNote", { version: partnerOffer.version })}
+        </p>
+      </div>
     </Layout>
   );
-}
-
-function StatCard({ icon: Icon, label, value, accent }: { icon: React.ComponentType<{ size: number; className?: string }>; label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-      <Icon size={20} className={accent ? "text-gold" : "text-teal"} />
-      <div className="mt-2 text-xl font-extrabold">{value}</div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-    </div>
-  );
-}
-
-function StatusBadge({ status, small }: { status: "pending" | "published" | "rejected"; small?: boolean }) {
-  const t = useT();
-  const cfg = {
-    published: { l: "enums.tourStatus.published", c: "bg-mint/15 text-mint" },
-    pending: { l: "enums.tourStatus.pending", c: "bg-orange-500/15 text-orange-500" },
-    rejected: { l: "enums.tourStatus.rejected", c: "bg-coral/15 text-coral" },
-  }[status] as { l: TKey; c: string };
-  return <span className={cn("inline-block rounded-lg px-2.5 py-1 font-semibold", cfg.c, small ? "text-[10px]" : "text-xs")}>{t(cfg.l)}</span>;
 }

@@ -1,4 +1,4 @@
-import { Building2, Check, ExternalLink, LogOut, Map, MessageSquare, Moon, ShieldCheck, Sun, Users, Loader2 } from "lucide-react";
+import { Building2, Check, ExternalLink, FileCheck, LogOut, Map, MessageSquare, Moon, ShieldCheck, Sun, UserPlus, Users, Loader2 } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import LanguageMenu from "@/components/LanguageMenu";
@@ -8,14 +8,24 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { TKey } from "@/i18n/keys";
 import { cn } from "@/lib/utils";
 
-export type AdminSection = "bookings" | "reviews" | "users" | "tours" | "partners" | "org";
+export type AdminSection =
+  | "bookings"
+  | "reviews"
+  | "tours"
+  | "moderation"
+  | "users"
+  | "partners"
+  | "applications"
+  | "org";
 
 const STAFF_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = [
   { section: "bookings", label: "backoffice.tabBookings", icon: Check },
   { section: "reviews", label: "backoffice.tabReviews", icon: MessageSquare },
   { section: "tours", label: "backoffice.tabTours", icon: Map },
+  { section: "moderation", label: "backoffice.tabModeration", icon: FileCheck },
   { section: "users", label: "backoffice.tabUsers", icon: Users },
   { section: "partners", label: "backoffice.tabPartners", icon: Building2 },
+  { section: "applications", label: "backoffice.tabApplications", icon: UserPlus },
 ];
 
 const PARTNER_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = [
