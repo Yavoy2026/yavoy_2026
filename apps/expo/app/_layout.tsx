@@ -48,7 +48,6 @@ function RootLayoutNav() {
           animation: "slide_from_right",
         }}
       />
-      <Stack.Screen name="backoffice" options={{ presentation: "card", animation: "slide_from_right" }} />
       <Stack.Screen
         name="reels"
         options={{

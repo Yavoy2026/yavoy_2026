@@ -930,18 +930,6 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
-        {(auth.role === "admin" || auth.role === "manager" || auth.role === "partner") && (
-          <TouchableOpacity
-            style={[styles.menuItem, { borderBottomColor: colors.border }]}
-            activeOpacity={0.7}
-            onPress={() => router.push("/backoffice")}
-            testID="menu-backoffice"
-          >
-            <ShieldCheck size={20} color={colors.gold} />
-            <Text style={[styles.menuText, { color: colors.text }]}>{t(auth.role === "partner" ? "profile.partnerCabinet" : "profile.backoffice")}</Text>
-            <ChevronRight size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
           <HelpCircle size={20} color={colors.textSecondary} />
           <Text style={[styles.menuText, { color: colors.text }]}>{t("profile.help")}</Text>
