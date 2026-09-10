@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type { Booking, BookingStatus, CreateBookingPayload, CreateBookingResponse } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
 import { bookings, tourDates, tours } from "../../db/schema.ts";
+import { offer } from "@yavoy/legal";
 import { env } from "../../env.ts";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.ts";
 import {
@@ -55,6 +56,8 @@ function toBooking(row: BookingViewRow, payUrl: string | null = null): Booking {
     meeting_point: row.meetingPoint,
     meeting_map_url: mapsUrl(row.meetingLat, row.meetingLng),
     payment_url: payUrl,
+    offer_version: b.offerVersion,
+    offer_accepted_at: b.offerAcceptedAt?.toISOString() ?? null,
     created_at: b.createdAt.toISOString(),
     cancelled_at: b.cancelledAt?.toISOString() ?? null,
   };
@@ -78,6 +81,12 @@ export async function createBooking(
   userId: string,
   payload: CreateBookingPayload,
 ): Promise<CreateBookingResponse> {
+  // клиент мог держать открытой старую страницу: согласие с прошлой редакцией
+  // оферты нам не подходит — акцепт должен относиться к действующему тексту
+  if (payload.offer_version !== offer.version) {
+    throw badRequest("offer_version_stale", "Оферта обновилась — перечитайте её и повторите бронирование");
+  }
+
   const bookingId = await db.transaction(async (tx) => {
     const date = await reserveSeats(tx, payload.tour_date_id, payload.tickets_count);
     if (!date) {
@@ -104,6 +113,8 @@ export async function createBooking(
         firstName: payload.first_name.trim(),
         lastName: payload.last_name.trim(),
         contact: payload.contact.trim(),
+        offerVersion: payload.offer_version,
+        offerAcceptedAt: new Date(),
         status: "requested",
       })
       .returning({ id: bookings.id });

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type { FastifyInstance, InjectOptions } from "fastify";
 import * as schema from "../src/db/schema.ts";
 import { createTestApp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
+import { offer } from "@yavoy/legal";
 
 let t: TestApp;
 let app: FastifyInstance;
@@ -39,7 +40,7 @@ beforeAll(async () => {
     method: "POST",
     url: "/v1/bookings",
     headers: authed(userToken),
-    payload: { tour_date_id: date.id, tickets_count: 1, first_name: "Ф", last_name: "Т", contact: "fan@test.ru" },
+    payload: { tour_date_id: date.id, tickets_count: 1, first_name: "Ф", last_name: "Т", contact: "fan@test.ru", offer_version: offer.version },
   });
   bookingId = booking.json().booking.id;
 });

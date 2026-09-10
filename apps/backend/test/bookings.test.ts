@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type { FastifyInstance, InjectOptions } from "fastify";
 import * as schema from "../src/db/schema.ts";
 import { createTestApp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
+import { offer } from "@yavoy/legal";
 
 let t: TestApp;
 let app: FastifyInstance;
@@ -42,6 +43,8 @@ const bookingPayload = (tickets = 1) => ({
   first_name: "Иван",
   last_name: "Тестов",
   contact: "ivan@test.ru",
+  // акцепт оферты обязателен: бэкенд сверяет версию с действующей (YAV-29)
+  offer_version: offer.version,
 });
 
 describe("бронирования", () => {
@@ -217,6 +220,7 @@ describe("заявка глазами организатора", () => {
         first_name: "Пётр",
         last_name: "Клиентов",
         contact: "client@test.ru",
+        offer_version: offer.version,
       },
     });
     expect(res.statusCode).toBe(200);

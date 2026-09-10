@@ -14,8 +14,14 @@ export interface LegalSection {
 }
 
 export interface LegalDocument {
-  id: "offer" | "privacy";
+  id: "offer" | "partner_offer" | "privacy";
   title: string;
+  /**
+   * Номер редакции. Растёт при каждом изменении текста и записывается в момент
+   * акцепта: «принял версию 3» доказуемо, а «принял то, что тогда лежало по
+   * этому адресу» — нет (YAV-29).
+   */
+  version: number;
   /** Дата последней редакции, ISO */
   updatedAt: string;
   intro: string[];

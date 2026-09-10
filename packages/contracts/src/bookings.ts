@@ -51,6 +51,11 @@ export const CreateBookingPayloadSchema = z.object({
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
   contact: z.string().min(3).max(200), // телефон или email
+  /**
+   * Номер принятой редакции оферты. Акцепт до оплаты — требование банка (п.7),
+   * и без версии он недоказуем: текст оферты меняется (YAV-29).
+   */
+  offer_version: z.number().int().min(1),
 });
 export type CreateBookingPayload = z.infer<typeof CreateBookingPayloadSchema>;
 
@@ -78,6 +83,9 @@ export const BookingSchema = z.object({
   meeting_map_url: z.string().nullable(),
   /** Заполнена, пока бронь ждёт оплату: кнопка «оплатить» ведёт сюда */
   payment_url: z.string().nullable(),
+  /** Принятая редакция оферты и момент акцепта */
+  offer_version: z.number().int().nullable(),
+  offer_accepted_at: z.string().nullable(),
   created_at: z.string(),
   cancelled_at: z.string().nullable(),
 });

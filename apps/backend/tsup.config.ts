@@ -6,7 +6,7 @@ export default defineConfig({
   platform: "node",
   target: "node22",
   // контракты — workspace-пакет из TS-исходников, вбандливаем; node_modules остаются external
-  noExternal: ["@yavoy/contracts", "@yavoy/i18n"],
+  noExternal: ["@yavoy/contracts", "@yavoy/i18n", "@yavoy/legal"],
   sourcemap: true,
   clean: true,
 })

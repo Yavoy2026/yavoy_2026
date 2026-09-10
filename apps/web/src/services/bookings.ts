@@ -1,4 +1,5 @@
 import type { BookedTour, BookingApiStatus } from "@/types";
+import { offer } from "@yavoy/legal";
 import { ApiError, authFetch } from "@/services/api";
 
 export interface CreateBookingPayload {
@@ -76,7 +77,12 @@ async function parseOrThrow(res: Response, fallbackCode: string): Promise<ApiBoo
 export async function createBooking(
   payload: CreateBookingPayload,
 ): Promise<{ booking: BookedTour; paymentUrl: string | null }> {
-  const res = await authFetch("/bookings", { method: "POST", body: JSON.stringify(payload) });
+  // Версию оферты подставляем здесь, а не в экранах: акцепт — свойство самого
+  // документа, а экранов бронирования несколько, и забыть её легко (YAV-29).
+  const res = await authFetch("/bookings", {
+    method: "POST",
+    body: JSON.stringify({ ...payload, offer_version: offer.version }),
+  });
   if (!res.ok) await parseOrThrow(res, "bookingCreateFailed");
   const body = (await res.json()) as { booking: ApiBooking; payment_url: string | null };
   return { booking: adaptBooking(body.booking), paymentUrl: body.payment_url };
@@ -86,7 +92,9 @@ export async function fetchMyBookings(): Promise<BookedTour[]> {
   const res = await authFetch("/me/bookings");
   if (!res.ok) throw new ApiError(res.status, "bookingsLoadFailed", "bookingsLoadFailed");
   const body = (await res.json()) as { items: ApiBooking[] };
-  return body.items.filter((b) => b.status !== "cancelled").map(adaptBooking);
+  // отменённые и отклонённые не прячем: пользователь должен видеть, чем
+  // закончилась заявка, иначе она просто исчезает без объяснений
+  return body.items.map(adaptBooking);
 }
 
 export async function cancelBooking(id: string): Promise<BookedTour> {

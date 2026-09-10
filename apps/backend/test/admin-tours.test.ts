@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { InjectOptions } from "fastify";
 import { createTestApp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
+import { offer } from "@yavoy/legal";
 
 let t: TestApp;
 let managerToken: string;
@@ -176,7 +177,7 @@ describe("бэкофис: CRUD туров", () => {
       method: "POST",
       url: "/v1/bookings",
       headers: authed(userToken),
-      payload: { tour_date_id: dateId, tickets_count: 4, first_name: "И", last_name: "Т", contact: "u@test.ru" },
+      payload: { tour_date_id: dateId, tickets_count: 4, first_name: "И", last_name: "Т", contact: "u@test.ru", offer_version: offer.version },
     });
     expect(booking.statusCode).toBe(200);
 

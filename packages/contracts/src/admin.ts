@@ -210,6 +210,53 @@ export const PartnerListResponseSchema = z.object({ items: z.array(PartnerProfil
 export type PartnerListResponse = z.infer<typeof PartnerListResponseSchema>;
 
 /** Назначение партнёра: существующему пользователю (admin-only) */
+/**
+ * Заявка на партнёрство (YAV-29): Pending Review → Approved | Rejected.
+ * Подаёт обычный пользователь, рассматривает менеджер или админ; одобрение
+ * создаёт профиль организации и выдаёт роль partner одной транзакцией.
+ */
+export const ApplicationStatusSchema = z.enum(["pending", "approved", "rejected"]);
+export type ApplicationStatus = z.infer<typeof ApplicationStatusSchema>;
+
+export const SubmitApplicationPayloadSchema = z.object({
+  org_name: z.string().min(2).max(200),
+  /** СТИР в Узбекистане, ИНН в РФ; проверяется менеджером глазами */
+  inn: z.string().min(4).max(20),
+  phone: z.string().max(50).default(""),
+  description: z.string().max(2000).default(""),
+  /** Номер принятой редакции партнёрской оферты; без него акцепт недоказуем */
+  offer_version: z.number().int().min(1),
+});
+export type SubmitApplicationPayload = z.infer<typeof SubmitApplicationPayloadSchema>;
+
+export const PartnerApplicationSchema = z.object({
+  id: z.string().uuid(),
+  status: ApplicationStatusSchema,
+  user_id: z.string().uuid(),
+  user_email: z.string(),
+  user_name: z.string(),
+  org_name: z.string(),
+  inn: z.string(),
+  phone: z.string(),
+  description: z.string(),
+  offer_version: z.number().int(),
+  offer_accepted_at: z.string(),
+  comment: z.string().nullable(),
+  created_at: z.string(),
+  reviewed_at: z.string().nullable(),
+});
+export type PartnerApplication = z.infer<typeof PartnerApplicationSchema>;
+
+export const PartnerApplicationListResponseSchema = z.object({
+  items: z.array(PartnerApplicationSchema),
+});
+export type PartnerApplicationListResponse = z.infer<typeof PartnerApplicationListResponseSchema>;
+
+export const RejectApplicationPayloadSchema = z.object({
+  comment: z.string().min(1).max(2000),
+});
+export type RejectApplicationPayload = z.infer<typeof RejectApplicationPayloadSchema>;
+
 export const CreatePartnerPayloadSchema = z.object({
   user_id: z.string().uuid(),
   org_name: z.string().min(1).max(300),

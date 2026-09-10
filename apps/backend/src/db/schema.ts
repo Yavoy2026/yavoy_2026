@@ -59,6 +59,8 @@ export const favoriteEntityEnum = pgEnum("favorite_entity", ["tour", "city"]);
 export const reviewStatusEnum = pgEnum("review_status", ["pending", "published", "rejected"]);
 /** Жизненный цикл правки тура: draft → pending → approved | rejected (YAV-28) */
 export const revisionStatusEnum = pgEnum("revision_status", ["draft", "pending", "approved", "rejected"]);
+/** Заявка на партнёрство: Pending Review → Approved | Rejected (YAV-29) */
+export const applicationStatusEnum = pgEnum("application_status", ["pending", "approved", "rejected"]);
 
 // ─── Каталог (M1) ────────────────────────────────────────────
 
@@ -216,6 +218,12 @@ export const bookings = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     /** Когда бронь вошла в текущий статус: по этому полю сборщик ищет протухшие */
     statusChangedAt: timestamp("status_changed_at", { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * Акцепт оферты до оплаты — требование банка (п.7). Храним номер редакции,
+     * а не факт «согласился»: текст меняется, и без версии акцепт недоказуем.
+     */
+    offerVersion: integer("offer_version"),
+    offerAcceptedAt: timestamp("offer_accepted_at", { withTimezone: true }),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   },
@@ -314,6 +322,38 @@ export const refreshSessions = pgTable(
 // ─── Партнёры (организаторы туров) ───────────────────────────
 
 // Профиль организации; users.role='partner' + строка здесь. Верификация ИНН — ручная менеджером.
+/**
+ * Заявка на партнёрство (YAV-29). Отдельно от partner_profiles намеренно:
+ * профиль означает действующего партнёра, и если сложить заявки туда, каждый
+ * список партнёров пришлось бы фильтровать, а отклонённые заявки — хранить
+ * как мусорные профили. Здесь же живёт причина отказа.
+ */
+export const partnerApplications = pgTable(
+  "partner_applications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    status: applicationStatusEnum("status").notNull().default("pending"),
+    orgName: text("org_name").notNull(),
+    /** СТИР в Узбекистане, ИНН в РФ — одно поле, проверка глазами менеджера */
+    inn: text("inn").notNull(),
+    phone: text("phone").notNull().default(""),
+    description: text("description").notNull().default(""),
+    /** Принятая редакция партнёрской оферты: без номера версии акцепт недоказуем */
+    offerVersion: integer("offer_version").notNull(),
+    offerAcceptedAt: timestamp("offer_accepted_at", { withTimezone: true }).notNull().defaultNow(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("partner_applications_status_idx").on(t.status),
+    // вторую заявку, пока первая на рассмотрении, подавать нельзя
+    uniqueIndex("partner_applications_open_idx").on(t.userId).where(sql`${t.status} = 'pending'`),
+  ],
+);
+
 export const partnerProfiles = pgTable("partner_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")

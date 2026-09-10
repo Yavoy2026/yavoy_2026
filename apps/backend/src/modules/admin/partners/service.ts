@@ -6,7 +6,9 @@ import type {
   UpdateMyPartnerProfilePayload,
   UpdatePartnerPayload,
 } from "@yavoy/contracts";
+import type { PartnerApplication } from "@yavoy/contracts";
 import type { Db } from "../../../db/client.ts";
+import { closeApplication } from "./applications.ts";
 import { partnerProfiles, users } from "../../../db/schema.ts";
 import { conflict, forbidden, notFound } from "../../../errors.ts";
 import {
@@ -140,4 +142,30 @@ export async function updateMyPartnerProfile(
 ): Promise<PartnerProfile> {
   const profile = await requirePartnerProfile(db, userId);
   return applyProfilePatch(db, profile.id, payload);
+}
+
+/**
+ * Одобрение заявки на партнёрство (YAV-29): профиль организации и роль
+ * выдаются данными из самой заявки — менеджер их уже проверил, повторно
+ * вводить нечего.
+ */
+export async function approveApplication(db: Db, reviewerId: string, applicationId: string): Promise<PartnerProfile> {
+  const application = await closeApplication(db, applicationId, "approved", reviewerId);
+  return createPartner(db, {
+    user_id: application.user_id,
+    org_name: application.org_name,
+    inn: application.inn,
+    phone: application.phone,
+    description: application.description,
+  });
+}
+
+/** Отказ с причиной: без неё заявитель не знает, что исправлять */
+export async function rejectApplication(
+  db: Db,
+  reviewerId: string,
+  applicationId: string,
+  comment: string,
+): Promise<PartnerApplication> {
+  return closeApplication(db, applicationId, "rejected", reviewerId, comment);
 }

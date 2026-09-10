@@ -1,6 +1,11 @@
 import {
+  ApplicationStatusSchema,
   CreatePartnerPayloadSchema,
   ErrorEnvelopeSchema,
+  PartnerApplicationListResponseSchema,
+  PartnerApplicationSchema,
+  RejectApplicationPayloadSchema,
+  SubmitApplicationPayloadSchema,
   PartnerListResponseSchema,
   PartnerProfileSchema,
   UpdateMyPartnerProfilePayloadSchema,
@@ -9,9 +14,12 @@ import {
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { getMyApplication, listApplications, submitApplication } from "./applications.ts";
 import {
+  approveApplication,
   createPartner,
   getMyPartnerProfile,
+  rejectApplication,
   listPartners,
   updateMyPartnerProfile,
   updatePartner,
@@ -37,7 +45,9 @@ export async function adminPartnersRoutes(fastify: FastifyInstance) {
   app.post(
     "/admin/partners",
     {
-      preHandler: [app.requireRole("admin")],
+      // менеджер рассматривает заявки, значит и назначить напрямую может:
+      // иначе он просто обошёл бы очередь (решение владельца, YAV-29)
+      preHandler: [app.requireRole("manager", "admin")],
       schema: {
         tags: ["admin"],
         body: CreatePartnerPayloadSchema,
@@ -85,5 +95,90 @@ export async function adminPartnersRoutes(fastify: FastifyInstance) {
       },
     },
     async (req) => updatePartner(app.db, req.params.id, req.body),
+  );
+
+  // ─── Заявки на партнёрство (YAV-29) ─────────────────────────
+
+  /** Подаёт обычный пользователь; акцепт партнёрской оферты обязателен */
+  app.post(
+    "/partner-applications",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        tags: ["partners"],
+        body: SubmitApplicationPayloadSchema,
+        response: {
+          200: PartnerApplicationSchema,
+          400: ErrorEnvelopeSchema,
+          401: ErrorEnvelopeSchema,
+          409: ErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (req) => submitApplication(app.db, req.user!.sub, req.body),
+  );
+
+  /** Своя последняя заявка: статус и причина отказа */
+  app.get(
+    "/partner-applications/me",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        tags: ["partners"],
+        response: { 200: PartnerApplicationSchema.nullable(), 401: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => getMyApplication(app.db, req.user!.sub),
+  );
+
+  app.get(
+    "/admin/partner-applications",
+    {
+      preHandler: [app.requireRole("manager", "admin")],
+      schema: {
+        tags: ["admin"],
+        querystring: z.object({ status: ApplicationStatusSchema.default("pending") }),
+        response: { 200: PartnerApplicationListResponseSchema, 403: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => ({ items: await listApplications(app.db, req.query.status) }),
+  );
+
+  app.post(
+    "/admin/partner-applications/:id/approve",
+    {
+      preHandler: [app.requireRole("manager", "admin")],
+      schema: {
+        tags: ["admin"],
+        params: IdParams,
+        response: {
+          200: PartnerProfileSchema,
+          400: ErrorEnvelopeSchema,
+          403: ErrorEnvelopeSchema,
+          404: ErrorEnvelopeSchema,
+          409: ErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (req) => approveApplication(app.db, req.user!.sub, req.params.id),
+  );
+
+  app.post(
+    "/admin/partner-applications/:id/reject",
+    {
+      preHandler: [app.requireRole("manager", "admin")],
+      schema: {
+        tags: ["admin"],
+        params: IdParams,
+        body: RejectApplicationPayloadSchema,
+        response: {
+          200: PartnerApplicationSchema,
+          400: ErrorEnvelopeSchema,
+          403: ErrorEnvelopeSchema,
+          404: ErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (req) => rejectApplication(app.db, req.user!.sub, req.params.id, req.body.comment),
   );
 }

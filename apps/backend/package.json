@@ -20,6 +20,7 @@
     "@fastify/swagger-ui": "^5.2.0",
     "@yavoy/contracts": "workspace:*",
     "@yavoy/i18n": "workspace:*",
+    "@yavoy/legal": "workspace:*",
     "drizzle-orm": "^0.44.0",
     "fastify": "^5.2.0",
     "fastify-plugin": "^5.0.0",

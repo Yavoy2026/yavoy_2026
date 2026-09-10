@@ -7,6 +7,7 @@ import { PLACEHOLDER as P, type LegalDocument } from "./types";
  */
 export const privacy: LegalDocument = {
   id: "privacy",
+  version: 1,
   title: "Политика конфиденциальности",
   updatedAt: P("дата утверждения"),
 

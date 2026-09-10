@@ -28,6 +28,9 @@ importers:
       '@yavoy/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@yavoy/legal':
+        specifier: workspace:*
+        version: link:../../packages/legal
       drizzle-orm:
         specifier: ^0.44.0
         version: 0.44.7(postgres@3.4.9)

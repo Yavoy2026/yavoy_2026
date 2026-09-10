@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { InjectOptions } from "fastify";
+import { partnerOffer } from "@yavoy/legal";
 import * as schema from "../src/db/schema.ts";
 import { createTestApp, loginViaOtp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
 
@@ -39,15 +40,9 @@ beforeAll(async () => {
 afterAll(() => t.teardown());
 
 describe("бэкофис: партнёры", () => {
-  it("менеджер назначить партнёра не может, админ — может; повторно → 409", async () => {
-    const byManager = await call({
-      method: "POST",
-      url: "/v1/admin/partners",
-      headers: authed(managerToken),
-      payload: { user_id: partnerUserId, org_name: "ООО Тестовые туры" },
-    });
-    expect(byManager.statusCode).toBe(403);
-
+  it("партнёра назначает менеджер или админ; повторно → 409", async () => {
+    // раньше это было заперто на админа; с появлением заявок менеджер их
+    // рассматривает, поэтому и назначить напрямую может (YAV-29)
     const byAdmin = await call({
       method: "POST",
       url: "/v1/admin/partners",
@@ -215,5 +210,133 @@ describe("бэкофис: партнёры", () => {
 
     const byPartner = await call({ method: "GET", url: "/v1/admin/partners", headers: authed(partnerToken) });
     expect(byPartner.statusCode).toBe(403);
+  });
+});
+
+/**
+ * Заявка на партнёрство (YAV-29): Pending Review → Approved | Rejected.
+ * Одобрение выдаёт роль и создаёт профиль данными из самой заявки.
+ */
+describe("заявка на партнёрство", () => {
+  let applicantToken: string;
+  let applicantId: string;
+
+  beforeAll(async () => {
+    const applicant = await signupWithRole(t, "wannabe@test.ru", "user", "Соискатель");
+    applicantId = applicant.id;
+    applicantToken = applicant.token;
+  });
+
+  const form = (over: Record<string, unknown> = {}) => ({
+    org_name: "ООО Заявочные Туры",
+    inn: "7799887766",
+    phone: "+998 90 000-00-00",
+    description: "Организуем экскурсии по Самарканду",
+    offer_version: partnerOffer.version,
+    ...over,
+  });
+
+  it("редакция оферты, отличная от действующей, не принимается", async () => {
+    const res = await call({
+      method: "POST",
+      url: "/v1/partner-applications",
+      headers: authed(applicantToken),
+      // не version-1: ноль отсекла бы схема раньше, а нам нужен именно наш барьер
+      payload: form({ offer_version: partnerOffer.version + 1 }),
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe("offer_version_stale");
+  });
+
+  it("заявка подаётся и видна заявителю со статусом pending", async () => {
+    const res = await call({
+      method: "POST",
+      url: "/v1/partner-applications",
+      headers: authed(applicantToken),
+      payload: form(),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().status).toBe("pending");
+    // акцепт зафиксирован с версией — иначе он недоказуем
+    expect(res.json().offer_version).toBe(partnerOffer.version);
+    expect(res.json().offer_accepted_at).toBeTruthy();
+
+    const mine = await call({
+      method: "GET",
+      url: "/v1/partner-applications/me",
+      headers: authed(applicantToken),
+    });
+    expect(mine.json().org_name).toBe("ООО Заявочные Туры");
+  });
+
+  it("вторую заявку, пока первая на рассмотрении, подать нельзя", async () => {
+    const res = await call({
+      method: "POST",
+      url: "/v1/partner-applications",
+      headers: authed(applicantToken),
+      payload: form(),
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe("application_pending");
+  });
+
+  it("отказ приходит с причиной, роль не выдаётся", async () => {
+    const queue = await call({
+      method: "GET",
+      url: "/v1/admin/partner-applications?status=pending",
+      headers: authed(managerToken),
+    });
+    const id = queue.json().items[0].id;
+
+    const rejected = await call({
+      method: "POST",
+      url: `/v1/admin/partner-applications/${id}/reject`,
+      headers: authed(managerToken),
+      payload: { comment: "СТИР не проходит проверку" },
+    });
+    expect(rejected.statusCode).toBe(200);
+    expect(rejected.json().comment).toBe("СТИР не проходит проверку");
+
+    const user = (await t.app.db.select().from(schema.users).where(eq(schema.users.id, applicantId)))[0]!;
+    expect(user.role).toBe("user");
+  });
+
+  it("после отказа можно подать заново, одобрение выдаёт роль и профиль", async () => {
+    const again = await call({
+      method: "POST",
+      url: "/v1/partner-applications",
+      headers: authed(applicantToken),
+      payload: form({ org_name: "ООО Заявочные Туры (исправлено)" }),
+    });
+    expect(again.statusCode).toBe(200);
+
+    const approved = await call({
+      method: "POST",
+      url: `/v1/admin/partner-applications/${again.json().id}/approve`,
+      headers: authed(managerToken),
+    });
+    expect(approved.statusCode).toBe(200);
+    // профиль создан данными из заявки — вводить их повторно не нужно
+    expect(approved.json().org_name).toBe("ООО Заявочные Туры (исправлено)");
+    expect(approved.json().inn).toBe("7799887766");
+
+    const user = (await t.app.db.select().from(schema.users).where(eq(schema.users.id, applicantId)))[0]!;
+    expect(user.role).toBe("partner");
+  });
+
+  it("повторное решение по рассмотренной заявке → 400", async () => {
+    const handled = await call({
+      method: "GET",
+      url: "/v1/admin/partner-applications?status=approved",
+      headers: authed(managerToken),
+    });
+    const id = handled.json().items[0].id;
+    const res = await call({
+      method: "POST",
+      url: `/v1/admin/partner-applications/${id}/approve`,
+      headers: authed(managerToken),
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe("application_not_pending");
   });
 });

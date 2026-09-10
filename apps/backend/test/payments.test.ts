@@ -4,6 +4,7 @@ import * as schema from "../src/db/schema.ts";
 import type { CreatePaymentInput, PaymentEvent, PaymentProvider } from "../src/modules/payments/provider.ts";
 import { expireStalePayments } from "../src/modules/payments/service.ts";
 import { createTestApp, seedCatalogFixture, signupWithRole, type TestApp } from "./helpers.ts";
+import { offer } from "@yavoy/legal";
 
 /**
  * Провайдер-дубль: настоящий OCTO по сети мы в тестах не дёргаем, а вся логика
@@ -59,6 +60,7 @@ const payload = (tickets = 1) => ({
   first_name: "Иван",
   last_name: "Петров",
   contact: "payer@example.com",
+  offer_version: offer.version,
 });
 
 const authed = () => ({ authorization: `Bearer ${token}` });

@@ -9,6 +9,7 @@ import { PLACEHOLDER as P, type LegalDocument } from "./types";
  */
 export const offer: LegalDocument = {
   id: "offer",
+  version: 1,
   title: "Публичная оферта",
   updatedAt: P("дата утверждения"),
 
