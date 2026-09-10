@@ -195,6 +195,13 @@ Rate-limit-плагин в NODE_ENV=test не регистрируется; ку
   `INSERT INTO tour_dates (tour_id, starts_on, seats_total, seats_left)
    SELECT t.id, current_date + o, 12, 12 FROM tours t, unnest(ARRAY[3,10,17,24]) AS o
    ON CONFLICT (tour_id, starts_on) DO NOTHING;`
+- **`when` в `migrations/meta/_journal.json` руками не писать.** Drizzle применяет
+  миграции по правилу «`when` больше последней применённой», причём сравнивает с
+  максимумом в БД. Выдуманная круглая метка у `0005` оказалась больше, чем у всех
+  следующих, и на выкатке **две миграции молча пропустились**, а третья прошла.
+  Свежая база это не ловит — там применяется всё подряд, поэтому тесты зелёные;
+  ломается только инкрементальный деплой. Проверять после выкатки не только
+  «Migrations applied», но и саму схему.
 - Файл `resume` в корне — личный файл владельца: в коммиты не включать
   (`git reset -q -- resume` перед `git add -A`).
 - `apps/expo/android|ios` — сгенерированы `expo prebuild`, в .gitignore; APK собирается

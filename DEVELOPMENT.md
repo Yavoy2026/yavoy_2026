@@ -207,7 +207,20 @@ docker save yavoy-backend:latest yavoy-web:latest | gzip | ssh root@89.169.21.10
 ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.yml up -d --no-build'
 ```
 
-Образ бэкенда сам прогоняет миграции при старте. Сид каталога (одноразово, стирает
+Образ бэкенда сам прогоняет миграции при старте. **Строчки «Migrations applied»
+недостаточно**: drizzle сравнивает `when` из журнала с максимумом в БД, и миграция
+с меткой меньше уже применённой пропускается молча. После выкатки со схемными
+изменениями сверять саму схему:
+
+```bash
+ssh root@89.169.21.102 "docker exec yavoy-postgres-1 psql -U yavoy -d yavoy \
+  -c \"select count(*) from drizzle.__drizzle_migrations;\" \
+  -c \"select table_name from information_schema.tables where table_schema='public';\""
+```
+
+Пропущенную миграцию доводят руками: `docker cp` файла в контейнер postgres и
+`psql -v ON_ERROR_STOP=1 -f`. Перезаписывать журнал в БД не нужно — drizzle
+сравнивает только с максимумом. Сид каталога (одноразово, стирает
 каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
 
 **Стенд протухает примерно через месяц.** Сид раскладывает даты выездов относительно
