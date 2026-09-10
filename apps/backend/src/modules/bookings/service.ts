@@ -71,7 +71,7 @@ async function loadBooking(db: Db, bookingId: string): Promise<Booking> {
 }
 
 /**
- * Создаёт заявку на бронирование (YAV-27). Места удерживаются сразу — иначе
+ * Создаёт заявку на бронирование (YAV-28). Места удерживаются сразу — иначе
  * организатор подтверждал бы бронь, на которую мест уже не осталось. Деньги
  * на этом шаге не берутся: сначала организатор проверяет доступность.
  */
@@ -218,7 +218,7 @@ export async function expireUnpaidBooking(db: Db, bookingId: string): Promise<vo
  */
 export async function expireStaleRequests(db: Db): Promise<number> {
   const deadline = new Date(Date.now() - env.PARTNER_RESPONSE_TTL_H * 3_600_000);
-  // requested — статус броней, созданных до YAV-27; они точно так же держат места
+  // requested — статус броней, созданных до YAV-28; они точно так же держат места
   const stale = [
     ...(await listStaleBookings(db, "awaiting_partner", deadline)),
     ...(await listStaleBookings(db, "requested", deadline)),

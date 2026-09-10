@@ -136,7 +136,8 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
   (bootstrap `GET /v1/catalog` + адаптер к легаси-типу `Tour`), `services/bookings.ts`, `services/social.ts`.
 - Каталог грузится целиком и фильтруется на клиенте — осознанно, пока туров десятки
   (при росте перейти на серверные фильтры `GET /v1/tours`, они уже реализованы).
-- Оставшиеся моки: `mocks/bookings.ts` (транзакции — до M4), `mocks/reels.ts` (Reels — backlog).
+- Оставшийся мок Expo: только `mocks/reels.ts` (Reels — backlog, оставлен сознательно).
+  Мок транзакций удалён: история платежей идёт из `GET /v1/me/transactions`.
 - **RN-web грабли**: вложенный Touchable/Pressable внутри другого Touchable не получает клики
   в браузере — кнопки поверх карточек размещать сиблингами тач-области (см. `CitySelector.tsx`).
 - Проверка типов: `npx tsc --noEmit` в `apps/expo/`.

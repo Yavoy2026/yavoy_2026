@@ -15,7 +15,7 @@ import { fetchMyApplication, submitApplication, type ApplicationForm } from "@/s
 const EMPTY: ApplicationForm = { org_name: "", inn: "", phone: "", description: "" };
 
 /**
- * Заявка на партнёрство (YAV-29). Раньше здесь жил демо-кабинет на моках —
+ * Заявка на партнёрство (YAV-24). Раньше здесь жил демо-кабинет на моках —
  * фейковые заявки, гости и выручка; настоящий кабинет партнёра находится
  * в панели управления, а витрине нужна именно форма подачи.
  */

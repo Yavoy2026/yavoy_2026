@@ -46,7 +46,7 @@ export async function adminPartnersRoutes(fastify: FastifyInstance) {
     "/admin/partners",
     {
       // менеджер рассматривает заявки, значит и назначить напрямую может:
-      // иначе он просто обошёл бы очередь (решение владельца, YAV-29)
+      // иначе он просто обошёл бы очередь (решение владельца, YAV-24)
       preHandler: [app.requireRole("manager", "admin")],
       schema: {
         tags: ["admin"],
@@ -97,7 +97,7 @@ export async function adminPartnersRoutes(fastify: FastifyInstance) {
     async (req) => updatePartner(app.db, req.params.id, req.body),
   );
 
-  // ─── Заявки на партнёрство (YAV-29) ─────────────────────────
+  // ─── Заявки на партнёрство (YAV-24) ─────────────────────────
 
   /** Подаёт обычный пользователь; акцепт партнёрской оферты обязателен */
   app.post(

@@ -65,7 +65,7 @@ const payload = (tickets = 1) => ({
 
 const authed = () => ({ authorization: `Bearer ${token}` });
 
-/** Заявка доходит до оплаты только после решения организатора (YAV-27) */
+/** Заявка доходит до оплаты только после решения организатора (YAV-28) */
 async function approve(bookingId: string) {
   const res = await t.app.inject({
     method: "POST",
@@ -213,7 +213,7 @@ describe("оплата брони", () => {
   });
 });
 
-/** История платежей (YAV-30): пользователь видит свои и только свои */
+/** История платежей (YAV-31): пользователь видит свои и только свои */
 describe("история платежей", () => {
   it("отдаёт оплаченный платёж с маской карты и статусом completed", async () => {
     const res = await t.app.inject({ method: "GET", url: "/v1/me/transactions", headers: authed() });

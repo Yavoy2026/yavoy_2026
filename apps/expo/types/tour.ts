@@ -1,4 +1,4 @@
-/** Статусы брони с бэкенда (YAV-27); зеркалит BookingStatusSchema в контрактах */
+/** Статусы брони с бэкенда (YAV-28); зеркалит BookingStatusSchema в контрактах */
 export type BookingApiStatus =
   | "requested"
   | "awaiting_partner"
@@ -142,7 +142,7 @@ export interface BookedTour {
   apiStatus?: BookingApiStatus;
   organizerPhone?: string;
   meetingMapUrl?: string;
-  /** Ссылка на платёжную страницу, пока бронь ждёт оплату (YAV-27) */
+  /** Ссылка на платёжную страницу, пока бронь ждёт оплату (YAV-28) */
   paymentUrl?: string;
 
   bookedAt: string;

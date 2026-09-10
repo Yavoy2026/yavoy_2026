@@ -51,10 +51,10 @@ const App = () => (
             {/* обязательны для интернет-эквайринга: банк проверяет их наличие (YAV-21) */}
             <Route path="/offer" element={<Legal doc="offer" />} />
             <Route path="/privacy" element={<Legal doc="privacy" />} />
-            {/* оферта для организаторов — отдельный документ: другие обязательства (YAV-29) */}
+            {/* оферта для организаторов — отдельный документ: другие обязательства (YAV-24) */}
             <Route path="/partner-offer" element={<Legal doc="partner_offer" />} />
 
-            {/* Панель управления: свой макет, разделы — отдельные адреса (YAV-26) */}
+            {/* Панель управления: свой макет, разделы — отдельные адреса (YAV-30) */}
             <Route path="/admin" element={<AdminIndex />} />
             <Route path="/admin/bookings" element={<AdminBookings />} />
             <Route path="/admin/reviews" element={<AdminReviews />} />

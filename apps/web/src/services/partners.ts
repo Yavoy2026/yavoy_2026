@@ -2,7 +2,7 @@ import { partnerOffer } from "@yavoy/legal";
 
 import { ApiError, authFetch } from "@/services/api";
 
-/** Заявка на партнёрство (YAV-29) */
+/** Заявка на партнёрство (YAV-24) */
 export interface PartnerApplication {
   id: string;
   status: "pending" | "approved" | "rejected";

@@ -36,7 +36,7 @@ export const categoryTypeEnum = pgEnum("category_type", [
 export const seasonTypeEnum = pgEnum("season_type", ["winter", "spring", "summer", "autumn", "all_year"]);
 export const tourStatusEnum = pgEnum("tour_status", ["draft", "pending", "published", "rejected", "archived"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "partner", "manager", "admin"]);
-// Жизненный цикл брони — см. BookingStatusSchema в @yavoy/contracts (YAV-27)
+// Жизненный цикл брони — см. BookingStatusSchema в @yavoy/contracts (YAV-28)
 export const bookingStatusEnum = pgEnum("booking_status", [
   "requested",
   "awaiting_partner",
@@ -57,9 +57,9 @@ export const paymentStatusEnum = pgEnum("payment_status", [
 ]);
 export const favoriteEntityEnum = pgEnum("favorite_entity", ["tour", "city"]);
 export const reviewStatusEnum = pgEnum("review_status", ["pending", "published", "rejected"]);
-/** Жизненный цикл правки тура: draft → pending → approved | rejected (YAV-28) */
+/** Жизненный цикл правки тура: draft → pending → approved | rejected (YAV-29) */
 export const revisionStatusEnum = pgEnum("revision_status", ["draft", "pending", "approved", "rejected"]);
-/** Заявка на партнёрство: Pending Review → Approved | Rejected (YAV-29) */
+/** Заявка на партнёрство: Pending Review → Approved | Rejected (YAV-24) */
 export const applicationStatusEnum = pgEnum("application_status", ["pending", "approved", "rejected"]);
 
 // ─── Каталог (M1) ────────────────────────────────────────────
@@ -146,7 +146,7 @@ export const tours = pgTable(
 );
 
 /**
- * Правки тура, ждущие модерации (YAV-28).
+ * Правки тура, ждущие модерации (YAV-29).
  *
  * Опубликованный тур трогать нельзя, пока правку не одобрили, — иначе он
  * пропадёт с витрины. Поэтому изменения живут здесь, а не в строке тура:
@@ -323,7 +323,7 @@ export const refreshSessions = pgTable(
 
 // Профиль организации; users.role='partner' + строка здесь. Верификация ИНН — ручная менеджером.
 /**
- * Заявка на партнёрство (YAV-29). Отдельно от partner_profiles намеренно:
+ * Заявка на партнёрство (YAV-24). Отдельно от partner_profiles намеренно:
  * профиль означает действующего партнёра, и если сложить заявки туда, каждый
  * список партнёров пришлось бы фильтровать, а отклонённые заявки — хранить
  * как мусорные профили. Здесь же живёт причина отказа.

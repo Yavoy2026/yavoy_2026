@@ -2,7 +2,7 @@ import type { BookingStatus } from "@yavoy/contracts";
 import { conflict } from "../../errors.ts";
 
 /**
- * Машина состояний брони (спека §1.3, правило 1; сценарий YAV-27).
+ * Машина состояний брони (спека §1.3, правило 1; сценарий YAV-28).
  * Любая смена статуса — только через assertTransition.
  *
  *   requested → awaiting_partner → awaiting_payment → confirmed → completed
@@ -14,7 +14,7 @@ import { conflict } from "../../errors.ts";
 const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
   // Заявка только что создана; обычный следующий шаг — уйти организатору.
   // Решения по ней разрешены и напрямую: в этом статусе лежат брони,
-  // созданные до YAV-27, и менеджер должен уметь их закрыть.
+  // созданные до YAV-28, и менеджер должен уметь их закрыть.
   requested: ["awaiting_partner", "awaiting_payment", "confirmed", "rejected", "expired", "cancelled"],
   // ждём, что организатор проверит доступность
   awaiting_partner: ["awaiting_payment", "confirmed", "rejected", "expired", "cancelled"],

@@ -35,7 +35,7 @@ export async function paymentsRoutes(fastify: FastifyInstance) {
     },
   );
 
-  /** История платежей пользователя (YAV-30) */
+  /** История платежей пользователя (YAV-31) */
   app.get(
     "/me/transactions",
     {

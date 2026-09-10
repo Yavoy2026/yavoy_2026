@@ -120,7 +120,7 @@ export const UpdateTourPayloadSchema = TourWritePayloadSchema.partial();
 export type UpdateTourPayload = z.infer<typeof UpdateTourPayloadSchema>;
 
 /**
- * Правка тура на модерации (YAV-28). Опубликованный тур продолжает работать,
+ * Правка тура на модерации (YAV-29). Опубликованный тур продолжает работать,
  * пока правка не одобрена, поэтому её содержимое живёт отдельно от тура.
  */
 export const RevisionStatusSchema = z.enum(["draft", "pending", "approved", "rejected"]);
@@ -211,7 +211,7 @@ export type PartnerListResponse = z.infer<typeof PartnerListResponseSchema>;
 
 /** Назначение партнёра: существующему пользователю (admin-only) */
 /**
- * Заявка на партнёрство (YAV-29): Pending Review → Approved | Rejected.
+ * Заявка на партнёрство (YAV-24): Pending Review → Approved | Rejected.
  * Подаёт обычный пользователь, рассматривает менеджер или админ; одобрение
  * создаёт профиль организации и выдаёт роль partner одной транзакцией.
  */

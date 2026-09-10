@@ -144,12 +144,15 @@ tour_dates         id, tour_id FK, starts_on date, seats_total, seats_left, pric
 ### 3.2 Бронирования и деньги
 
 ```
-bookings           id, user_id FK, tour_id FK, tour_date_id FK,
-                   status (pending_payment|confirmed|completed|cancelled|refunded),
-                   tickets_count, amount_kopeks, contact_name, contact_phone, contact_email,
-                   voucher_code UNIQUE, confirmation_code,
-                   idempotency_key UNIQUE, expires_at (TTL неоплаченной брони),
-                   cancelled_at, cancel_reason, created_at
+bookings           РЕАЛИЗОВАНО (YAV-28): id, user_id FK, tour_id FK, tour_date_id FK,
+                   status (requested|awaiting_partner|awaiting_payment|confirmed|
+                           completed|rejected|expired|cancelled),
+                   tickets_count, amount_kopeks (bigint), currency, confirmation_code,
+                   first_name, last_name, contact,
+                   status_changed_at (по нему сборщик ищет протухшие),
+                   offer_version + offer_accepted_at (акцепт оферты, требование банка),
+                   created_at, confirmed_at, cancelled_at
+                   -- целевое, ещё не заведено: idempotency_key, cancel_reason
 
 payments           РЕАЛИЗОВАНО (YAV-21): id, booking_id FK, provider (octo|yookassa),
                    provider_payment_id (UNIQUE вместе с provider), status
@@ -160,6 +163,8 @@ payments           РЕАЛИЗОВАНО (YAV-21): id, booking_id FK, provider 
 loyalty_accounts   user_id PK, balance_points
 loyalty_entries    id, user_id, delta, reason (booking|reel|promo|redeem), ref_id, created_at
 
+-- Промокоды и сертификаты — целевые таблицы, ещё НЕ заведены. Обе фичи
+-- выключены флагом в клиентах до появления бэкенда (YAV-32).
 promo_codes        id, code UNIQUE, owner_user_id (пригласивший), bonus_points,
                    max_uses, used_count, expires_at
 promo_redemptions  id, promo_id FK, user_id FK, UNIQUE(promo_id, user_id)
@@ -168,11 +173,14 @@ gift_certificates  id, code UNIQUE, buyer_user_id, amount_kopeks,
                    status (active|redeemed|expired), redeemed_by, redeemed_at
 ```
 
-**Машина состояний брони:**
-`pending_payment` →(вебхук succeeded)→ `confirmed` →(дата прошла)→ `completed`;
-`pending_payment` →(TTL 30 мин / отмена)→ `cancelled`;
-`confirmed` →(отмена по политике)→ `refunded` (через возврат ЮKassa).
-Списание `seats_left` — при создании брони в одной транзакции c `SELECT ... FOR UPDATE`; возврат мест — при `cancelled`/TTL.
+**Машина состояний брони** — см. §5.5. Кратко:
+`requested → awaiting_partner → awaiting_payment → confirmed → completed`,
+тупики `rejected` (организатор отказал), `expired` (истёк срок ответа или оплаты),
+`cancelled` (отменил человек). Переходы только через `modules/bookings/transitions.ts`.
+
+Списание `seats_left` — условным UPDATE (`... WHERE seats_left >= N`) плюс CHECK
+в БД, без `SELECT ... FOR UPDATE`. Места держатся с момента заявки и до
+терминального статуса; возврат — при выходе из «живых» статусов.
 
 ### 3.3 UGC и социальное
 
@@ -196,6 +204,23 @@ reel_likes         reel_id, user_id, PK(reel_id, user_id)
 ### 3.4 Партнёрка, модерация, коммуникации
 
 ```
+partner_applications  РЕАЛИЗОВАНО (YAV-24): id, user_id FK, status (pending|approved|
+                   rejected), org_name, inn, phone, description,
+                   offer_version + offer_accepted_at (принятая редакция партнёрской
+                   оферты; без номера акцепт недоказуем),
+                   comment (причина отказа — относится к попытке, не к партнёру),
+                   created_at, reviewed_by, reviewed_at.
+                   Частичный UNIQUE(user_id) WHERE status='pending' — вторую заявку
+                   при открытой первой подать нельзя.
+
+tour_revisions     РЕАЛИЗОВАНО (YAV-29): id, tour_id FK, status (draft|pending|
+                   approved|rejected), payload jsonb (то, чем тур станет после
+                   одобрения), comment, created_by, created_at, reviewed_by, reviewed_at.
+                   Частичный UNIQUE(tour_id) WHERE status IN ('draft','pending') —
+                   две незакрытые правки гонялись бы за одну строку тура.
+                   Строка тура при этом НЕ трогается: витрина показывает текущую
+                   версию, пока новая на модерации.
+
 partner_profiles   -- РЕАЛИЗОВАНА упрощённая версия (авг 2026):
                    -- id, user_id FK UNIQUE, org_name, description, phone,
                    -- inn (текст, проверка ручная менеджером), verified bool, created_at.
@@ -295,7 +320,7 @@ PUT    /me/favorites/{tour|city}/{id}           (идемпотентно)
 DELETE /me/favorites/{tour|city}/{id}
 ```
 
-### 5.5 Бронирования и оплата (реализовано; YAV-21, YAV-27, YAV-30)
+### 5.5 Бронирования и оплата (реализовано; YAV-21, YAV-28, YAV-31)
 ```
 POST   /bookings               {tour_date_id, tickets_count, contact..., offer_version}
                                → {booking, payment_url}   payment_url всегда null (см. ниже)
@@ -309,7 +334,7 @@ GET    /admin/bookings?status=a,b   очередь; партнёр видит т
 POST   /webhooks/{provider}    без auth, подлинность — по подписи в теле
 ```
 
-**Жизненный цикл (YAV-27).** `requested → awaiting_partner → awaiting_payment
+**Жизненный цикл (YAV-28).** `requested → awaiting_partner → awaiting_payment
 → confirmed → completed`; тупики `rejected` (организатор отказал), `expired`
 (истёк срок ответа или оплаты), `cancelled` (отменил человек). Тупики разделены
 намеренно: у них разный смысл в отчётах и разные письма.
@@ -339,7 +364,7 @@ POST   /webhooks/{provider}    без auth, подлинность — по по
 `cancelled`/`failed` → `cancelled`, истёкший `PAYMENT_TTL_MIN` → `expired`,
 места в продажу. Коллбэки идемпотентны: повтор того же статуса не меняет ничего.
 
-`GET /me/transactions` (YAV-30) идёт от броней пользователя. Статус выводится
+`GET /me/transactions` (YAV-31) идёт от броней пользователя. Статус выводится
 на сервере — у провайдера пять состояний, человеку осмысленны четыре, и правило
 «частичный возврат — это возврат» должно быть одно на обе платформы: провайдер
 помечает такой платёж как `succeeded`, поэтому смотрим на `refunded_minor`.
@@ -373,7 +398,7 @@ POST   /gift-certificates      {amount} → оплата через ЮKassa
 POST   /gift-certificates/redeem {code}
 ```
 
-### 5.9 Партнёрка — РЕАЛИЗОВАНО (авг 2026; YAV-28, YAV-29)
+### 5.9 Партнёрка — РЕАЛИЗОВАНО (авг 2026; YAV-29, YAV-24)
 
 ```
 POST   /partner-applications        заявка: org_name, inn, phone, offer_version
@@ -389,14 +414,14 @@ POST   /admin/revisions/{id}/approve
 POST   /admin/revisions/{id}/reject {comment}
 ```
 
-**Заявка на партнёрство (YAV-29).** `pending → approved | rejected`. Отдельная
+**Заявка на партнёрство (YAV-24).** `pending → approved | rejected`. Отдельная
 таблица, а не статус в `partner_profiles`: профиль означает действующего
 партнёра, и заявки в нём заставили бы фильтровать каждый список, а отклонённые
 остались бы мусорными профилями. Одобряют менеджер и админ; они же могут
 назначить партнёра напрямую. Принятая редакция партнёрской оферты пишется в
 заявку — оферт две, у покупателя и организатора разные обязательства.
 
-**Модерация правок (YAV-28).** Правка опубликованного тура НЕ трогает его
+**Модерация правок (YAV-29).** Правка опубликованного тура НЕ трогает его
 строку: она живёт в `tour_revisions`, а тур продолжает работать на витрине,
 пока менеджер не одобрит. Частичный уникальный индекс не даёт завести две
 незакрытые правки на один тур. Расписание и места через модерацию не идут —

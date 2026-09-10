@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Жизненный цикл брони (YAV-27):
+ * Жизненный цикл брони (YAV-28):
  *
  *   requested → awaiting_partner → awaiting_payment → confirmed → completed
  *
@@ -53,7 +53,7 @@ export const CreateBookingPayloadSchema = z.object({
   contact: z.string().min(3).max(200), // телефон или email
   /**
    * Номер принятой редакции оферты. Акцепт до оплаты — требование банка (п.7),
-   * и без версии он недоказуем: текст оферты меняется (YAV-29).
+   * и без версии он недоказуем: текст оферты меняется (YAV-24).
    */
   offer_version: z.number().int().min(1),
 });
@@ -93,7 +93,7 @@ export type Booking = z.infer<typeof BookingSchema>;
 
 /**
  * Ответ на создание брони. payment_url всегда null: платить можно только
- * после того, как организатор подтвердит доступность (YAV-27). Ссылка на
+ * после того, как организатор подтвердит доступность (YAV-28). Ссылка на
  * оплату появляется в самой броне, когда та переходит в awaiting_payment.
  * Поле оставлено, чтобы клиенты не ломались на форме ответа.
  */
@@ -107,7 +107,7 @@ export const BookingListResponseSchema = z.object({ items: z.array(BookingSchema
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>;
 
 /**
- * История платежей пользователя (YAV-30). Статус выводится на сервере, а не
+ * История платежей пользователя (YAV-31). Статус выводится на сервере, а не
  * в клиентах: у провайдера состояний больше, чем имеет смысл показывать
  * человеку, и правило «частичный возврат — это возврат» должно быть одно
  * на обе платформы.

@@ -78,7 +78,7 @@ export async function createBooking(
   payload: CreateBookingPayload,
 ): Promise<{ booking: BookedTour; paymentUrl: string | null }> {
   // Версию оферты подставляем здесь, а не в экранах: акцепт — свойство самого
-  // документа, а экранов бронирования несколько, и забыть её легко (YAV-29).
+  // документа, а экранов бронирования несколько, и забыть её легко (YAV-24).
   const res = await authFetch("/bookings", {
     method: "POST",
     body: JSON.stringify({ ...payload, offer_version: offer.version }),
@@ -102,7 +102,7 @@ export async function cancelBooking(id: string): Promise<BookedTour> {
   return adaptBooking(await parseOrThrow(res, "bookingCancelFailed"));
 }
 
-/** История платежей (YAV-30). Статус считает сервер — правило одно на обе платформы */
+/** История платежей (YAV-31). Статус считает сервер — правило одно на обе платформы */
 export interface Transaction {
   id: string;
   booking_id: string;

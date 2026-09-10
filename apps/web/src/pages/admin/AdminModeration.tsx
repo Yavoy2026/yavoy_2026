@@ -10,7 +10,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { approveRevision, fetchRevisions, rejectRevision } from "@/services/admin";
 
 /**
- * Очередь модерации правок (YAV-28). Пока правка здесь, опубликованный тур
+ * Очередь модерации правок (YAV-29). Пока правка здесь, опубликованный тур
  * продолжает работать на витрине со старым содержимым.
  */
 export default function AdminModeration() {

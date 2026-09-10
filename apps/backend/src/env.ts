@@ -51,7 +51,7 @@ const EnvSchema = z.object({
   PAYMENT_TTL_MIN: z.coerce.number().int().min(5).max(120).default(30),
   /**
    * Сколько часов заявка ждёт ответа организатора. Места удерживаются с момента
-   * заявки, поэтому молчание не может длиться вечно (YAV-27).
+   * заявки, поэтому молчание не может длиться вечно (YAV-28).
    */
   PARTNER_RESPONSE_TTL_H: z.coerce.number().int().min(1).max(168).default(24),
 

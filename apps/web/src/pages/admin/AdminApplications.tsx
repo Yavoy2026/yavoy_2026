@@ -10,7 +10,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { approveApplication, fetchApplications, rejectApplication } from "@/services/admin";
 
 /**
- * Заявки на партнёрство (YAV-29). Одобрение выдаёт роль и создаёт профиль
+ * Заявки на партнёрство (YAV-24). Одобрение выдаёт роль и создаёт профиль
  * данными из заявки — вводить их повторно не нужно.
  */
 export default function AdminApplications() {

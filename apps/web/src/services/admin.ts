@@ -55,7 +55,7 @@ function adaptAdminBooking(b: ApiBooking): AdminBooking {
   };
 }
 
-/** Очередь панели; несколько статусов сразу — список через запятую (YAV-27) */
+/** Очередь панели; несколько статусов сразу — список через запятую (YAV-28) */
 export async function fetchAdminBookings(...statuses: BookingApiStatus[]): Promise<AdminBooking[]> {
   const res = await authFetch(`/admin/bookings?status=${statuses.join(",")}`);
   const body = await ensureOk<{ items: ApiBooking[] }>(res, "requestsLoadFailed");
@@ -296,7 +296,7 @@ export async function updateMyPartnerProfile(payload: {
   return ensureOk<PartnerProfile>(res, "orgProfileSaveFailed");
 }
 
-// ─── Модерация правок туров (YAV-28) ─────────────────────────
+// ─── Модерация правок туров (YAV-29) ─────────────────────────
 
 export interface TourRevision {
   id: string;
@@ -332,7 +332,7 @@ export async function submitTourForModeration(tourId: string): Promise<void> {
   await ensureOk(await authFetch(`/admin/tours/${tourId}/submit`, { method: "POST" }), "tourSubmitFailed");
 }
 
-// ─── Заявки на партнёрство (YAV-29) ──────────────────────────
+// ─── Заявки на партнёрство (YAV-24) ──────────────────────────
 
 export interface AdminApplication {
   id: string;

@@ -248,7 +248,7 @@ export async function updateTour(db: Db, actor: Actor, id: string, payload: Upda
   }
 
   // Опубликованный тур правится только через ревизию: сама строка остаётся
-  // на витрине, пока менеджер не одобрит правку (YAV-28). Расписание и места
+  // на витрине, пока менеджер не одобрит правку (YAV-29). Расписание и места
   // сюда не относятся — они меняются отдельными эндпоинтами и сразу.
   if (scope && existing.tour.status === "published") {
     await saveDraftRevision(db, id, actor.sub, { ...toWritePayload(existing.tour), ...payload });

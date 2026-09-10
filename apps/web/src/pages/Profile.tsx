@@ -151,7 +151,7 @@ export default function Profile() {
                     <div className="text-right">
                       <div className="font-bold">{formatMoney(bk.totalPrice)}</div>
                       <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {t(cfg.label)}</div>
-                      {/* организатор подтвердил — платёжная страница банка уже создана (YAV-27) */}
+                      {/* организатор подтвердил — платёжная страница банка уже создана (YAV-28) */}
                       {bk.apiStatus === "awaiting_payment" && bk.paymentUrl && (
                         <a
                           href={bk.paymentUrl}
@@ -308,7 +308,7 @@ export default function Profile() {
 
 /**
  * Явная карта, а не каскад if: раньше неизвестный статус молча притворялся
- * «заявка отправлена», и новые состояния из YAV-27 попали бы туда же.
+ * «заявка отправлена», и новые состояния из YAV-28 попали бы туда же.
  */
 const BOOKING_STATUS_CFG: Record<BookingApiStatus, { label: TKey; color: string; icon: typeof CheckCircle }> = {
   requested: { label: "enums.bookingStatus.requested", color: "text-orange-500", icon: Clock },
