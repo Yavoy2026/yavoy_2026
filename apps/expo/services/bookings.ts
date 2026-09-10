@@ -101,3 +101,26 @@ export async function cancelBooking(id: string): Promise<BookedTour> {
   const res = await authFetch(`/bookings/${id}/cancel`, { method: "POST" });
   return adaptBooking(await parseOrThrow(res, "bookingCancelFailed"));
 }
+
+/** История платежей (YAV-30). Статус считает сервер — правило одно на обе платформы */
+export interface Transaction {
+  id: string;
+  booking_id: string;
+  tour_title: string;
+  tour_image_url: string;
+  status: "completed" | "pending" | "refunded" | "failed";
+  amount_minor: number;
+  refunded_minor: number;
+  currency: string;
+  masked_pan: string | null;
+  card_vendor: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export async function fetchMyTransactions(): Promise<Transaction[]> {
+  const res = await authFetch("/me/transactions");
+  if (!res.ok) throw new ApiError(res.status, "transactionsLoadFailed", "transactionsLoadFailed");
+  const body = (await res.json()) as { items: Transaction[] };
+  return body.items;
+}

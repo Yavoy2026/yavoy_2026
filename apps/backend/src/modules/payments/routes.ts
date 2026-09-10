@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { ErrorEnvelopeSchema } from "@yavoy/contracts";
+import { ErrorEnvelopeSchema, TransactionListResponseSchema } from "@yavoy/contracts";
 import { notFound } from "../../errors.ts";
-import { applyPaymentEvent } from "./service.ts";
+import { applyPaymentEvent, listMyTransactions } from "./service.ts";
 
 /**
  * Коллбэки провайдера. Без авторизации — подлинность проверяется подписью
@@ -33,5 +33,18 @@ export async function paymentsRoutes(fastify: FastifyInstance) {
       await applyPaymentEvent(app.db, app.mailer, event);
       return { ok: true as const };
     },
+  );
+
+  /** История платежей пользователя (YAV-30) */
+  app.get(
+    "/me/transactions",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        tags: ["payments"],
+        response: { 200: TransactionListResponseSchema, 401: ErrorEnvelopeSchema },
+      },
+    },
+    async (req) => ({ items: await listMyTransactions(app.db, req.user!.sub) }),
   );
 }

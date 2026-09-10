@@ -105,3 +105,32 @@ export type CreateBookingResponse = z.infer<typeof CreateBookingResponseSchema>;
 
 export const BookingListResponseSchema = z.object({ items: z.array(BookingSchema) });
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>;
+
+/**
+ * История платежей пользователя (YAV-30). Статус выводится на сервере, а не
+ * в клиентах: у провайдера состояний больше, чем имеет смысл показывать
+ * человеку, и правило «частичный возврат — это возврат» должно быть одно
+ * на обе платформы.
+ */
+export const TransactionStatusSchema = z.enum(["completed", "pending", "refunded", "failed"]);
+export type TransactionStatus = z.infer<typeof TransactionStatusSchema>;
+
+export const TransactionSchema = z.object({
+  id: z.string().uuid(),
+  booking_id: z.string().uuid(),
+  tour_title: z.string(),
+  tour_image_url: z.string(),
+  status: TransactionStatusSchema,
+  amount_minor: z.number().int(),
+  refunded_minor: z.number().int(),
+  currency: z.string(),
+  /** Маска карты и платёжная система приходят от банка; до оплаты их нет */
+  masked_pan: z.string().nullable(),
+  card_vendor: z.string().nullable(),
+  paid_at: z.string().nullable(),
+  created_at: z.string(),
+});
+export type Transaction = z.infer<typeof TransactionSchema>;
+
+export const TransactionListResponseSchema = z.object({ items: z.array(TransactionSchema) });
+export type TransactionListResponse = z.infer<typeof TransactionListResponseSchema>;

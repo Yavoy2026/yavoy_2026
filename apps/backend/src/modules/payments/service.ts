@@ -1,11 +1,12 @@
-import { and, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
+import type { Transaction, TransactionStatus } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
-import { bookings, payments } from "../../db/schema.ts";
+import { bookings, payments, tours } from "../../db/schema.ts";
 import { env } from "../../env.ts";
 import { notFound } from "../../errors.ts";
 import type { Mailer } from "../../mail/mailer.ts";
 import { cancelUnpaidBooking, confirmPaidBooking, expireUnpaidBooking } from "../bookings/service.ts";
-import type { PaymentEvent, PaymentProvider } from "./provider.ts";
+import type { PaymentEvent, PaymentProvider, PaymentStatus } from "./provider.ts";
 
 /**
  * Создаёт платёж по броне и возвращает ссылку на платёжную страницу банка.
@@ -113,4 +114,47 @@ export async function expireStalePayments(db: Db): Promise<number> {
     await expireUnpaidBooking(db, row.bookingId);
   }
   return stale.length;
+}
+
+/**
+ * История платежей пользователя (YAV-30). Идёт по броням: платёж всегда
+ * привязан к брони, а бронь — к пользователю. Возврат считается по
+ * refunded_minor, а не по статусу: провайдер помечает succeeded и при
+ * частичном возврате тоже.
+ */
+export async function listMyTransactions(db: Db, userId: string): Promise<Transaction[]> {
+  const rows = await db
+    .select({
+      payment: payments,
+      tourTitle: tours.title,
+      tourImageUrl: tours.imageUrl,
+    })
+    .from(payments)
+    .innerJoin(bookings, eq(bookings.id, payments.bookingId))
+    .innerJoin(tours, eq(tours.id, bookings.tourId))
+    .where(eq(bookings.userId, userId))
+    .orderBy(desc(payments.createdAt));
+
+  return rows.map(({ payment, tourTitle, tourImageUrl }) => ({
+    id: payment.id,
+    booking_id: payment.bookingId,
+    tour_title: tourTitle,
+    tour_image_url: tourImageUrl,
+    status: transactionStatus(payment.status, payment.refundedMinor),
+    amount_minor: payment.amountMinor,
+    refunded_minor: payment.refundedMinor,
+    currency: payment.currency,
+    masked_pan: payment.maskedPan,
+    card_vendor: payment.cardVendor,
+    paid_at: payment.paidAt?.toISOString() ?? null,
+    created_at: payment.createdAt.toISOString(),
+  }));
+}
+
+/** Состояний у провайдера больше, чем имеет смысл показывать человеку */
+function transactionStatus(status: PaymentStatus, refundedMinor: number): TransactionStatus {
+  if (refundedMinor > 0) return "refunded";
+  if (status === "succeeded") return "completed";
+  if (status === "cancelled" || status === "failed") return "failed";
+  return "pending";
 }

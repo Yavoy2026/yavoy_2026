@@ -212,3 +212,46 @@ describe("оплата брони", () => {
     expect(date.seatsLeft).toBe(1);
   });
 });
+
+/** История платежей (YAV-30): пользователь видит свои и только свои */
+describe("история платежей", () => {
+  it("отдаёт оплаченный платёж с маской карты и статусом completed", async () => {
+    const res = await t.app.inject({ method: "GET", url: "/v1/me/transactions", headers: authed() });
+    expect(res.statusCode).toBe(200);
+    const items = res.json().items as { status: string; amount_minor: number; tour_title: string }[];
+    expect(items.length).toBeGreaterThan(0);
+
+    const paid = items.find((i) => i.amount_minor === 500_000)!;
+    expect(paid.status).toBe("completed");
+    expect(paid.tour_title).toBe("Обзорная по Москве");
+  });
+
+  it("частичный возврат показывается как refunded, а не completed", async () => {
+    const { bookingId, paymentId: pid } = await bookAndApprove(1);
+    await t.app.db
+      .update(schema.payments)
+      .set({ status: "succeeded", refundedMinor: 100 })
+      .where(eq(schema.payments.id, pid));
+
+    const res = await t.app.inject({ method: "GET", url: "/v1/me/transactions", headers: authed() });
+    const row = (res.json().items as { booking_id: string; status: string }[]).find((i) => i.booking_id === bookingId)!;
+    // провайдер помечает частичный возврат как succeeded — решаем это у себя
+    expect(row.status).toBe("refunded");
+  });
+
+  it("чужие платежи не видны", async () => {
+    const stranger = await signupWithRole(t, "stranger@example.com", "user");
+    const res = await t.app.inject({
+      method: "GET",
+      url: "/v1/me/transactions",
+      headers: { authorization: `Bearer ${stranger.token}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().items).toHaveLength(0);
+  });
+
+  it("без авторизации → 401", async () => {
+    const res = await t.app.inject({ method: "GET", url: "/v1/me/transactions" });
+    expect(res.statusCode).toBe(401);
+  });
+});

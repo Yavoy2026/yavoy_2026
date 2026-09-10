@@ -143,7 +143,7 @@ export const ru = {
       expired: "Срок истёк",
       cancelled: "Отменено",
     },
-    transactionStatus: { completed: "Оплачено", pending: "В обработке", refunded: "Возврат" },
+    transactionStatus: { completed: "Оплачено", pending: "В обработке", refunded: "Возврат", failed: "Не прошёл" },
     role: { user: "Пользователь", partner: "Партнёр", manager: "Менеджер", admin: "Админ" },
     theme: { system: "Системная", light: "Светлая", dark: "Тёмная" },
     /** Языки проведения экскурсии (поле tours.languages) */
@@ -337,6 +337,7 @@ export const ru = {
   },
 
   profile: {
+    noTransactions: "Платежей пока нет",
     guest: "Гость",
     user: "Пользователь",
     guestHint: "Войдите, чтобы открыть все возможности",
@@ -736,6 +737,7 @@ export const ru = {
     roleChangeFailed: "Не удалось изменить роль",
     userStatusFailed: "Не удалось изменить статус пользователя",
     bookingsLoadFailed: "Не удалось загрузить бронирования",
+    transactionsLoadFailed: "Не удалось загрузить платежи",
     bookingCreateFailed: "Не удалось создать бронирование",
     bookingCancelFailed: "Не удалось отменить бронирование",
     requestsLoadFailed: "Не удалось загрузить заявки",

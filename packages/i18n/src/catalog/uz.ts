@@ -109,7 +109,7 @@ export const uz: Catalog = {
       expired: "Muddati tugadi",
       cancelled: "Bekor qilingan",
     },
-    transactionStatus: { completed: "Toʻlangan", pending: "Jarayonda", refunded: "Qaytarildi" },
+    transactionStatus: { completed: "Toʻlangan", pending: "Jarayonda", refunded: "Qaytarildi", failed: "Amalga oshmadi" },
     role: { user: "Foydalanuvchi", partner: "Hamkor", manager: "Menejer", admin: "Administrator" },
     theme: { system: "Tizimdagi", light: "Yorugʻ", dark: "Qorongʻi" },
     tourLanguage: {
@@ -302,6 +302,7 @@ export const uz: Catalog = {
   },
 
   profile: {
+    noTransactions: "Hozircha toʻlovlar yoʻq",
     guest: "Mehmon",
     user: "Foydalanuvchi",
     guestHint: "Barcha imkoniyatlar uchun tizimga kiring",
@@ -700,6 +701,7 @@ export const uz: Catalog = {
     roleChangeFailed: "Rolni oʻzgartirib boʻlmadi",
     userStatusFailed: "Foydalanuvchi holatini oʻzgartirib boʻlmadi",
     bookingsLoadFailed: "Bandlovlarni yuklab boʻlmadi",
+    transactionsLoadFailed: "Toʻlovlarni yuklab boʻlmadi",
     bookingCreateFailed: "Bandlov yaratib boʻlmadi",
     bookingCancelFailed: "Bandlovni bekor qilib boʻlmadi",
     requestsLoadFailed: "Soʻrovlarni yuklab boʻlmadi",

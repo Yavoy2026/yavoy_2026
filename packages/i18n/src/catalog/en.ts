@@ -97,7 +97,7 @@ export const en: Catalog = {
       expired: "Expired",
       cancelled: "Cancelled",
     },
-    transactionStatus: { completed: "Paid", pending: "Processing", refunded: "Refunded" },
+    transactionStatus: { completed: "Paid", pending: "Processing", refunded: "Refunded", failed: "Failed" },
     role: { user: "User", partner: "Partner", manager: "Manager", admin: "Admin" },
     theme: { system: "System", light: "Light", dark: "Dark" },
     tourLanguage: {
@@ -290,6 +290,7 @@ export const en: Catalog = {
   },
 
   profile: {
+    noTransactions: "No payments yet",
     guest: "Guest",
     user: "User",
     guestHint: "Sign in to unlock everything",
@@ -688,6 +689,7 @@ export const en: Catalog = {
     roleChangeFailed: "Could not change the role",
     userStatusFailed: "Could not change the user status",
     bookingsLoadFailed: "Could not load the bookings",
+    transactionsLoadFailed: "Could not load payments",
     bookingCreateFailed: "Could not create the booking",
     bookingCancelFailed: "Could not cancel the booking",
     requestsLoadFailed: "Could not load the requests",

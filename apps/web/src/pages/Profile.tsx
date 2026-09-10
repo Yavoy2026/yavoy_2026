@@ -10,7 +10,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCatalog } from "@/services/catalog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchMyBookings } from "@/services/bookings";
+import { fetchMyBookings, fetchMyTransactions } from "@/services/bookings";
 import { createReview, fetchMyReviews } from "@/services/social";
 import type { BookedTour } from "@/types";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ import { translateError } from "@/i18n/errors";
 import type { BookingApiStatus } from "@/types";
 import type { TKey } from "@/i18n/keys";
 
-type Section = "favorites" | "transactions" | "reviews" | "reels" | "promos" | null;
+type Section = "favorites" | "trips" | "payments" | "reviews" | "reels" | "promos" | null;
 
 
 export default function Profile() {
@@ -33,10 +33,13 @@ export default function Profile() {
   const [reelCity, setReelCity] = useState("");
 
   const { tours, cityNameMap } = useCatalog();
-  const { t, formatNumber, formatMoney } = useI18n();
+  const { t, formatNumber, formatMoney, formatMoneyMinor, formatDate } = useI18n();
   const queryClient = useQueryClient();
   const bookingsQuery = useQuery({ queryKey: ["my-bookings"], queryFn: fetchMyBookings, enabled: isAuthenticated });
   const bookings = bookingsQuery.data ?? [];
+  // история платежей приходит из payments — на инсталляции без эквайринга она пуста
+  const transactionsQuery = useQuery({ queryKey: ["my-transactions"], queryFn: fetchMyTransactions, enabled: isAuthenticated });
+  const transactions = transactionsQuery.data ?? [];
   const reviewsQuery = useQuery({ queryKey: ["my-reviews"], queryFn: fetchMyReviews, enabled: isAuthenticated });
   const userReviews = reviewsQuery.data ?? [];
   const reviewedBookingIds = new Set(userReviews.map((r) => r.bookingId));
@@ -129,7 +132,7 @@ export default function Profile() {
 
       {/* Sections */}
       <div className="mb-6 overflow-hidden rounded-3xl bg-card ring-1 ring-border/60">
-        <Row icon={Plane} iconBg="bg-teal/10" iconColor="text-teal" title={t("profile.myTrips")} count={t("units.trips", { count: bookings.length })} open={open === "transactions"} onClick={() => toggle("transactions")}>
+        <Row icon={Plane} iconBg="bg-teal/10" iconColor="text-teal" title={t("profile.myTrips")} count={t("units.trips", { count: bookings.length })} open={open === "trips"} onClick={() => toggle("trips")}>
           {bookings.length === 0 ? (
             <p className="text-sm text-muted-foreground">{isAuthenticated ? t("profile.noTripsHint") : t("profile.noTripsGuest")}</p>
           ) : (
@@ -198,6 +201,32 @@ export default function Profile() {
               <p className="text-sm text-muted-foreground">{r.text}</p>
             </div>
           ))}
+        </Row>
+
+        <Row icon={Receipt} iconBg="bg-gold/15" iconColor="text-gold" title={t("profile.transactions")} count={t("units.operations", { count: transactions.length })} open={open === "payments"} onClick={() => toggle("payments")}>
+          {transactions.length === 0 ? (
+            <p className="p-3 text-sm text-muted-foreground">{t("profile.noTransactions")}</p>
+          ) : (
+            transactions.map((tr) => {
+              const tone = tr.status === "completed" ? "text-mint" : tr.status === "refunded" ? "text-gold" : tr.status === "failed" ? "text-coral" : "text-muted-foreground";
+              return (
+                <div key={tr.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
+                  <img src={tr.tour_image_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{tr.tour_title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(tr.paid_at ?? tr.created_at)}
+                      {tr.masked_pan ? ` · ${tr.masked_pan}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold">{formatMoneyMinor(tr.amount_minor)}</div>
+                    <div className={cn("text-xs", tone)}>{t(`enums.transactionStatus.${tr.status}` as TKey)}</div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </Row>
 
         <Row icon={Share2} iconBg="bg-mint/15" iconColor="text-mint" title={t("profile.myPromoCodes")} count={t("profile.promoSubtitle")} open={open === "promos"} onClick={() => toggle("promos")}>

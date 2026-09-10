@@ -60,11 +60,11 @@ import { useTheme, ThemeMode } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useFavorites } from "@/providers/FavoritesProvider";
 import { useBookings } from "@/providers/BookingsProvider";
+import { fetchMyTransactions } from "@/services/bookings";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
 import { useCertificates } from "@/providers/CertificatesProvider";
 import { usePromoCodes } from "@/providers/PromoCodesProvider";
 import { useReels } from "@/providers/ReelsProvider";
-import { transactions } from "@/mocks/bookings";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createReview, fetchMyReviews } from "@/services/social";
 import { useCatalog } from "@/services/catalog";
@@ -173,10 +173,17 @@ export default function ProfileScreen() {
   const { tours, cityNameMap } = useCatalog();
   const router = useRouter();
   const { colors, themeMode, setTheme } = useTheme();
-  const { t, formatNumber, formatMoney } = useI18n();
+  const { t, formatNumber, formatMoney, formatMoneyMinor, formatDate } = useI18n();
   const auth = useAuth();
   const { favoriteIds } = useFavorites();
   const { bookings, upcomingBookings, completedBookings } = useBookings();
+  // история платежей из payments; без эквайринга список пуст — это честно
+  const transactionsQuery = useQuery({
+    queryKey: ["my-transactions"],
+    queryFn: fetchMyTransactions,
+    enabled: auth.isAuthenticated,
+  });
+  const transactions = transactionsQuery.data ?? [];
   const { points, addPromoPoints } = useLoyalty();
   const { certificates } = useCertificates();
   const { promoCodes, generateNewPromo } = usePromoCodes();
@@ -287,6 +294,7 @@ export default function ProfileScreen() {
     completed: { label: "enums.transactionStatus.completed", color: colors.green, icon: CheckCircle },
     pending: { label: "enums.transactionStatus.pending", color: colors.orange, icon: Clock },
     refunded: { label: "enums.transactionStatus.refunded", color: colors.red, icon: XCircle },
+    failed: { label: "enums.transactionStatus.failed", color: colors.red, icon: XCircle },
   };
 
   console.log("[ProfileScreen] Rendering with", favoriteIds.length, "favorites");
@@ -299,9 +307,9 @@ export default function ProfileScreen() {
     router.push({ pathname: "/tour-detail", params: { tourId, tourIds: tourId } });
   }, [router]);
 
-  const totalSpent = transactions
-    .filter((t) => t.status === "completed")
-    .reduce((sum, t) => sum + t.amount, 0);
+  // как в вебе: считаем по настоящим броням, а не по истории платежей —
+  // на инсталляции без эквайринга платежей нет вовсе
+  const totalSpent = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
 
   const renderStars = useCallback((rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -705,28 +713,35 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         {expandedSection === "transactions" ? (
           <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            {transactions.map((tr) => {
-              const config = statusConfig[tr.status] || statusConfig.completed;
-              const StatusIcon = config.icon;
-              return (
-                <View key={tr.id} style={[styles.transactionCard, { backgroundColor: colors.surface }]}>
-                  <Image source={{ uri: tr.tourImage }} style={styles.transactionImage} contentFit="cover" />
-                  <View style={styles.transactionInfo}>
-                    <Text style={[styles.transactionTitle, { color: colors.text }]} numberOfLines={1}>{tr.tourTitle}</Text>
-                    <Text style={[styles.transactionDate, { color: colors.textMuted }]}>{tr.date}</Text>
-                  </View>
-                  <View style={styles.transactionRight}>
-                    <Text style={[styles.transactionAmount, { color: colors.text }]}>
-                      {`${tr.status === "refunded" ? "+" : "-"}${formatMoney(tr.amount)}`}
-                    </Text>
-                    <View style={styles.transactionStatus}>
-                      <StatusIcon size={12} color={config.color} />
-                      <Text style={[styles.transactionStatusText, { color: config.color }]}>{t(config.label)}</Text>
+            {transactions.length === 0 ? (
+              <Text style={[styles.emptyNote, { color: colors.textMuted }]}>{t("profile.noTransactions")}</Text>
+            ) : (
+              transactions.map((tr) => {
+                const config = statusConfig[tr.status] || statusConfig.completed;
+                const StatusIcon = config.icon;
+                return (
+                  <View key={tr.id} style={[styles.transactionCard, { backgroundColor: colors.surface }]}>
+                    <Image source={{ uri: tr.tour_image_url }} style={styles.transactionImage} contentFit="cover" />
+                    <View style={styles.transactionInfo}>
+                      <Text style={[styles.transactionTitle, { color: colors.text }]} numberOfLines={1}>{tr.tour_title}</Text>
+                      <Text style={[styles.transactionDate, { color: colors.textMuted }]}>
+                        {formatDate(tr.paid_at ?? tr.created_at)}
+                        {tr.masked_pan ? ` · ${tr.masked_pan}` : ""}
+                      </Text>
+                    </View>
+                    <View style={styles.transactionRight}>
+                      <Text style={[styles.transactionAmount, { color: colors.text }]}>
+                        {`${tr.status === "refunded" ? "+" : "-"}${formatMoneyMinor(tr.amount_minor)}`}
+                      </Text>
+                      <View style={styles.transactionStatus}>
+                        <StatusIcon size={12} color={config.color} />
+                        <Text style={[styles.transactionStatusText, { color: config.color }]}>{t(config.label)}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })
+            )}
           </View>
         ) : null}
       </View>
@@ -1380,6 +1395,7 @@ const styles = StyleSheet.create({
   transactionRight: { alignItems: "flex-end" },
   transactionAmount: { fontSize: 14, fontWeight: "700" as const },
   transactionStatus: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 },
+  emptyNote: { fontSize: 13, textAlign: "center", paddingVertical: 16 },
   transactionStatusText: { fontSize: 11, fontWeight: "500" as const },
   menuContainer: {
     marginTop: 20,
