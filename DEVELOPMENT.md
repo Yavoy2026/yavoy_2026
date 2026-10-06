@@ -184,6 +184,21 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 - `@fastify/cors` по умолчанию разрешает только GET/HEAD/POST — методы заданы явно в `app.ts`.
 - Не слать `Content-Type: application/json` без тела — fastify отвечает 400 (учтено в `authFetch`).
 
+## Прод
+
+Прод-нода создана 6 октября 2026: Serverspace, Ташкент, Ubuntu 26.04 LTS,
+2 vCPU / 4 ГБ / 80 ГБ NVMe / 100 Мбит/с, `89.31.28.161`, домен **yavay.uz**.
+Доступ — `ssh yavoy-prod` (отдельный ключ `~/.ssh/yavoy-prod`, алиас в `~/.ssh/config.d/yavoy.conf`).
+
+Сервер, DNS-зона, настройка ноды, бэкапы и почта — в `deploy/PROD.md`.
+Доступы к инфраструктуре (токен API, домен, IP) — `deploy/infra.env` по образцу
+`deploy/infra.env.example`; на сервер этот файл не копируется, в отличие от `deploy/.env`.
+
+Нода настроена (swap, ufw, docker с ротацией логов, бэкапы с проверенным восстановлением),
+стек поднят целиком, домен делегирован, сертификаты Let's Encrypt выпущены:
+https://yavay.uz и https://api.yavay.uz. Каталог пуст, почты пока нет
+(аккаунт Mailgun не активирован) — остаток в `deploy/PROD.md`.
+
 ## Stage-стенд
 
 Stage (не прод!) развёрнут на VPS `89.169.21.102` (Ubuntu 24.04), домены через sslip.io:

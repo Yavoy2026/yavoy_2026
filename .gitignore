@@ -16,3 +16,6 @@ apps/expo/package-lock.json
 # Сгенерировано expo prebuild (CNG) — не версионируем
 apps/expo/android/
 apps/expo/ios/
+
+# Локальные доступы к инфраструктуре (токен Serverspace) — на сервер не уезжают
+deploy/infra.env
