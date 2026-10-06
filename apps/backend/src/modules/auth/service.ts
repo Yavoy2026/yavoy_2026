@@ -3,7 +3,7 @@ import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import type { OtpVerifyPayload, OtpVerifyResponse, Tokens, UserProfile } from "@yavoy/contracts";
 import type { Db } from "../../db/client.ts";
 import { emailOtps, refreshSessions, users } from "../../db/schema.ts";
-import { tooManyRequests, unauthorized } from "../../errors.ts";
+import { serviceUnavailable, tooManyRequests, unauthorized } from "../../errors.ts";
 import type { Mailer } from "../../mail/mailer.ts";
 import { otpMail } from "../../mail/mailer.ts";
 import {
@@ -99,7 +99,14 @@ export async function requestOtp(db: Db, mailer: Mailer, rawEmail: string): Prom
       },
     });
 
-  await mailer.send(otpMail({ to: email, code }));
+  try {
+    await mailer.send(otpMail({ to: email, code }));
+  } catch {
+    // Код уже записан вместе с кулдауном в 60 секунд. Если письмо не ушло,
+    // оставить его — значит запереть человека на минуту без кода на руках.
+    await db.delete(emailOtps).where(eq(emailOtps.email, email));
+    throw serviceUnavailable("otp_mail_failed", "Не удалось отправить код, попробуйте ещё раз");
+  }
 }
 
 export async function verifyOtp(

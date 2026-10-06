@@ -652,6 +652,7 @@ export const en: Catalog = {
     empty_patch: "Specify a role or an active status",
     insufficient_role: "Not enough permissions",
     internal_error: "Internal server error",
+    otp_mail_failed: "Could not send the code. Please try again",
     invalid_cursor: "Invalid pagination cursor",
     invalid_refresh_token: "Invalid refresh token",
     invalid_token: "Invalid or expired token",

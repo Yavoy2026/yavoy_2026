@@ -664,6 +664,7 @@ export const uz: Catalog = {
     empty_patch: "Rol yoki faollikni koʻrsating",
     insufficient_role: "Huquqlar yetarli emas",
     internal_error: "Serverning ichki xatosi",
+    otp_mail_failed: "Kodni yuborib boʻlmadi. Qaytadan urinib koʻring",
     invalid_cursor: "Sahifalash kursori notoʻgʻri",
     invalid_refresh_token: "Refresh-token yaroqsiz",
     invalid_token: "Token yaroqsiz yoki muddati tugagan",

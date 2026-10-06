@@ -701,6 +701,7 @@ export const ru = {
     empty_patch: "Укажите роль или активность",
     insufficient_role: "Недостаточно прав",
     internal_error: "Внутренняя ошибка сервера",
+    otp_mail_failed: "Не удалось отправить код. Попробуйте ещё раз",
     invalid_cursor: "Некорректный курсор пагинации",
     invalid_refresh_token: "Недействительный refresh-токен",
     invalid_token: "Недействительный или истёкший токен",

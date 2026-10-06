@@ -21,11 +21,16 @@ const t = createTranslator(CATALOGS, env.MAIL_LOCALE);
 const money = (minor: number) => formatMoneyMinor(minor, env.MAIL_LOCALE, env.CURRENCY);
 
 /**
- * SMTP задаётся через SMTP_URL (smtp://user:pass@host:port).
+ * SMTP задаётся через SMTP_URL (smtp://user:pass@host:port, smtps:// — TLS сразу).
  * Без него письма уходят в лог — разработка и тесты не требуют почтового аккаунта.
  */
 export function createMailer(log: FastifyBaseLogger): Mailer {
   if (!env.SMTP_URL) {
+    // В проде это не «режим разработки», а дыра: коды входа всех пользователей
+    // легли бы в docker logs. Лучше не стартовать, чем тихо раздавать их в лог.
+    if (env.NODE_ENV === "production") {
+      throw new Error("SMTP_URL обязателен в production: без него коды входа уходят только в лог");
+    }
     return {
       async send(msg) {
         // text попадает в лог намеренно: без SMTP это единственный способ увидеть OTP-код
@@ -34,15 +39,41 @@ export function createMailer(log: FastifyBaseLogger): Mailer {
     };
   }
 
-  // nodemailer подключается лениво, чтобы не тащить его в тестах без SMTP
-  const transportPromise = import("nodemailer").then((m) =>
-    m.default.createTransport(env.SMTP_URL),
-  );
+  // Адрес отправителя должен быть на домене, который подписан DKIM. Дефолт
+  // с чужим доменом молча ломал бы SPF/DKIM и отправлял письма в спам.
+  if (!env.MAIL_FROM) {
+    throw new Error("MAIL_FROM обязателен вместе с SMTP_URL: адрес на домене отправки");
+  }
+
+  // nodemailer подключается лениво, чтобы не тащить его в тестах без SMTP.
+  // URL разбираем сами: таймауты через строку подключения не задать, а без них
+  // зависший SMTP держит HTTP-запрос до умолчаний библиотеки.
+  const transportPromise = import("nodemailer").then((m) => {
+    const url = new URL(env.SMTP_URL!);
+    const secure = url.protocol === "smtps:";
+    return m.default.createTransport({
+      host: url.hostname,
+      port: Number(url.port) || (secure ? 465 : 587),
+      secure,
+      auth: url.username
+        ? { user: decodeURIComponent(url.username), pass: decodeURIComponent(url.password) }
+        : undefined,
+      connectionTimeout: 5_000,
+      greetingTimeout: 5_000,
+      socketTimeout: 10_000,
+    });
+  });
 
   return {
     async send(msg) {
       const transport = await transportPromise;
-      await transport.sendMail({ from: env.MAIL_FROM ?? "noreply@yavoy.ru", ...msg });
+      try {
+        await transport.sendMail({ from: env.MAIL_FROM, ...msg });
+      } catch (err) {
+        // логируем здесь: выше ошибка превращается в доменную и подробности теряются
+        log.error({ err, to: msg.to, subject: msg.subject }, "MAIL failed");
+        throw err;
+      }
       log.info({ mail: { to: msg.to, subject: msg.subject } }, "MAIL sent");
     },
   };
