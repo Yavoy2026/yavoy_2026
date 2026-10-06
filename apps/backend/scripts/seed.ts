@@ -1,7 +1,16 @@
 /**
  * Seed каталога из src/db/seed-data.json (снапшот бывших моков Expo,
- * см. scripts/snapshot-mocks.ts). Идемпотентен: очищает каталог и заливает заново.
+ * см. scripts/snapshot-mocks.ts). Очищает каталог целиком и заливает заново.
  * Запуск: pnpm db:seed
+ *
+ * **Разрушительный и не для прода.** Каталог в нём демонстрационный, российский,
+ * а очистка задевает не только туры: по каскаду уезжают даты выездов и правки
+ * туров. Брони и отзывы каскадом НЕ удаляются — внешние ключи у них без
+ * onDelete, — поэтому на базе с ними очистка падает с ошибкой FK. И это
+ * опаснее, чем кажется: если броней нет, а отзывы есть, падение случается уже
+ * после удаления дат, и каталог остаётся без единой даты выезда — кнопка брони
+ * мертва на всей витрине. Поэтому ниже стоит предохранитель, а сама очистка
+ * идёт одной транзакцией.
  */
 import { readFileSync } from "node:fs";
 import { createDb } from "../src/db/client.ts";
@@ -75,9 +84,36 @@ const data = JSON.parse(
 
 const { db, sql } = createDb();
 
-await db.delete(tourDates);
-await db.delete(tours);
-await db.delete(cities);
+/**
+ * Предохранитель. Документации тут мало: сид запускают редко и обычно второпях,
+ * а цена ошибки — каталог инсталляции. SEED_FORCE=1 снимает проверку осознанно.
+ */
+const force = process.env.SEED_FORCE === "1";
+const [{ bookings: bookingCount, reviews: reviewCount }] = await sql`
+  select (select count(*) from bookings) as bookings,
+         (select count(*) from reviews) as reviews
+`;
+const liveData = Number(bookingCount) > 0 || Number(reviewCount) > 0;
+
+if (!force && (env.NODE_ENV === "production" || liveData)) {
+  const why = env.NODE_ENV === "production"
+    ? "NODE_ENV=production"
+    : `в базе есть живые данные (броней: ${bookingCount}, отзывов: ${reviewCount})`;
+  console.error(
+    `Сид остановлен: ${why}.\n` +
+    "Он стирает каталог целиком и заливает демонстрационные туры по России.\n" +
+    "Если это действительно нужно — SEED_FORCE=1 pnpm db:seed",
+  );
+  await sql.end();
+  process.exit(1);
+}
+
+// Одной транзакцией: падение на втором удалении иначе оставит каталог без дат выездов
+await db.transaction(async (tx) => {
+  await tx.delete(tourDates);
+  await tx.delete(tours);
+  await tx.delete(cities);
+});
 
 await db.insert(cities).values(
   data.cities.map((c, i) => ({
