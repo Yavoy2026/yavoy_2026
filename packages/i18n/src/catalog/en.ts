@@ -321,7 +321,9 @@ export const en: Catalog = {
     createPromo: "Create a promo code",
     myReels: "My Reels",
     reelsCount: "{{count}} under review · +{{points}} points per publication",
+    reelsCountPlain: "{{count}} under review",
     reelsReward: "Adding a reel earns {{points}} points. The video appears in the feed after moderation.",
+    reelsRewardPlain: "The video appears in the feed after moderation.",
     reelsOnModeration: "Under admin review",
     pickVideo: "Add a video",
     videoPicked: "Video selected",
@@ -334,6 +336,7 @@ export const en: Catalog = {
     submitForModeration: "Send for review",
     reelSentTitle: "Reel sent",
     reelSentText: "The video was sent to the admin for review. {{points}} points were credited to your bonus account.",
+    reelSentTextPlain: "The video was sent to the admin for review.",
     transactions: "Transactions",
     notifications: "Notifications",
     notifAll: "All notifications",
@@ -370,6 +373,7 @@ export const en: Catalog = {
     reelDefaultTour: "YAVOY excursion",
     reelOnModeration: "under review",
     reelSentWeb: "Reel sent for review. {{points}} points credited.",
+    reelSentWebPlain: "Reel sent for review.",
   },
 
   voucher: {

@@ -283,12 +283,13 @@ export default function ProfileScreen() {
       city: reelCity,
       videoUri: pickedVideoUri,
     });
-    addPromoPoints(reward);
+    // не начисляем в выключенный счётчик (YAV-33)
+    if (FEATURES.loyaltyPoints) addPromoPoints(reward);
     setReelTitle("");
     setReelTourTitle("");
     setReelCity("");
     setPickedVideoUri(undefined);
-    Alert.alert(t("profile.reelSentTitle"), t("profile.reelSentText", { points: reward }));
+    Alert.alert(t("profile.reelSentTitle"), FEATURES.loyaltyPoints ? t("profile.reelSentText", { points: reward }) : t("profile.reelSentTextPlain"));
   }, [submitReel, addPromoPoints, reelTitle, reelTourTitle, reelCity, pickedVideoUri, t]);
 
   const statusConfig: Record<string, { label: TKey; color: string; icon: React.ComponentType<{ size: number; color: string }> }> = {
@@ -671,7 +672,7 @@ export default function ProfileScreen() {
               </View>
               <View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReels")}</Text>
-                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.reelsCount", { count: moderationReels.length, points: rewardPoints })}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{FEATURES.loyaltyPoints ? t("profile.reelsCount", { count: moderationReels.length, points: rewardPoints }) : t("profile.reelsCountPlain", { count: moderationReels.length })}</Text>
               </View>
             </View>
             {expandedSection === "reels" ? (
@@ -684,7 +685,7 @@ export default function ProfileScreen() {
             <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}> 
               <View style={[styles.reelsRewardBox, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}> 
                 <Coins size={16} color={colors.teal} />
-                <Text style={[styles.reelsRewardText, { color: colors.teal }]}>{t("profile.reelsReward", { points: rewardPoints })}</Text>
+                <Text style={[styles.reelsRewardText, { color: colors.teal }]}>{FEATURES.loyaltyPoints ? t("profile.reelsReward", { points: rewardPoints }) : t("profile.reelsRewardPlain")}</Text>
               </View>
               <TouchableOpacity style={[styles.videoPickCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={pickReelVideo} activeOpacity={0.75}>
                 <View style={[styles.videoPickIcon, { backgroundColor: colors.coral + "20" }]}> 

@@ -368,7 +368,10 @@ export const ru = {
     createPromo: "Создать промокод",
     myReels: "Мои Reels",
     reelsCount: "{{count}} на модерации · +{{points}} баллов за публикацию",
+    /** Без баллов: используется, пока выключен флаг loyaltyPoints (YAV-33) */
+    reelsCountPlain: "{{count}} на модерации",
     reelsReward: "За добавление reels начисляется {{points}} баллов. Видео появится в ленте после модерации администратором.",
+    reelsRewardPlain: "Видео появится в ленте после модерации администратором.",
     reelsOnModeration: "На модерации администратора",
     pickVideo: "Добавить видео",
     videoPicked: "Видео выбрано",
@@ -381,6 +384,7 @@ export const ru = {
     submitForModeration: "Отправить на модерацию",
     reelSentTitle: "Reels отправлен",
     reelSentText: "Видео отправлено администратору на модерацию. На бонусный счёт начислено {{points}} баллов.",
+    reelSentTextPlain: "Видео отправлено администратору на модерацию.",
     transactions: "Транзакции",
     notifications: "Уведомления",
     notifAll: "Все уведомления",
@@ -417,6 +421,7 @@ export const ru = {
     reelDefaultTour: "Экскурсия YAVOY",
     reelOnModeration: "на модерации",
     reelSentWeb: "Reels отправлен на модерацию. Начислено {{points}} баллов.",
+    reelSentWebPlain: "Reels отправлен на модерацию.",
   },
 
   voucher: {

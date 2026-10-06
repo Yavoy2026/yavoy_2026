@@ -63,6 +63,7 @@ import { useViewedTours } from "@/providers/ViewedToursProvider";
 import { useBookings } from "@/providers/BookingsProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLoyalty } from "@/providers/LoyaltyProvider";
+import { FEATURES } from "@/constants/features";
 import { Tour, TourReview, BookedTour } from "@/types/tour";
 import { tourLanguageList } from "@yavoy/i18n";
 import { useI18n } from "@/providers/I18nProvider";
@@ -626,7 +627,8 @@ export default function TourDetailScreen() {
   }, []);
 
   const handleBookingComplete = useCallback((booking: BookedTour) => {
-    addPointsFromPurchase(booking.totalPrice);
+    // баллы выключены флагом, тихое начисление за покупку только имитирует награду (YAV-33)
+    if (FEATURES.loyaltyPoints) addPointsFromPurchase(booking.totalPrice);
     console.log("[TourDetail] Booking completed:", booking.id);
   }, [addPointsFromPurchase]);
 

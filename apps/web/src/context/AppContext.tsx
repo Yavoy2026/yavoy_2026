@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { addFavorite, fetchFavorites, removeFavorite, type FavoriteKind } from "@/services/social";
 import { initialReels } from "@/data/reels";
+import { FEATURES } from "@/features";
 import type { TravelReel } from "@/types";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -158,7 +159,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString().slice(0, 10),
     };
     setReels((prev) => [newReel, ...prev]);
-    setPoints((p) => p + reward);
+    // не начисляем в выключенный счётчик: пока нет бэкенда лояльности,
+    // тихое начисление в localStorage только создаёт видимость награды (YAV-33)
+    if (FEATURES.loyaltyPoints) setPoints((p) => p + reward);
     return reward;
   }, [t]);
 

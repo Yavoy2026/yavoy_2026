@@ -69,7 +69,8 @@ export default function Profile() {
   const handleSubmitReel = () => {
     const reward = submitReel({ title: reelTitle, tourTitle: reelTour, city: reelCity });
     setReelTitle(""); setReelTour(""); setReelCity("");
-    toast.success(t("profile.reelSentWeb", { points: reward }));
+    // про баллы говорим только когда они включены (YAV-33)
+    toast.success(FEATURES.loyaltyPoints ? t("profile.reelSentWeb", { points: reward }) : t("profile.reelSentWebPlain"));
   };
 
   return (
@@ -250,8 +251,8 @@ export default function Profile() {
         )}
 
         {isAuthenticated && (
-          <Row icon={Video} iconBg="bg-coral/15" iconColor="text-coral" title={t("profile.myReels")} count={t("profile.reelsCount", { count: moderationReels.length, points: 500 })} open={open === "reels"} onClick={() => toggle("reels")} last>
-            <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Coins size={16} /> {t("profile.reelsReward", { points: 500 })}</div>
+          <Row icon={Video} iconBg="bg-coral/15" iconColor="text-coral" title={t("profile.myReels")} count={FEATURES.loyaltyPoints ? t("profile.reelsCount", { count: moderationReels.length, points: 500 }) : t("profile.reelsCountPlain", { count: moderationReels.length })} open={open === "reels"} onClick={() => toggle("reels")} last>
+            <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal">{FEATURES.loyaltyPoints ? <><Coins size={16} /> {t("profile.reelsReward", { points: 500 })}</> : t("profile.reelsRewardPlain")}</div>
             <button onClick={() => toast(t("profile.videoWebOnly"))} className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-3 text-left">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-coral/15"><Upload size={18} className="text-coral" /></div>
               <div><div className="font-semibold">{t("profile.pickVideo")}</div><div className="text-xs text-muted-foreground">{t("profile.pickVideoHint")}</div></div>

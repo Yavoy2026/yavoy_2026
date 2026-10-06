@@ -333,7 +333,9 @@ export const uz: Catalog = {
     createPromo: "Promokod yaratish",
     myReels: "Mening Reels",
     reelsCount: "{{count}} tekshiruvda · nashr uchun +{{points}} ball",
+    reelsCountPlain: "{{count}} tekshiruvda",
     reelsReward: "Reels qoʻshganingiz uchun {{points}} ball beriladi. Video moderatsiyadan keyin lentada paydo boʻladi.",
+    reelsRewardPlain: "Video moderatsiyadan keyin lentada paydo boʻladi.",
     reelsOnModeration: "Administrator tekshiruvida",
     pickVideo: "Video qoʻshish",
     videoPicked: "Video tanlandi",
@@ -346,6 +348,7 @@ export const uz: Catalog = {
     submitForModeration: "Moderatsiyaga yuborish",
     reelSentTitle: "Reels yuborildi",
     reelSentText: "Video administratorga moderatsiyaga yuborildi. Bonus hisobingizga {{points}} ball qoʻshildi.",
+    reelSentTextPlain: "Video administratorga moderatsiyaga yuborildi.",
     transactions: "Tranzaksiyalar",
     notifications: "Bildirishnomalar",
     notifAll: "Barcha bildirishnomalar",
@@ -382,6 +385,7 @@ export const uz: Catalog = {
     reelDefaultTour: "YAVOY ekskursiyasi",
     reelOnModeration: "tekshiruvda",
     reelSentWeb: "Reels moderatsiyaga yuborildi. {{points}} ball qoʻshildi.",
+    reelSentWebPlain: "Reels moderatsiyaga yuborildi.",
   },
 
   voucher: {
