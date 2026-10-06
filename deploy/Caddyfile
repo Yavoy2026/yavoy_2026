@@ -1,0 +1,34 @@
+{$WEB_DOMAIN} {
+	encode gzip
+	root * /srv
+
+	# Ассет с расширением обязан отдавать честный 404, если файла нет.
+	# Иначе SPA-фолбэк вернёт index.html со статусом 200, и браузер получит
+	# HTML вместо картинки или JS-чанка — вместо ошибки будет молчаливая пустота.
+	@asset path *.js *.css *.map *.json *.txt *.xml *.webmanifest \
+		*.svg *.png *.jpg *.jpeg *.webp *.gif *.ico *.avif \
+		*.woff *.woff2 *.ttf *.otf
+	handle @asset {
+		file_server
+	}
+
+	# Всё остальное — маршруты клиентского роутера
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# www → корень. Без этого блока Caddy не выпустит сертификат на www.<домен>,
+# и посетитель, набравший адрес с www, упрётся в ошибку TLS.
+www.{$WEB_DOMAIN} {
+	redir https://{$WEB_DOMAIN}{uri} permanent
+}
+
+{$API_DOMAIN} {
+	# Bootstrap каталога — 143 КБ JSON на каждый визит, и он не сжимался:
+	# encode стоял только в блоке витрины. На узком канале прод-ноды
+	# (10 Мбит/с) это упиралось бы в сеть раньше, чем в процессор.
+	encode zstd gzip
+	reverse_proxy backend:3000
+}

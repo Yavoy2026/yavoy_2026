@@ -1,4 +1,21 @@
 node_modules
 .env
+.env.*
+!.env.example
 .expo
 .rork
+dist/
+*.pem
+.keys/
+coverage/
+.DS_Store
+
+# npm-артефакт: канонический лок Expo — bun.lock
+apps/expo/package-lock.json
+
+# Сгенерировано expo prebuild (CNG) — не версионируем
+apps/expo/android/
+apps/expo/ios/
+
+# Локальные доступы к инфраструктуре (токен Serverspace) — на сервер не уезжают
+deploy/infra.env

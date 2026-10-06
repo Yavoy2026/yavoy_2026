@@ -2,29 +2,14 @@
   "$schema": "https://rork.com/schema/rork.json",
   "apps": [
     {
-      "name": "YAVAY Travel Group",
-      "path": "expo",
+      "name": "YaVoy Travel Group",
+      "path": "apps/expo",
       "framework": "react-native"
     },
     {
-      "name": "YAVAY Travel Group",
-      "path": "expo",
-      "framework": "react-native"
-    },
-    {
-      "name": "YAVAY Travel Group",
-      "path": "ios",
-      "framework": "swift"
-    },
-    {
-      "name": "YAVAY Travel Group Web",
-      "path": "web",
+      "name": "YaVoy Travel Group Web",
+      "path": "apps/web",
       "framework": "web"
-    },
-    {
-      "name": "YAVAY Travel Group",
-      "path": "android",
-      "framework": "kotlin"
     }
   ]
 }

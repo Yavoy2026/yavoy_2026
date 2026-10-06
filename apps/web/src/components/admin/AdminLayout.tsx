@@ -1,0 +1,160 @@
+import { Building2, Check, ExternalLink, FileCheck, LogOut, Map, MessageSquare, Moon, ShieldCheck, Sun, UserPlus, Users, Loader2 } from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+
+import LanguageMenu from "@/components/LanguageMenu";
+import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { TKey } from "@/i18n/keys";
+import { cn } from "@/lib/utils";
+
+export type AdminSection =
+  | "bookings"
+  | "reviews"
+  | "tours"
+  | "moderation"
+  | "users"
+  | "partners"
+  | "applications"
+  | "org";
+
+const STAFF_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = [
+  { section: "bookings", label: "backoffice.tabBookings", icon: Check },
+  { section: "reviews", label: "backoffice.tabReviews", icon: MessageSquare },
+  { section: "tours", label: "backoffice.tabTours", icon: Map },
+  { section: "moderation", label: "backoffice.tabModeration", icon: FileCheck },
+  { section: "users", label: "backoffice.tabUsers", icon: Users },
+  { section: "partners", label: "backoffice.tabPartners", icon: Building2 },
+  { section: "applications", label: "backoffice.tabApplications", icon: UserPlus },
+];
+
+const PARTNER_NAV: { section: AdminSection; label: TKey; icon: typeof Map }[] = [
+  // заявки первыми: это единственный раздел, где от организатора ждут действия
+  { section: "bookings", label: "backoffice.tabBookingsPartner", icon: Check },
+  { section: "tours", label: "backoffice.tabMyTours", icon: Map },
+  { section: "org", label: "backoffice.tabOrg", icon: Building2 },
+];
+
+/**
+ * Макет панели управления. Витринный Layout здесь не используется намеренно:
+ * футер с марками платёжных систем, нижняя навигация покупателя и герой-баннер
+ * под таблицей модерации — источник большей части UI-багов бэкофиса.
+ *
+ * Переходы между разделами — роутерные. Полная перезагрузка документа, которую
+ * мы пробовали сначала, страховала от протечек стейта грубой силой, но платить
+ * за это приходилось на каждом переходе: разбор всего бандла, повторный whoami
+ * и все запросы заново. Изоляцию держит не перезагрузка, а то, что каждый
+ * раздел владеет своими запросами, а мутации сбрасывают кэш явно.
+ */
+export function AdminLayout({
+  section,
+  title,
+  action,
+  children,
+}: {
+  section: AdminSection;
+  title?: string;
+  /** Главное действие раздела — живёт в строке заголовка, а не над списком */
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const navigate = useNavigate();
+  const { user, role, isLoading: authLoading, logout } = useAuth();
+  const { isDark, setThemeMode } = useApp();
+  const { t } = useI18n();
+
+  const isPartner = role === "partner";
+  const hasAccess = isPartner || role === "admin" || role === "manager";
+  const nav = isPartner ? PARTNER_NAV : STAFF_NAV;
+  // раздела нет в меню роли — значит и по прямой ссылке он недоступен:
+  // партнёру нечего делать в пользователях, сотруднику — в профиле чужой организации
+  const sectionAllowed = nav.some((item) => item.section === section);
+
+  if (authLoading) {
+    // сессия ещё проверяется (whoami) — не показывать «доступ запрещён» раньше времени
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 size={28} className="animate-spin text-teal" />
+      </div>
+    );
+  }
+
+  if (hasAccess && !sectionAllowed) {
+    return <Navigate to={isPartner ? "/admin/tours" : "/admin/bookings"} replace />;
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center">
+        <ShieldCheck size={48} className="text-muted-foreground" />
+        <h1 className="text-xl font-extrabold">{t("backoffice.deniedTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("backoffice.deniedText")}</p>
+        <Link to="/" className="mt-2 rounded-xl bg-teal px-5 py-2.5 text-sm font-bold text-white">
+          {t("common.home")}
+        </Link>
+      </div>
+    );
+  }
+
+  const iconBtn =
+    "flex h-8 w-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+
+  return (
+    <div className="min-h-screen bg-background md:flex">
+      <aside className="border-b border-border bg-card md:min-h-screen md:w-56 md:shrink-0 md:border-b-0 md:border-r">
+        <div className="flex items-center gap-2 border-b border-border px-3 py-3">
+          <ShieldCheck size={18} className="shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">
+              {t(isPartner ? "backoffice.titlePartner" : "backoffice.title")}
+            </div>
+            <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
+          </div>
+        </div>
+
+        <nav className="flex gap-0.5 overflow-x-auto p-2 md:flex-col md:overflow-visible">
+          {nav.map((item) => (
+            <Link
+              key={item.section}
+              to={`/admin/${item.section}`}
+              className={cn(
+                "flex shrink-0 items-center gap-2 rounded px-2.5 py-1.5 text-sm transition-colors",
+                section === item.section
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60",
+              )}
+            >
+              <item.icon size={15} /> {t(item.label)}
+            </Link>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="min-w-0 flex-1">
+        <header className="flex items-center gap-2 border-b border-border px-4 py-2">
+          <h1 className="mr-auto truncate text-sm font-semibold">{title}</h1>
+          {action}
+          <Link to="/" className={iconBtn} aria-label={t("backoffice.toStorefront")} title={t("backoffice.toStorefront")}>
+            <ExternalLink size={15} />
+          </Link>
+          <LanguageMenu className={`${iconBtn} w-auto gap-1 px-2 text-xs font-semibold`} />
+          <button onClick={() => setThemeMode(isDark ? "light" : "dark")} aria-label={t("nav.theme")} className={iconBtn}>
+            {isDark ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <button
+            onClick={async () => {
+              await logout();
+              navigate("/");
+            }}
+            aria-label={t("common.logout")}
+            className={iconBtn}
+          >
+            <LogOut size={15} />
+          </button>
+        </header>
+
+        <main className="p-4">{children}</main>
+      </div>
+    </div>
+  );
+}

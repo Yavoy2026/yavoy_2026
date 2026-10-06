@@ -1,0 +1,103 @@
+# Продовый compose для VPS. Запуск: docker compose -f deploy/docker-compose.prod.yml up -d
+# Требуется .env рядом: POSTGRES_PASSWORD, JWT_PRIVATE_KEY_PEM, JWT_PUBLIC_KEY_PEM,
+# API_DOMAIN, WEB_DOMAIN, VITE_API_URL (опционально DEFAULT_LOCALE / SUPPORTED_LOCALES / MAIL_LOCALE)
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # Параметры задаются из .env под размер ноды; дефолты здесь — консервативные,
+    # прод (4 ГБ) задаёт свои значения в deploy/.env.
+    # Пул приложения max: 10 (db/client.ts), поэтому max_connections с запасом.
+    command: >
+      postgres
+      -c shared_buffers=${PG_SHARED_BUFFERS:-256MB}
+      -c effective_cache_size=${PG_EFFECTIVE_CACHE:-768MB}
+      -c work_mem=${PG_WORK_MEM:-8MB}
+      -c maintenance_work_mem=${PG_MAINT_WORK_MEM:-128MB}
+      -c max_connections=${PG_MAX_CONNECTIONS:-50}
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    # База и приложение живут на одной ноде, поэтому лимиты обязательны:
+    # без них утечка в Node утащит за собой Postgres через OOM-killer
+    mem_limit: ${MEM_POSTGRES:-768m}
+    environment:
+      POSTGRES_USER: yavoy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: yavoy
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yavoy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: apps/backend/Dockerfile
+    image: yavoy-backend:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: ${MEM_BACKEND:-512m}
+    # Зависший, но не упавший процесс рестарт-политикой не ловится — нужна проба.
+    # curl в образе нет (node:22-alpine), поэтому пробуем встроенным fetch.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=384}
+      DATABASE_URL: postgres://yavoy:${POSTGRES_PASSWORD}@postgres:5432/yavoy
+      JWT_PRIVATE_KEY_PEM: ${JWT_PRIVATE_KEY_PEM}
+      JWT_PUBLIC_KEY_PEM: ${JWT_PUBLIC_KEY_PEM}
+      # Языки клиентов и писем; смена DEFAULT_LOCALE не требует пересборки приложений
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-ru}
+      SUPPORTED_LOCALES: ${SUPPORTED_LOCALES:-ru,en,uz}
+      MAIL_LOCALE: ${MAIL_LOCALE:-ru}
+      # Эквайринг: none — оплаты нет, octo — узбекская инсталляция (YAV-21)
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-none}
+      CURRENCY: ${CURRENCY:-RUB}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      PAYMENT_RETURN_URL: ${PAYMENT_RETURN_URL:-}
+      PAYMENT_TTL_MIN: ${PAYMENT_TTL_MIN:-30}
+      OCTO_SHOP_ID: ${OCTO_SHOP_ID:-}
+      OCTO_SECRET: ${OCTO_SECRET:-}
+      OCTO_NOTIFY_SECRET: ${OCTO_NOTIFY_SECRET:-}
+      OCTO_TEST: ${OCTO_TEST:-true}
+      # Без SMTP_URL письма (код входа, подтверждение брони) уходят только в лог
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+
+  # Caddy: TLS + статика веб-клиента (запечена в образ) + reverse proxy на API
+  caddy:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    image: yavoy-web:latest
+    restart: unless-stopped
+    mem_limit: ${MEM_CADDY:-192m}
+    ports:
+      - "80:80"
+      - "443:443"
+      # HTTP/3 (QUIC): Caddy рекламирует h3 через Alt-Svc — без проброса UDP
+      # браузеры зависают на запросах после перехода на h3
+      - "443:443/udp"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+      WEB_DOMAIN: ${WEB_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+volumes:
+  pgdata:
+  caddy_data:
