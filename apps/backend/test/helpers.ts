@@ -8,7 +8,13 @@ import * as schema from "../src/db/schema.ts";
 import type { MailMessage } from "../src/mail/mailer.ts";
 import type { PaymentProvider } from "../src/modules/payments/provider.ts";
 
-const ADMIN_URL = process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://yavoy:yavoy@localhost:5434/yavoy";
+// Подключение, из-под которого создаются временные базы тестов. DATABASE_URL —
+// второй по очереди намеренно: в CI задан только он, и без этого шага обвязка
+// уходила на локальный порт 5434 и роняла все файлы, кроме первого.
+const ADMIN_URL =
+  process.env.TEST_DATABASE_ADMIN_URL ??
+  process.env.DATABASE_URL ??
+  "postgres://yavoy:yavoy@localhost:5434/yavoy";
 
 export interface TestApp {
   app: FastifyInstance;
