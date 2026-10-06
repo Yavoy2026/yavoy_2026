@@ -87,7 +87,7 @@ export default function Explore() {
                 transport === c.key ? "border-teal bg-teal text-white" : "border-border bg-card hover:border-teal/40",
               )}
             >
-              <span className="text-xl">{c.emoji}</span> {c.label}
+              <span className="text-xl">{c.emoji}</span> {t(c.label)}
             </button>
           ))}
         </div>
