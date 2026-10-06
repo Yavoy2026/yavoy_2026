@@ -1,0 +1,779 @@
+{
+  "cities": [
+    {
+      "id": "tashkent",
+      "name": "Ташкент",
+      "description": "Столица Узбекистана, базары и современная архитектура",
+      "emoji": "🏙",
+      "image": "https://yavay.uz/media/56ef7bc9-f150-4cb1-a768-760fe959e361.webp",
+      "position": 0
+    },
+    {
+      "id": "samarkand",
+      "name": "Самарканд",
+      "description": "Жемчужина Шёлкового пути, город Регистана",
+      "emoji": "🕌",
+      "image": "https://yavay.uz/media/fa103fd8-ada9-451b-bb39-2b204266a6c2.webp",
+      "position": 1
+    },
+    {
+      "id": "bukhara",
+      "name": "Бухара",
+      "description": "Город-музей со 140 памятниками",
+      "emoji": "🏰",
+      "image": "https://yavay.uz/media/54b1dfd6-74d7-44fe-a843-c975eb172a39.webp",
+      "position": 2
+    },
+    {
+      "id": "khiva",
+      "name": "Хива",
+      "description": "Древняя Ичан-Кала под открытым небом",
+      "emoji": "🏛",
+      "image": "https://yavay.uz/media/816c2d7e-df74-4de5-b168-5fdccb6cf52e.webp",
+      "position": 3
+    },
+    {
+      "id": "chimgan",
+      "name": "Чимган и Чарвак",
+      "description": "Горы и бирюзовое водохранилище под Ташкентом",
+      "emoji": "🏔",
+      "image": "https://yavay.uz/media/6b088c82-6a8d-4abe-9391-323243e21515.webp",
+      "position": 4
+    },
+    {
+      "id": "aidarkul",
+      "name": "Айдаркуль",
+      "description": "Юртовые лагеря у озера в пустыне",
+      "emoji": "🐪",
+      "image": "https://yavay.uz/media/d0cbdc13-1f5c-4f4a-9959-2f8bf71e4097.webp",
+      "position": 5
+    },
+    {
+      "id": "termez",
+      "name": "Термез",
+      "description": "Буддийское наследие древнего юга",
+      "emoji": "🛕",
+      "image": "https://yavay.uz/media/b5630c21-4874-406e-aaf5-b27fcd09d7ef.webp",
+      "position": 6
+    },
+    {
+      "id": "fergana",
+      "name": "Ферганская долина",
+      "description": "Шёлк Маргилана и керамика Риштана",
+      "emoji": "🎨",
+      "image": "https://yavay.uz/media/82afa6f4-42eb-426c-8105-c681c03601b4.webp",
+      "position": 7
+    },
+    {
+      "id": "nukus",
+      "name": "Нукус",
+      "description": "Музей Савицкого и каньоны Устюрта",
+      "emoji": "🏺",
+      "image": "https://yavay.uz/media/aaf403ed-f848-4342-bc07-d8ecb064bb51.webp",
+      "position": 8
+    },
+    {
+      "id": "aral",
+      "name": "Муйнак и Арал",
+      "description": "Корабельное кладбище и высохшее море",
+      "emoji": "🚢",
+      "image": "https://yavay.uz/media/1fe83fa0-d4fc-4666-9a46-6a140a54bcca.webp",
+      "position": 9
+    }
+  ],
+  "tours": [
+    {
+      "city": "tashkent",
+      "title": "Обзорная экскурсия по Ташкенту",
+      "description": "Столица Узбекистана за один день: комплекс Хазрати Имам со старейшим Кораном Османа, базар Чорсу, ташкентское метро — один из красивейших в мире, и современный центр с площадью Мустакиллик. Гид расскажет историю города от Тимуридов до наших дней.",
+      "image": "https://yavay.uz/media/56ef7bc9-f150-4cb1-a768-760fe959e361.webp",
+      "gallery": [
+        "https://yavay.uz/media/56ef7bc9-f150-4cb1-a768-760fe959e361.webp",
+        "https://yavay.uz/media/16238f5b-4a39-4a03-a89a-e470a6bb41d5.webp",
+        "https://yavay.uz/media/bf76c3ad-6b19-4637-b875-79f051c4cabd.webp"
+      ],
+      "priceMinor": 25000000,
+      "originalPriceMinor": 32000000,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "4 часа",
+      "transport": "auto",
+      "interest": "city",
+      "category": null,
+      "season": "all_year",
+      "organizer": {
+        "id": "org1",
+        "name": "Ташкент Гид",
+        "rating": 4.8,
+        "review_count": 342,
+        "avatar": "https://yavay.uz/media/avatar-29d3ce7392fe.jpg",
+        "verified": true,
+        "tours_count": 28
+      },
+      "highlights": [
+        "Хазрати Имам и Коран Османа",
+        "Базар Чорсу",
+        "Ташкентское метро",
+        "Площадь Мустакиллик"
+      ],
+      "includes": [
+        "Транспорт",
+        "Профессиональный гид",
+        "Входные билеты",
+        "Дегустация сухофруктов"
+      ],
+      "excludes": [
+        "Питание",
+        "Сувениры"
+      ],
+      "whatToBring": [
+        "Удобная обувь",
+        "Головной убор",
+        "Бутылка воды",
+        "Фотоаппарат"
+      ],
+      "languages": [
+        "ru",
+        "en",
+        "uz"
+      ],
+      "schedule": "Ежедневно в 10:00, 14:00",
+      "groupSize": "до 15 человек",
+      "meetingPoint": "Отель «Узбекистан», центральный вход",
+      "startTime": "10:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": true,
+      "isLikelyToSellOut": true,
+      "popularity": 95
+    },
+    {
+      "city": "tashkent",
+      "title": "Вечерний Ташкент и плов-центр",
+      "description": "Вечерний Ташкент с гастро-финалом: подсвеченные фонтаны, телебашня и плов-центр Бешкозон, где плов готовят в 300-литровых казанах. Ужин из легендарного ташкентского плова с перепелиными яйцами входит в стоимость.",
+      "image": "https://yavay.uz/media/16238f5b-4a39-4a03-a89a-e470a6bb41d5.webp",
+      "gallery": [
+        "https://yavay.uz/media/16238f5b-4a39-4a03-a89a-e470a6bb41d5.webp",
+        "https://yavay.uz/media/56ef7bc9-f150-4cb1-a768-760fe959e361.webp"
+      ],
+      "priceMinor": 32000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "4 часа",
+      "transport": "auto",
+      "interest": "city",
+      "category": "gastro",
+      "season": "all_year",
+      "organizer": {
+        "id": "org1",
+        "name": "Ташкент Гид",
+        "rating": 4.8,
+        "review_count": 342,
+        "avatar": "https://yavay.uz/media/avatar-29d3ce7392fe.jpg",
+        "verified": true,
+        "tours_count": 28
+      },
+      "highlights": [
+        "Плов-центр Бешкозон",
+        "Ужин из плова",
+        "Телебашня с подсветкой",
+        "Фонтаны Алишера Навои"
+      ],
+      "includes": [
+        "Транспорт",
+        "Гид",
+        "Ужин из плова",
+        "Чай из пиалы"
+      ],
+      "excludes": [
+        "Алкоголь",
+        "Личные расходы"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "uz"
+      ],
+      "schedule": "Ежедневно в 17:00",
+      "groupSize": "до 12 человек",
+      "meetingPoint": "Площадь Амира Темура",
+      "startTime": "17:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": true,
+      "isLikelyToSellOut": false,
+      "popularity": 88
+    },
+    {
+      "city": "samarkand",
+      "title": "Самарканд: Регистан, Гур-Эмир и Биби-Ханум",
+      "description": "Жемчужина Шёлкового пути за один день: величественный ансамбль Регистан с тремя медресе, мавзолей Гур-Эмир с надгробием Тамерлана, мечеть Биби-Ханум и базар Сиаб. Гид расскажет легенды эпохи Тимуридов и Улугбека.",
+      "image": "https://yavay.uz/media/fa103fd8-ada9-451b-bb39-2b204266a6c2.webp",
+      "gallery": [
+        "https://yavay.uz/media/fa103fd8-ada9-451b-bb39-2b204266a6c2.webp",
+        "https://yavay.uz/media/bf76c3ad-6b19-4637-b875-79f051c4cabd.webp"
+      ],
+      "priceMinor": 45000000,
+      "originalPriceMinor": 52000000,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "6 часов",
+      "transport": "auto",
+      "interest": "educational",
+      "category": null,
+      "season": "all_year",
+      "organizer": {
+        "id": "org2",
+        "name": "Регистан Тревел",
+        "rating": 4.9,
+        "review_count": 521,
+        "avatar": "https://yavay.uz/media/avatar-62649f1f60b3.jpg",
+        "verified": true,
+        "tours_count": 41
+      },
+      "highlights": [
+        "Ансамбль Регистан",
+        "Мавзолей Гур-Эмир",
+        "Мечеть Биби-Ханум",
+        "Базар Сиаб"
+      ],
+      "includes": [
+        "Транспорт по городу",
+        "Гид-историк",
+        "Все входные билеты",
+        "Вода"
+      ],
+      "excludes": [
+        "Обед",
+        "Сувениры"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Ежедневно в 09:00, 14:00",
+      "groupSize": "до 18 человек",
+      "meetingPoint": "Отель «Регистан», пл. Регистан",
+      "startTime": "09:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": true,
+      "isLikelyToSellOut": true,
+      "popularity": 98
+    },
+    {
+      "city": "samarkand",
+      "title": "Шахи-Зинда на рассвете: фототур",
+      "description": "Самый фотогеничный маршрут Самарканда до толп туристов: бирюзовый коридор мавзолеев Шахи-Зинда на рассвете, обсерватория Улугбека и лучшие точки для съёмки Регистана. Фотограф поможет поймать идеальный свет.",
+      "image": "https://yavay.uz/media/bf76c3ad-6b19-4637-b875-79f051c4cabd.webp",
+      "gallery": [
+        "https://yavay.uz/media/bf76c3ad-6b19-4637-b875-79f051c4cabd.webp",
+        "https://yavay.uz/media/fa103fd8-ada9-451b-bb39-2b204266a6c2.webp"
+      ],
+      "priceMinor": 28000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "3 часа",
+      "transport": "auto",
+      "interest": "city",
+      "category": "photo",
+      "season": "all_year",
+      "organizer": {
+        "id": "org2",
+        "name": "Регистан Тревел",
+        "rating": 4.9,
+        "review_count": 521,
+        "avatar": "https://yavay.uz/media/avatar-62649f1f60b3.jpg",
+        "verified": true,
+        "tours_count": 41
+      },
+      "highlights": [
+        "Шахи-Зинда без туристов",
+        "Обсерватория Улугбека",
+        "Рассветный свет",
+        "Помощь фотографа"
+      ],
+      "includes": [
+        "Транспорт",
+        "Гид",
+        "Входные билеты"
+      ],
+      "excludes": [
+        "Обед"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Ежедневно в 05:30",
+      "groupSize": "до 8 человек",
+      "meetingPoint": "Некрополь Шахи-Зинда",
+      "startTime": "05:30",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": false,
+      "isLikelyToSellOut": true,
+      "popularity": 90
+    },
+    {
+      "city": "bukhara",
+      "title": "Старая Бухара пешком",
+      "description": "Исторический центр Бухары — объект ЮНЕСКО: ансамбль Пои-Калян с минаретом высотой 46 метров, крепость Арк, ансамбль Ляби-Хауз и торговые купола XVI века. Пешеходный маршрут по самой аутентичной части города.",
+      "image": "https://yavay.uz/media/54b1dfd6-74d7-44fe-a843-c975eb172a39.webp",
+      "gallery": [
+        "https://yavay.uz/media/54b1dfd6-74d7-44fe-a843-c975eb172a39.webp",
+        "https://yavay.uz/media/82afa6f4-42eb-426c-8105-c681c03601b4.webp"
+      ],
+      "priceMinor": 26000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "4 часа",
+      "transport": "auto",
+      "interest": "city",
+      "category": null,
+      "season": "all_year",
+      "organizer": {
+        "id": "org3",
+        "name": "Старая Бухара",
+        "rating": 4.8,
+        "review_count": 276,
+        "avatar": "https://yavay.uz/media/avatar-e04762e4c75d.jpg",
+        "verified": true,
+        "tours_count": 19
+      },
+      "highlights": [
+        "Минарет Пои-Калян",
+        "Крепость Арк",
+        "Ляби-Хауз",
+        "Торговые купола"
+      ],
+      "includes": [
+        "Гид",
+        "Входные билеты",
+        "Чай в караван-сарае"
+      ],
+      "excludes": [
+        "Питание"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Ежедневно в 09:00, 16:00",
+      "groupSize": "до 15 человек",
+      "meetingPoint": "Ансамбль Пои-Калян",
+      "startTime": "09:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": true,
+      "isLikelyToSellOut": false,
+      "popularity": 92
+    },
+    {
+      "city": "bukhara",
+      "title": "Велотур по Бухаре",
+      "description": "Активная велоэкскурсия по зелёной Бухаре: городские стены, мавзолей Саманидов IX века, Боло-Хауз и загородная мечеть Чор-Минор. Велосипеды и шлемы предоставляются.",
+      "image": "https://yavay.uz/media/54b1dfd6-74d7-44fe-a843-c975eb172a39.webp",
+      "gallery": [
+        "https://yavay.uz/media/54b1dfd6-74d7-44fe-a843-c975eb172a39.webp"
+      ],
+      "priceMinor": 20000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "3 часа",
+      "transport": "bike",
+      "interest": "city",
+      "category": null,
+      "season": "summer",
+      "organizer": {
+        "id": "org3",
+        "name": "Старая Бухара",
+        "rating": 4.8,
+        "review_count": 276,
+        "avatar": "https://yavay.uz/media/avatar-e04762e4c75d.jpg",
+        "verified": true,
+        "tours_count": 19
+      },
+      "highlights": [
+        "Мавзолей Саманидов",
+        "Чор-Минор",
+        "Зелёные аллеи"
+      ],
+      "includes": [
+        "Велосипед",
+        "Шлем",
+        "Гид",
+        "Вода"
+      ],
+      "excludes": [
+        "Входные билеты"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru"
+      ],
+      "schedule": "Апрель–октябрь, в 8:00 и 16:00",
+      "groupSize": "до 10 человек",
+      "meetingPoint": "Бассейн Ляби-Хауз",
+      "startTime": "08:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": false,
+      "isLikelyToSellOut": false,
+      "popularity": 72
+    },
+    {
+      "city": "khiva",
+      "title": "Хива: Ичан-Кала — город-музей",
+      "description": "Целый город-крепость под открытым небом: Джума-мечеть с 213 резными колоннами, минарет Ислам-Ходжа, гарем Куня-Арк и башня Кальта-Минор, покрытая бирюзовой плиткой. Финал — закат с крепостной стены.",
+      "image": "https://yavay.uz/media/816c2d7e-df74-4de5-b168-5fdccb6cf52e.webp",
+      "gallery": [
+        "https://yavay.uz/media/816c2d7e-df74-4de5-b168-5fdccb6cf52e.webp",
+        "https://yavay.uz/media/aaf403ed-f848-4342-bc07-d8ecb064bb51.webp"
+      ],
+      "priceMinor": 38000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "5 часов",
+      "transport": "auto",
+      "interest": "educational",
+      "category": null,
+      "season": "all_year",
+      "organizer": {
+        "id": "org4",
+        "name": "Хива Гид",
+        "rating": 4.7,
+        "review_count": 198,
+        "avatar": "https://yavay.uz/media/avatar-9a8ffce18099.jpg",
+        "verified": true,
+        "tours_count": 23
+      },
+      "highlights": [
+        "Джума-мечеть",
+        "Кальта-Минор",
+        "Минарет Ислам-Ходжа",
+        "Закат со стены"
+      ],
+      "includes": [
+        "Гид",
+        "Все входные билеты",
+        "Фольклорное шоу"
+      ],
+      "excludes": [
+        "Обед",
+        "Трансфер из Ургенча"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Ежедневно в 09:00",
+      "groupSize": "до 16 человек",
+      "meetingPoint": "Западные ворота Ата-Дарвоза",
+      "startTime": "09:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": false,
+      "isLikelyToSellOut": true,
+      "popularity": 89
+    },
+    {
+      "city": "chimgan",
+      "title": "Треккинг по Чимгану и Большому Чимгану",
+      "description": "Многодневный треккинг в горах Западного Тянь-Шаня: плато Кумбель, водопады Гулькама и Чарвакские пейзажи. Ночёвка в горном приюте, питание и инструктор включены.",
+      "image": "https://yavay.uz/media/6b088c82-6a8d-4abe-9391-323243e21515.webp",
+      "gallery": [
+        "https://yavay.uz/media/6b088c82-6a8d-4abe-9391-323243e21515.webp",
+        "https://yavay.uz/media/d0cbdc13-1f5c-4f4a-9959-2f8bf71e4097.webp"
+      ],
+      "priceMinor": 120000000,
+      "originalPriceMinor": 140000000,
+      "currency": "UZS",
+      "duration": "multi_day",
+      "durationText": "2 дня",
+      "transport": "auto",
+      "interest": "nature",
+      "category": null,
+      "season": "summer",
+      "organizer": {
+        "id": "org5",
+        "name": "Горы Узбекистана",
+        "rating": 4.7,
+        "review_count": 207,
+        "avatar": "https://yavay.uz/media/avatar-e6de0f921eeb.jpg",
+        "verified": true,
+        "tours_count": 16
+      },
+      "highlights": [
+        "Вершина Большой Чимган",
+        "Плато Кумбель",
+        "Водопады Гулькама",
+        "Ночёвка в приюте"
+      ],
+      "includes": [
+        "Трансфер",
+        "Питание",
+        "Проживание",
+        "Инструктор"
+      ],
+      "excludes": [
+        "Личные расходы",
+        "Снаряжение"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Май–октябрь, выезд по субботам",
+      "groupSize": "4–10 человек",
+      "meetingPoint": "Малый Чирчик, причал",
+      "startTime": "07:00",
+      "isInstantConfirmation": false,
+      "isFreeCancellation": true,
+      "isBestseller": false,
+      "isLikelyToSellOut": true,
+      "popularity": 84
+    },
+    {
+      "city": "aidarkul",
+      "title": "Юртовый лагерь на Айдаркуле: верблюды и звёзды",
+      "description": "Два дня в пустыне Кызылкум: ночёвка в национальных юртах у озера Айдаркуль, катание на верблюдах до заката, плов у костра и звёздное небо без единого огня. Отъезд из Самарканда или Бухары.",
+      "image": "https://yavay.uz/media/d0cbdc13-1f5c-4f4a-9959-2f8bf71e4097.webp",
+      "gallery": [
+        "https://yavay.uz/media/d0cbdc13-1f5c-4f4a-9959-2f8bf71e4097.webp",
+        "https://yavay.uz/media/aaf403ed-f848-4342-bc07-d8ecb064bb51.webp"
+      ],
+      "priceMinor": 180000000,
+      "originalPriceMinor": 210000000,
+      "currency": "UZS",
+      "duration": "multi_day",
+      "durationText": "2 дня",
+      "transport": "auto",
+      "interest": "nature",
+      "category": "glamping",
+      "season": "all_year",
+      "organizer": {
+        "id": "org6",
+        "name": "Юртовый лагерь Нур",
+        "rating": 4.9,
+        "review_count": 98,
+        "avatar": "https://yavay.uz/media/avatar-423a52ce4b8b.jpg",
+        "verified": true,
+        "tours_count": 9
+      },
+      "highlights": [
+        "Ночь в юрте",
+        "Верблюды на закате",
+        "Плов у костра",
+        "Купание в Айдаркуле"
+      ],
+      "includes": [
+        "Трансфер из Самарканда",
+        "Юрта",
+        "Все питание",
+        "Верблюды",
+        "Фольклор"
+      ],
+      "excludes": [
+        "Напитки",
+        "Личные расходы"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Заезды ежедневно",
+      "groupSize": "до 12 человек",
+      "meetingPoint": "Отель в Самарканде — трансфер",
+      "startTime": "09:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": true,
+      "isLikelyToSellOut": true,
+      "popularity": 94
+    },
+    {
+      "city": "fergana",
+      "title": "Ферганская долина: шёлк и керамика",
+      "description": "Погружение в мир узбекских ремёсел: шёлковая фабрика Йодгорлик в Маргилане с ручным ткацким станком, керамическая школа Риштана с бирюзовой глазурью и мастер-класс по икату. Обед в семейном чайхане.",
+      "image": "https://yavay.uz/media/82afa6f4-42eb-426c-8105-c681c03601b4.webp",
+      "gallery": [
+        "https://yavay.uz/media/82afa6f4-42eb-426c-8105-c681c03601b4.webp",
+        "https://yavay.uz/media/54b1dfd6-74d7-44fe-a843-c975eb172a39.webp"
+      ],
+      "priceMinor": 75000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "10 часов",
+      "transport": "auto",
+      "interest": "educational",
+      "category": "ethno",
+      "season": "all_year",
+      "organizer": {
+        "id": "org8",
+        "name": "Ферганские ремёсла",
+        "rating": 4.6,
+        "review_count": 144,
+        "avatar": "https://yavay.uz/media/avatar-5255db548109.jpg",
+        "verified": true,
+        "tours_count": 14
+      },
+      "highlights": [
+        "Фабрика Йодгорлик",
+        "Керамика Риштана",
+        "Мастер-класс по икату",
+        "Обед в чайхане"
+      ],
+      "includes": [
+        "Трансфер из Ташкента",
+        "Гид",
+        "Мастер-класс",
+        "Обед"
+      ],
+      "excludes": [
+        "Сувениры"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "uz"
+      ],
+      "schedule": "Вт, Чт, Сб в 07:00",
+      "groupSize": "до 12 человек",
+      "meetingPoint": "Ташкент, ст. Коканд — трансфер",
+      "startTime": "07:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": false,
+      "isLikelyToSellOut": false,
+      "popularity": 81
+    },
+    {
+      "city": "aral",
+      "title": "Муйнак: кладбище кораблей и плато Устюрт",
+      "description": "Путешествие к морю, которого нет: корабельное кладбище Муйнака, краеведческий музей Арала и первые белые каньоны плато Устюрт. Самая трагичная и самая фотогеничная экспедиция Узбекистана.",
+      "image": "https://yavay.uz/media/1fe83fa0-d4fc-4666-9a46-6a140a54bcca.webp",
+      "gallery": [
+        "https://yavay.uz/media/1fe83fa0-d4fc-4666-9a46-6a140a54bcca.webp",
+        "https://yavay.uz/media/aaf403ed-f848-4342-bc07-d8ecb064bb51.webp"
+      ],
+      "priceMinor": 95000000,
+      "originalPriceMinor": null,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "10 часов",
+      "transport": "auto",
+      "interest": "nature",
+      "category": null,
+      "season": "summer",
+      "organizer": {
+        "id": "org7",
+        "name": "Устюрт Экспедиция",
+        "rating": 4.8,
+        "review_count": 134,
+        "avatar": "https://yavay.uz/media/avatar-8936c3b45f3b.jpg",
+        "verified": true,
+        "tours_count": 12
+      },
+      "highlights": [
+        "Корабельное кладбище",
+        "Музей Арала",
+        "Каньоны Устюрта",
+        "Закат над пустыней"
+      ],
+      "includes": [
+        "Джип-трансфер из Нукуса",
+        "Гид",
+        "Обед-сухпаёк",
+        "Вода"
+      ],
+      "excludes": [
+        "Проживание в Нукусе"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Ежедневно в 08:00",
+      "groupSize": "до 8 человек",
+      "meetingPoint": "Отель Jipek Joli, Нукус",
+      "startTime": "08:00",
+      "isInstantConfirmation": true,
+      "isFreeCancellation": true,
+      "isBestseller": true,
+      "isLikelyToSellOut": true,
+      "popularity": 87
+    },
+    {
+      "city": "aral",
+      "title": "Вертолёт над Аралом и Устюртом",
+      "description": "Полёт на вертолёте над бывшим дном Аральского моря: белые скалы Устюрта, затонувшие корабли с высоты и южный берег Арала. Посадка на плато с пикником и фотосессией. Самый впечатляющий тур страны.",
+      "image": "https://yavay.uz/media/aaf403ed-f848-4342-bc07-d8ecb064bb51.webp",
+      "gallery": [
+        "https://yavay.uz/media/aaf403ed-f848-4342-bc07-d8ecb064bb51.webp",
+        "https://yavay.uz/media/1fe83fa0-d4fc-4666-9a46-6a140a54bcca.webp"
+      ],
+      "priceMinor": 350000000,
+      "originalPriceMinor": 420000000,
+      "currency": "UZS",
+      "duration": "one_day",
+      "durationText": "3 часа",
+      "transport": "air",
+      "interest": "nature",
+      "category": null,
+      "season": "summer",
+      "organizer": {
+        "id": "org7",
+        "name": "Устюрт Экспедиция",
+        "rating": 4.8,
+        "review_count": 134,
+        "avatar": "https://yavay.uz/media/avatar-8936c3b45f3b.jpg",
+        "verified": true,
+        "tours_count": 12
+      },
+      "highlights": [
+        "Панорама Устюрта с высоты",
+        "Бывшее дно Арала",
+        "Пикник на плато",
+        "Фотосессия"
+      ],
+      "includes": [
+        "Вертолёт",
+        "Пилот-гид",
+        "Пикник",
+        "Страховка"
+      ],
+      "excludes": [
+        "Трансфер в Нукус",
+        "Проживание"
+      ],
+      "whatToBring": [],
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "schedule": "Апрель–сентябрь, по погоде",
+      "groupSize": "3–5 человек",
+      "meetingPoint": "Аэропорт Нукус",
+      "startTime": "10:00",
+      "isInstantConfirmation": false,
+      "isFreeCancellation": false,
+      "isBestseller": true,
+      "isLikelyToSellOut": true,
+      "popularity": 91
+    }
+  ]
+}

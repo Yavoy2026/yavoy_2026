@@ -22,7 +22,8 @@ ENV NODE_ENV=production
 COPY --from=build /app /app
 COPY --from=build /repo/apps/backend/dist /app/dist
 COPY --from=build /repo/apps/backend/src/db/migrations /app/dist/migrations
-# dist/seed.js читает JSON по пути ../src/db/seed-data.json относительно себя
+# dist/seed.js и dist/import-catalog.js читают JSON по пути ../src/db/… относительно себя
 COPY --from=build /repo/apps/backend/src/db/seed-data.json /app/src/db/seed-data.json
+COPY --from=build /repo/apps/backend/src/db/catalog-uz.json /app/src/db/catalog-uz.json
 EXPOSE 3000
 CMD ["sh", "-c", "node dist/migrate.js && node dist/server.js"]

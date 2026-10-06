@@ -1,7 +1,13 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: { server: "src/server.ts", migrate: "src/db/migrate.ts", seed: "scripts/seed.ts" },
+  entry: {
+    server: "src/server.ts",
+    migrate: "src/db/migrate.ts",
+    seed: "scripts/seed.ts",
+    // наполнение каталога инсталляции: запускается руками на сервере
+    "import-catalog": "scripts/import-catalog.ts",
+  },
   format: "esm",
   platform: "node",
   target: "node22",

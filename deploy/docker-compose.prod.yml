@@ -97,7 +97,11 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+      # Медиа каталога — в томе: образ веба пересобирается на каждой выкатке,
+      # и всё, что лежало бы внутри него, терялось бы вместе с ним
+      - media:/srv/media
 
 volumes:
   pgdata:
   caddy_data:
+  media:
