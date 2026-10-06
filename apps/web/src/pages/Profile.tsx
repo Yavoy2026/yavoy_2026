@@ -107,9 +107,10 @@ export default function Profile() {
             <button onClick={() => navigate("/auth")} className="rounded-xl bg-teal px-6 py-2.5 font-bold text-white">{t("common.loginOrRegister")}</button>
           </div>
         )}
-        <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-background p-4 dark:bg-navy-light">
+        {/* Баллы под флагом: счётчик был клиентской выдумкой и показывался даже гостю */}
+        <div className={cn("mt-5 grid gap-3 rounded-2xl bg-background p-4 dark:bg-navy-light", FEATURES.loyaltyPoints ? "grid-cols-3" : "grid-cols-2")}>
           <Stat value={String(bookings.length)} label={t("profile.statTrips")} color="text-teal-light" />
-          <Stat value={String(points)} label={t("profile.statPoints")} color="text-gold" />
+          {FEATURES.loyaltyPoints && <Stat value={String(points)} label={t("profile.statPoints")} color="text-gold" />}
           <Stat value={String(favorites.length)} label={t("profile.statFavorites")} color="text-teal-light" />
         </div>
       </div>
@@ -134,43 +135,46 @@ export default function Profile() {
 
       {/* Sections */}
       <div className="mb-6 overflow-hidden rounded-3xl bg-card ring-1 ring-border/60">
-        <Row icon={Plane} iconBg="bg-teal/10" iconColor="text-teal" title={t("profile.myTrips")} count={t("units.trips", { count: bookings.length })} open={open === "trips"} onClick={() => toggle("trips")}>
-          {bookings.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{isAuthenticated ? t("profile.noTripsHint") : t("profile.noTripsGuest")}</p>
-          ) : (
-            <>
-              {bookings.map((bk) => {
-                const cfg = bookingStatusCfg(bk.apiStatus ?? "requested");
-                return (
-                  <div key={bk.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
-                    <img src={bk.tourImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold">{bk.tourTitle}</div>
-                      <div className="text-xs text-muted-foreground">{bk.tourDate} · {bk.tourStartTime} · {t("units.people", { count: bk.ticketCount })} · {bk.confirmationCode}</div>
+        {/* Разделы под авторизацией гостю не показываем: их запросы отключены, и гость видел пустые нули вместо приглашения войти. Избранное остаётся — оно работает и без входа */}
+        {isAuthenticated && (
+          <Row icon={Plane} iconBg="bg-teal/10" iconColor="text-teal" title={t("profile.myTrips")} count={t("units.trips", { count: bookings.length })} open={open === "trips"} onClick={() => toggle("trips")}>
+            {bookings.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{isAuthenticated ? t("profile.noTripsHint") : t("profile.noTripsGuest")}</p>
+            ) : (
+              <>
+                {bookings.map((bk) => {
+                  const cfg = bookingStatusCfg(bk.apiStatus ?? "requested");
+                  return (
+                    <div key={bk.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
+                      <img src={bk.tourImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold">{bk.tourTitle}</div>
+                        <div className="text-xs text-muted-foreground">{bk.tourDate} · {bk.tourStartTime} · {t("units.people", { count: bk.ticketCount })} · {bk.confirmationCode}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold">{formatMoney(bk.totalPrice)}</div>
+                        <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {t(cfg.label)}</div>
+                        {/* организатор подтвердил — платёжная страница банка уже создана (YAV-28) */}
+                        {bk.apiStatus === "awaiting_payment" && bk.paymentUrl && (
+                          <a
+                            href={bk.paymentUrl}
+                            className="mt-1 inline-block rounded-lg bg-teal px-3 py-1 text-xs font-bold text-white"
+                          >
+                            {t("booking.payNow")}
+                          </a>
+                        )}
+                        {bk.apiStatus === "completed" && !reviewedBookingIds.has(bk.id) && (
+                          <button onClick={() => setReviewBooking(bk)} className="mt-1 text-xs font-semibold text-gold hover:underline">{t("booking.leaveReview")}</button>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold">{formatMoney(bk.totalPrice)}</div>
-                      <div className={cn("flex items-center justify-end gap-1 text-xs", cfg.color)}><cfg.icon size={12} /> {t(cfg.label)}</div>
-                      {/* организатор подтвердил — платёжная страница банка уже создана (YAV-28) */}
-                      {bk.apiStatus === "awaiting_payment" && bk.paymentUrl && (
-                        <a
-                          href={bk.paymentUrl}
-                          className="mt-1 inline-block rounded-lg bg-teal px-3 py-1 text-xs font-bold text-white"
-                        >
-                          {t("booking.payNow")}
-                        </a>
-                      )}
-                      {bk.apiStatus === "completed" && !reviewedBookingIds.has(bk.id) && (
-                        <button onClick={() => setReviewBooking(bk)} className="mt-1 text-xs font-semibold text-gold hover:underline">{t("booking.leaveReview")}</button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">{t("profile.tripsTotal", { amount: formatMoney(totalSpent) })}</div>
-            </>
-          )}
-        </Row>
+                  );
+                })}
+                <div className="rounded-2xl bg-teal/10 p-3 text-center text-sm font-semibold text-teal">{t("profile.tripsTotal", { amount: formatMoney(totalSpent) })}</div>
+              </>
+            )}
+          </Row>
+        )}
 
         <Row icon={Heart} iconBg="bg-coral/10" iconColor="text-coral" title={t("profile.favoriteTours")} count={t("units.excursions", { count: favTours.length })} open={open === "favorites"} onClick={() => toggle("favorites")}>
           {favTours.length === 0 ? <p className="text-sm text-muted-foreground">{t("profile.noFavoriteTours")}</p> : favTours.map((tour) => (
@@ -185,51 +189,55 @@ export default function Profile() {
           ))}
         </Row>
 
-        <Row icon={MessageSquare} iconBg="bg-gold/15" iconColor="text-gold" title={t("profile.myReviews")} count={t("units.reviews", { count: userReviews.length })} open={open === "reviews"} onClick={() => toggle("reviews")}>
-          {userReviews.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("profile.noReviews")}</p>
-          ) : userReviews.map((r) => (
-            <div key={r.id} className="rounded-2xl bg-background p-3">
-              <div className="mb-1.5 flex items-center gap-2">
-                <img src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">{r.tourTitle}</div>
-                  <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={12} className={i < r.rating ? "text-gold" : "text-muted-foreground/30"} fill={i < r.rating ? "#E8B931" : "transparent"} />)}</div>
+        {isAuthenticated && (
+          <Row icon={MessageSquare} iconBg="bg-gold/15" iconColor="text-gold" title={t("profile.myReviews")} count={t("units.reviews", { count: userReviews.length })} open={open === "reviews"} onClick={() => toggle("reviews")}>
+            {userReviews.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("profile.noReviews")}</p>
+            ) : userReviews.map((r) => (
+              <div key={r.id} className="rounded-2xl bg-background p-3">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <img src={r.tourImage} alt="" className="h-9 w-9 rounded-lg object-cover" />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">{r.tourTitle}</div>
+                    <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={12} className={i < r.rating ? "text-gold" : "text-muted-foreground/30"} fill={i < r.rating ? "#E8B931" : "transparent"} />)}</div>
+                  </div>
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", r.status === "published" ? "bg-mint/15 text-mint" : r.status === "pending" ? "bg-gold/15 text-gold" : "bg-coral/15 text-coral")}>
+                    {t(`enums.tourStatus.${r.status === "published" ? "published" : r.status === "pending" ? "pending" : "rejected"}` as TKey)}
+                  </span>
                 </div>
-                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", r.status === "published" ? "bg-mint/15 text-mint" : r.status === "pending" ? "bg-gold/15 text-gold" : "bg-coral/15 text-coral")}>
-                  {t(`enums.tourStatus.${r.status === "published" ? "published" : r.status === "pending" ? "pending" : "rejected"}` as TKey)}
-                </span>
+                <p className="text-sm text-muted-foreground">{r.text}</p>
               </div>
-              <p className="text-sm text-muted-foreground">{r.text}</p>
-            </div>
-          ))}
-        </Row>
+            ))}
+          </Row>
+        )}
 
-        <Row icon={Receipt} iconBg="bg-gold/15" iconColor="text-gold" title={t("profile.transactions")} count={t("units.operations", { count: transactions.length })} open={open === "payments"} onClick={() => toggle("payments")}>
-          {transactions.length === 0 ? (
-            <p className="p-3 text-sm text-muted-foreground">{t("profile.noTransactions")}</p>
-          ) : (
-            transactions.map((tr) => {
-              const tone = tr.status === "completed" ? "text-mint" : tr.status === "refunded" ? "text-gold" : tr.status === "failed" ? "text-coral" : "text-muted-foreground";
-              return (
-                <div key={tr.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
-                  <img src={tr.tour_image_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{tr.tour_title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(tr.paid_at ?? tr.created_at)}
-                      {tr.masked_pan ? ` · ${tr.masked_pan}` : ""}
+        {isAuthenticated && (
+          <Row icon={Receipt} iconBg="bg-gold/15" iconColor="text-gold" title={t("profile.transactions")} count={t("units.operations", { count: transactions.length })} open={open === "payments"} onClick={() => toggle("payments")}>
+            {transactions.length === 0 ? (
+              <p className="p-3 text-sm text-muted-foreground">{t("profile.noTransactions")}</p>
+            ) : (
+              transactions.map((tr) => {
+                const tone = tr.status === "completed" ? "text-mint" : tr.status === "refunded" ? "text-gold" : tr.status === "failed" ? "text-coral" : "text-muted-foreground";
+                return (
+                  <div key={tr.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
+                    <img src={tr.tour_image_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold">{tr.tour_title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(tr.paid_at ?? tr.created_at)}
+                        {tr.masked_pan ? ` · ${tr.masked_pan}` : ""}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold">{formatMoneyMinor(tr.amount_minor)}</div>
+                      <div className={cn("text-xs", tone)}>{t(`enums.transactionStatus.${tr.status}` as TKey)}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold">{formatMoneyMinor(tr.amount_minor)}</div>
-                    <div className={cn("text-xs", tone)}>{t(`enums.transactionStatus.${tr.status}` as TKey)}</div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </Row>
+                );
+              })
+            )}
+          </Row>
+        )}
 
         {FEATURES.promoCodes && (
           <Row icon={Share2} iconBg="bg-mint/15" iconColor="text-mint" title={t("profile.myPromoCodes")} count={t("profile.promoSubtitle")} open={open === "promos"} onClick={() => toggle("promos")}>
@@ -241,23 +249,25 @@ export default function Profile() {
           </Row>
         )}
 
-        <Row icon={Video} iconBg="bg-coral/15" iconColor="text-coral" title={t("profile.myReels")} count={t("profile.reelsCount", { count: moderationReels.length, points: 500 })} open={open === "reels"} onClick={() => toggle("reels")} last>
-          <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Coins size={16} /> {t("profile.reelsReward", { points: 500 })}</div>
-          <button onClick={() => toast(t("profile.videoWebOnly"))} className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-3 text-left">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-coral/15"><Upload size={18} className="text-coral" /></div>
-            <div><div className="font-semibold">{t("profile.pickVideo")}</div><div className="text-xs text-muted-foreground">{t("profile.pickVideoHint")}</div></div>
-          </button>
-          <input value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} placeholder={t("profile.reelTitlePlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-          <input value={reelTour} onChange={(e) => setReelTour(e.target.value)} placeholder={t("profile.reelTourPlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-          <input value={reelCity} onChange={(e) => setReelCity(e.target.value)} placeholder={t("profile.reelCityPlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
-          <button onClick={handleSubmitReel} className="w-full rounded-xl bg-coral py-3 font-bold text-white">{t("profile.submitForModeration")}</button>
-          {moderationReels.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
-              <img src={r.coverImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
-              <div className="flex-1"><div className="font-semibold">{r.title}</div><div className="text-xs text-orange-500">{t("profile.reelsOnModeration")}</div></div>
-            </div>
-          ))}
-        </Row>
+        {isAuthenticated && (
+          <Row icon={Video} iconBg="bg-coral/15" iconColor="text-coral" title={t("profile.myReels")} count={t("profile.reelsCount", { count: moderationReels.length, points: 500 })} open={open === "reels"} onClick={() => toggle("reels")} last>
+            <div className="flex items-center gap-2 rounded-2xl bg-teal/10 p-3 text-sm text-teal"><Coins size={16} /> {t("profile.reelsReward", { points: 500 })}</div>
+            <button onClick={() => toast(t("profile.videoWebOnly"))} className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-3 text-left">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-coral/15"><Upload size={18} className="text-coral" /></div>
+              <div><div className="font-semibold">{t("profile.pickVideo")}</div><div className="text-xs text-muted-foreground">{t("profile.pickVideoHint")}</div></div>
+            </button>
+            <input value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} placeholder={t("profile.reelTitlePlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+            <input value={reelTour} onChange={(e) => setReelTour(e.target.value)} placeholder={t("profile.reelTourPlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+            <input value={reelCity} onChange={(e) => setReelCity(e.target.value)} placeholder={t("profile.reelCityPlaceholder")} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-teal" />
+            <button onClick={handleSubmitReel} className="w-full rounded-xl bg-coral py-3 font-bold text-white">{t("profile.submitForModeration")}</button>
+            {moderationReels.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-background p-3">
+                <img src={r.coverImage} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                <div className="flex-1"><div className="font-semibold">{r.title}</div><div className="text-xs text-orange-500">{t("profile.reelsOnModeration")}</div></div>
+              </div>
+            ))}
+          </Row>
+        )}
       </div>
 
       {/* Theme + transactions summary */}

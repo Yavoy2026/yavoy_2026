@@ -348,11 +348,16 @@ export default function ProfileScreen() {
             <Text style={[styles.statNumber, { color: colors.tealLight }]}>{String(bookings.length)}</Text>
             <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t("profile.statTrips")}</Text>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.gray300 + "30" }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.gold }]}>{String(points)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t("profile.statPoints")}</Text>
-          </View>
+          {/* Баллы под флагом: счётчик был клиентской выдумкой и показывался даже гостю */}
+          {FEATURES.loyaltyPoints ? (
+            <>
+              <View style={[styles.statDivider, { backgroundColor: colors.gray300 + "30" }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statNumber, { color: colors.gold }]}>{String(points)}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t("profile.statPoints")}</Text>
+              </View>
+            </>
+          ) : null}
           <View style={[styles.statDivider, { backgroundColor: colors.gray300 + "30" }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.tealLight }]}>{String(favoriteIds.length)}</Text>
@@ -362,65 +367,70 @@ export default function ProfileScreen() {
       </View>
 
       <View style={[styles.sectionsContainer, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
-        <TouchableOpacity
-          style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
-          onPress={() => toggleSection("myBookings")}
-          activeOpacity={0.7}
-          testID="section-my-bookings"
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.tealSoft }]}>
-              <Plane size={20} color={colors.teal} />
+        {/* Разделы под авторизацией гостю не показываем: запросы к ним отключены, и гость видел нули вместо приглашения войти. Избранное остаётся — работает и без входа */}
+        {auth.isAuthenticated ? (
+          <>
+          <TouchableOpacity
+            style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
+            onPress={() => toggleSection("myBookings")}
+            activeOpacity={0.7}
+            testID="section-my-bookings"
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.tealSoft }]}>
+                <Plane size={20} color={colors.teal} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myTrips")}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.tripsCount", { total: t("units.trips", { count: bookings.length }), upcoming: upcomingBookings.length })}</Text>
+              </View>
             </View>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myTrips")}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.tripsCount", { total: t("units.trips", { count: bookings.length }), upcoming: upcomingBookings.length })}</Text>
-            </View>
-          </View>
-          {expandedSection === "myBookings" ? (
-            <ChevronDown size={20} color={colors.textMuted} />
-          ) : (
-            <ChevronRight size={20} color={colors.textMuted} />
-          )}
-        </TouchableOpacity>
-        {expandedSection === "myBookings" ? (
-          <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            {bookings.length === 0 ? (
-              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noTrips")}</Text>
+            {expandedSection === "myBookings" ? (
+              <ChevronDown size={20} color={colors.textMuted} />
             ) : (
-              <>
-                {bookings.map((bk) => {
-                  const isUpcoming = bk.status === "upcoming";
-                  return (
-                    <View key={bk.id} style={[styles.purchasedCard, { backgroundColor: colors.surface }]}>
-                      <Image source={{ uri: bk.tourImage }} style={styles.purchasedImage} contentFit="cover" />
-                      <View style={styles.purchasedInfo}>
-                        <Text style={[styles.purchasedTitle, { color: colors.text }]} numberOfLines={1}>{bk.tourTitle}</Text>
-                        <View style={styles.purchasedMeta}>
-                          <Calendar size={12} color={colors.textMuted} />
-                          <Text style={[styles.purchasedDate, { color: colors.textMuted }]}>{bk.tourDate}</Text>
-                          <Text style={[styles.purchasedTickets, { color: colors.textMuted }]}>{`· ${bk.tourStartTime}`}</Text>
-                        </View>
-                        <View style={styles.purchasedBottom}>
-                          <View style={[styles.statusPill, { backgroundColor: isUpcoming ? colors.tealSoft : colors.greenLight }]}>
-                            <Text style={[styles.statusPillText, { color: isUpcoming ? colors.teal : colors.green }]}>{t(isUpcoming ? "profile.upcoming" : "profile.completed")}</Text>
+              <ChevronRight size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
+          {expandedSection === "myBookings" ? (
+            <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
+              {bookings.length === 0 ? (
+                <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noTrips")}</Text>
+              ) : (
+                <>
+                  {bookings.map((bk) => {
+                    const isUpcoming = bk.status === "upcoming";
+                    return (
+                      <View key={bk.id} style={[styles.purchasedCard, { backgroundColor: colors.surface }]}>
+                        <Image source={{ uri: bk.tourImage }} style={styles.purchasedImage} contentFit="cover" />
+                        <View style={styles.purchasedInfo}>
+                          <Text style={[styles.purchasedTitle, { color: colors.text }]} numberOfLines={1}>{bk.tourTitle}</Text>
+                          <View style={styles.purchasedMeta}>
+                            <Calendar size={12} color={colors.textMuted} />
+                            <Text style={[styles.purchasedDate, { color: colors.textMuted }]}>{bk.tourDate}</Text>
+                            <Text style={[styles.purchasedTickets, { color: colors.textMuted }]}>{`· ${bk.tourStartTime}`}</Text>
                           </View>
-                          <TouchableOpacity onPress={() => setVoucherBooking(bk)} activeOpacity={0.7}>
-                            <Text style={[styles.voucherLink, { color: colors.teal }]}>{t("booking.voucher")}</Text>
-                          </TouchableOpacity>
-                          {bk.status === "completed" && !reviewedBookingIds.has(bk.id) ? (
-                            <TouchableOpacity onPress={() => setReviewBooking(bk)} activeOpacity={0.7}>
-                              <Text style={[styles.voucherLink, { color: colors.gold }]}>{t("booking.leaveReview")}</Text>
+                          <View style={styles.purchasedBottom}>
+                            <View style={[styles.statusPill, { backgroundColor: isUpcoming ? colors.tealSoft : colors.greenLight }]}>
+                              <Text style={[styles.statusPillText, { color: isUpcoming ? colors.teal : colors.green }]}>{t(isUpcoming ? "profile.upcoming" : "profile.completed")}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setVoucherBooking(bk)} activeOpacity={0.7}>
+                              <Text style={[styles.voucherLink, { color: colors.teal }]}>{t("booking.voucher")}</Text>
                             </TouchableOpacity>
-                          ) : null}
+                            {bk.status === "completed" && !reviewedBookingIds.has(bk.id) ? (
+                              <TouchableOpacity onPress={() => setReviewBooking(bk)} activeOpacity={0.7}>
+                                <Text style={[styles.voucherLink, { color: colors.gold }]}>{t("booking.leaveReview")}</Text>
+                              </TouchableOpacity>
+                            ) : null}
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </>
-            )}
-          </View>
+                    );
+                  })}
+                </>
+              )}
+            </View>
+          ) : null}
+          </>
         ) : null}
 
         <TouchableOpacity
@@ -474,50 +484,54 @@ export default function ProfileScreen() {
 
 
 
-        <TouchableOpacity
-          style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
-          onPress={() => toggleSection("reviews")}
-          activeOpacity={0.7}
-          testID="section-reviews"
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <View style={[styles.sectionIcon, { backgroundColor: "rgba(232,185,49,0.1)" }]}>
-              <MessageSquare size={20} color={colors.gold} />
-            </View>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReviews")}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.reviews", { count: userReviews.length })}</Text>
-            </View>
-          </View>
-          {expandedSection === "reviews" ? (
-            <ChevronDown size={20} color={colors.textMuted} />
-          ) : (
-            <ChevronRight size={20} color={colors.textMuted} />
-          )}
-        </TouchableOpacity>
-        {expandedSection === "reviews" ? (
-          <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            {userReviews.map((review) => (
-              <View key={review.id} style={[styles.reviewCard, { backgroundColor: colors.surface }]}>
-                <View style={styles.reviewTop}>
-                  <Image source={{ uri: review.tourImage }} style={styles.reviewImage} contentFit="cover" />
-                  <View style={styles.reviewInfo}>
-                    <Text style={[styles.reviewTourTitle, { color: colors.text }]} numberOfLines={1}>{review.tourTitle}</Text>
-                    <View style={styles.reviewStars}>
-                      {renderStars(review.rating)}
-                    </View>
-                    <Text style={[styles.reviewDateText, { color: colors.textMuted }]}>
-                      {review.status === "pending" ? t("enums.tourStatus.pending") : review.status === "rejected" ? t("enums.tourStatus.rejected") : review.date}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.reviewText, { color: colors.textSecondary }]}>{review.text}</Text>
+        {auth.isAuthenticated ? (
+          <>
+          <TouchableOpacity
+            style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
+            onPress={() => toggleSection("reviews")}
+            activeOpacity={0.7}
+            testID="section-reviews"
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIcon, { backgroundColor: "rgba(232,185,49,0.1)" }]}>
+                <MessageSquare size={20} color={colors.gold} />
               </View>
-            ))}
-            {userReviews.length === 0 ? (
-              <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noReviews")}</Text>
-            ) : null}
-          </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReviews")}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.reviews", { count: userReviews.length })}</Text>
+              </View>
+            </View>
+            {expandedSection === "reviews" ? (
+              <ChevronDown size={20} color={colors.textMuted} />
+            ) : (
+              <ChevronRight size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
+          {expandedSection === "reviews" ? (
+            <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
+              {userReviews.map((review) => (
+                <View key={review.id} style={[styles.reviewCard, { backgroundColor: colors.surface }]}>
+                  <View style={styles.reviewTop}>
+                    <Image source={{ uri: review.tourImage }} style={styles.reviewImage} contentFit="cover" />
+                    <View style={styles.reviewInfo}>
+                      <Text style={[styles.reviewTourTitle, { color: colors.text }]} numberOfLines={1}>{review.tourTitle}</Text>
+                      <View style={styles.reviewStars}>
+                        {renderStars(review.rating)}
+                      </View>
+                      <Text style={[styles.reviewDateText, { color: colors.textMuted }]}>
+                        {review.status === "pending" ? t("enums.tourStatus.pending") : review.status === "rejected" ? t("enums.tourStatus.rejected") : review.date}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.reviewText, { color: colors.textSecondary }]}>{review.text}</Text>
+                </View>
+              ))}
+              {userReviews.length === 0 ? (
+                <Text style={[styles.emptySection, { color: colors.textMuted }]}>{t("profile.noReviews")}</Text>
+              ) : null}
+            </View>
+          ) : null}
+          </>
         ) : null}
 
         {FEATURES.giftCertificates ? (
@@ -643,114 +657,122 @@ export default function ProfileScreen() {
           </>
         ) : null}
 
-        <TouchableOpacity
-          style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
-          onPress={() => toggleSection("reels")}
-          activeOpacity={0.7}
-          testID="section-reels"
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.coral + "20" }]}> 
-              <Video size={20} color={colors.coral} />
+        {auth.isAuthenticated ? (
+          <>
+          <TouchableOpacity
+            style={[styles.sectionHeader, { borderBottomColor: colors.border }]}
+            onPress={() => toggleSection("reels")}
+            activeOpacity={0.7}
+            testID="section-reels"
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.coral + "20" }]}> 
+                <Video size={20} color={colors.coral} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReels")}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.reelsCount", { count: moderationReels.length, points: rewardPoints })}</Text>
+              </View>
             </View>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.myReels")}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("profile.reelsCount", { count: moderationReels.length, points: rewardPoints })}</Text>
-            </View>
-          </View>
+            {expandedSection === "reels" ? (
+              <ChevronDown size={20} color={colors.textMuted} />
+            ) : (
+              <ChevronRight size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
           {expandedSection === "reels" ? (
-            <ChevronDown size={20} color={colors.textMuted} />
-          ) : (
-            <ChevronRight size={20} color={colors.textMuted} />
-          )}
-        </TouchableOpacity>
-        {expandedSection === "reels" ? (
-          <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}> 
-            <View style={[styles.reelsRewardBox, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}> 
-              <Coins size={16} color={colors.teal} />
-              <Text style={[styles.reelsRewardText, { color: colors.teal }]}>{t("profile.reelsReward", { points: rewardPoints })}</Text>
-            </View>
-            <TouchableOpacity style={[styles.videoPickCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={pickReelVideo} activeOpacity={0.75}>
-              <View style={[styles.videoPickIcon, { backgroundColor: colors.coral + "20" }]}> 
-                <Upload size={18} color={colors.coral} />
+            <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}> 
+              <View style={[styles.reelsRewardBox, { backgroundColor: colors.tealSoft, borderColor: colors.teal + "30" }]}> 
+                <Coins size={16} color={colors.teal} />
+                <Text style={[styles.reelsRewardText, { color: colors.teal }]}>{t("profile.reelsReward", { points: rewardPoints })}</Text>
               </View>
-              <View style={styles.videoPickTextWrap}>
-                <Text style={[styles.videoPickTitle, { color: colors.text }]}>{t(pickedVideoUri ? "profile.videoPicked" : "profile.pickVideo")}</Text>
-                <Text style={[styles.videoPickSub, { color: colors.textMuted }]}>{t(pickedVideoUri ? "profile.videoReady" : "profile.pickVideoHint")}</Text>
-              </View>
-            </TouchableOpacity>
-            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelTitlePlaceholder")} placeholderTextColor={colors.textMuted} value={reelTitle} onChangeText={setReelTitle} />
-            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelTourPlaceholder")} placeholderTextColor={colors.textMuted} value={reelTourTitle} onChangeText={setReelTourTitle} />
-            <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelCityPlaceholder")} placeholderTextColor={colors.textMuted} value={reelCity} onChangeText={setReelCity} />
-            <TouchableOpacity style={[styles.buyNewBtn, { backgroundColor: colors.coral }]} onPress={handleSubmitReel} activeOpacity={0.7}>
-              <Video size={14} color="#FFFFFF" />
-              <Text style={styles.buyNewBtnText}>{t("profile.submitForModeration")}</Text>
-            </TouchableOpacity>
-            {moderationReels.map((reel) => (
-              <View key={reel.id} style={[styles.moderationCard, { backgroundColor: colors.surface }]}> 
-                <Image source={{ uri: reel.coverImage }} style={styles.moderationImage} contentFit="cover" />
-                <View style={styles.moderationInfo}>
-                  <Text style={[styles.moderationTitle, { color: colors.text }]} numberOfLines={1}>{reel.title}</Text>
-                  <Text style={[styles.moderationStatus, { color: colors.orange }]}>{t("profile.reelsOnModeration")}</Text>
+              <TouchableOpacity style={[styles.videoPickCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={pickReelVideo} activeOpacity={0.75}>
+                <View style={[styles.videoPickIcon, { backgroundColor: colors.coral + "20" }]}> 
+                  <Upload size={18} color={colors.coral} />
                 </View>
-              </View>
-            ))}
-          </View>
+                <View style={styles.videoPickTextWrap}>
+                  <Text style={[styles.videoPickTitle, { color: colors.text }]}>{t(pickedVideoUri ? "profile.videoPicked" : "profile.pickVideo")}</Text>
+                  <Text style={[styles.videoPickSub, { color: colors.textMuted }]}>{t(pickedVideoUri ? "profile.videoReady" : "profile.pickVideoHint")}</Text>
+                </View>
+              </TouchableOpacity>
+              <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelTitlePlaceholder")} placeholderTextColor={colors.textMuted} value={reelTitle} onChangeText={setReelTitle} />
+              <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelTourPlaceholder")} placeholderTextColor={colors.textMuted} value={reelTourTitle} onChangeText={setReelTourTitle} />
+              <TextInput style={[styles.reelInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]} placeholder={t("profile.reelCityPlaceholder")} placeholderTextColor={colors.textMuted} value={reelCity} onChangeText={setReelCity} />
+              <TouchableOpacity style={[styles.buyNewBtn, { backgroundColor: colors.coral }]} onPress={handleSubmitReel} activeOpacity={0.7}>
+                <Video size={14} color="#FFFFFF" />
+                <Text style={styles.buyNewBtnText}>{t("profile.submitForModeration")}</Text>
+              </TouchableOpacity>
+              {moderationReels.map((reel) => (
+                <View key={reel.id} style={[styles.moderationCard, { backgroundColor: colors.surface }]}> 
+                  <Image source={{ uri: reel.coverImage }} style={styles.moderationImage} contentFit="cover" />
+                  <View style={styles.moderationInfo}>
+                    <Text style={[styles.moderationTitle, { color: colors.text }]} numberOfLines={1}>{reel.title}</Text>
+                    <Text style={[styles.moderationStatus, { color: colors.orange }]}>{t("profile.reelsOnModeration")}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          </>
         ) : null}
 
-        <TouchableOpacity
-          style={[styles.sectionHeader, styles.sectionHeaderLast, { borderBottomColor: colors.border }]}
-          onPress={() => toggleSection("transactions")}
-          activeOpacity={0.7}
-          testID="section-transactions"
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.orangeLight }]}>
-              <Receipt size={20} color={colors.orange} />
+        {auth.isAuthenticated ? (
+          <>
+          <TouchableOpacity
+            style={[styles.sectionHeader, styles.sectionHeaderLast, { borderBottomColor: colors.border }]}
+            onPress={() => toggleSection("transactions")}
+            activeOpacity={0.7}
+            testID="section-transactions"
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.orangeLight }]}>
+                <Receipt size={20} color={colors.orange} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.transactions")}</Text>
+                <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.operations", { count: transactions.length })}</Text>
+              </View>
             </View>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.transactions")}</Text>
-              <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{t("units.operations", { count: transactions.length })}</Text>
-            </View>
-          </View>
-          {expandedSection === "transactions" ? (
-            <ChevronDown size={20} color={colors.textMuted} />
-          ) : (
-            <ChevronRight size={20} color={colors.textMuted} />
-          )}
-        </TouchableOpacity>
-        {expandedSection === "transactions" ? (
-          <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
-            {transactions.length === 0 ? (
-              <Text style={[styles.emptyNote, { color: colors.textMuted }]}>{t("profile.noTransactions")}</Text>
+            {expandedSection === "transactions" ? (
+              <ChevronDown size={20} color={colors.textMuted} />
             ) : (
-              transactions.map((tr) => {
-                const config = statusConfig[tr.status] || statusConfig.completed;
-                const StatusIcon = config.icon;
-                return (
-                  <View key={tr.id} style={[styles.transactionCard, { backgroundColor: colors.surface }]}>
-                    <Image source={{ uri: tr.tour_image_url }} style={styles.transactionImage} contentFit="cover" />
-                    <View style={styles.transactionInfo}>
-                      <Text style={[styles.transactionTitle, { color: colors.text }]} numberOfLines={1}>{tr.tour_title}</Text>
-                      <Text style={[styles.transactionDate, { color: colors.textMuted }]}>
-                        {formatDate(tr.paid_at ?? tr.created_at)}
-                        {tr.masked_pan ? ` · ${tr.masked_pan}` : ""}
-                      </Text>
-                    </View>
-                    <View style={styles.transactionRight}>
-                      <Text style={[styles.transactionAmount, { color: colors.text }]}>
-                        {`${tr.status === "refunded" ? "+" : "-"}${formatMoneyMinor(tr.amount_minor)}`}
-                      </Text>
-                      <View style={styles.transactionStatus}>
-                        <StatusIcon size={12} color={config.color} />
-                        <Text style={[styles.transactionStatusText, { color: config.color }]}>{t(config.label)}</Text>
+              <ChevronRight size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
+          {expandedSection === "transactions" ? (
+            <View style={[styles.sectionContent, { backgroundColor: colors.surfaceSecondary }]}>
+              {transactions.length === 0 ? (
+                <Text style={[styles.emptyNote, { color: colors.textMuted }]}>{t("profile.noTransactions")}</Text>
+              ) : (
+                transactions.map((tr) => {
+                  const config = statusConfig[tr.status] || statusConfig.completed;
+                  const StatusIcon = config.icon;
+                  return (
+                    <View key={tr.id} style={[styles.transactionCard, { backgroundColor: colors.surface }]}>
+                      <Image source={{ uri: tr.tour_image_url }} style={styles.transactionImage} contentFit="cover" />
+                      <View style={styles.transactionInfo}>
+                        <Text style={[styles.transactionTitle, { color: colors.text }]} numberOfLines={1}>{tr.tour_title}</Text>
+                        <Text style={[styles.transactionDate, { color: colors.textMuted }]}>
+                          {formatDate(tr.paid_at ?? tr.created_at)}
+                          {tr.masked_pan ? ` · ${tr.masked_pan}` : ""}
+                        </Text>
+                      </View>
+                      <View style={styles.transactionRight}>
+                        <Text style={[styles.transactionAmount, { color: colors.text }]}>
+                          {`${tr.status === "refunded" ? "+" : "-"}${formatMoneyMinor(tr.amount_minor)}`}
+                        </Text>
+                        <View style={styles.transactionStatus}>
+                          <StatusIcon size={12} color={config.color} />
+                          <Text style={[styles.transactionStatusText, { color: config.color }]}>{t(config.label)}</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })
-            )}
-          </View>
+                  );
+                })
+              )}
+            </View>
+          ) : null}
+          </>
         ) : null}
       </View>
 
