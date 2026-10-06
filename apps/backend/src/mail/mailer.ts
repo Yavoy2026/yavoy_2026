@@ -28,7 +28,7 @@ export function createMailer(log: FastifyBaseLogger): Mailer {
   if (!env.SMTP_URL) {
     return {
       async send(msg) {
-        // text попадает в лог намеренно: на стенде без SMTP это единственный способ увидеть OTP-код
+        // text попадает в лог намеренно: без SMTP это единственный способ увидеть OTP-код
         log.info({ mail: msg }, "MAIL (SMTP не настроен — только лог)");
       },
     };

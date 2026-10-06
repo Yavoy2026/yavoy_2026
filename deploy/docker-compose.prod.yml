@@ -5,7 +5,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    # Параметры задаются из .env: прод-нода 4 ГБ, стенд 2 ГБ, дефолты — под стенд.
+    # Параметры задаются из .env под размер ноды; дефолты здесь — консервативные,
+    # прод (4 ГБ) задаёт свои значения в deploy/.env.
     # Пул приложения max: 10 (db/client.ts), поэтому max_connections с запасом.
     command: >
       postgres

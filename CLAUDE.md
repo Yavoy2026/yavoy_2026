@@ -14,7 +14,7 @@ packages/i18n/       Переводы ru/en/uz + плюрализация и ф�
 packages/legal/      Оферта и политика конфиденциальности; общий текст для веба и Expo
 apps/expo/           Мобильное приложение (Expo SDK 54, React Query) — npm, НЕ pnpm
 apps/web/            Веб-клиент (Vite + React + shadcn) + панель управления /admin — npm, НЕ pnpm
-deploy/              Stage/prod: docker-compose.prod.yml, Caddyfile, .env.example
+deploy/              Прод: docker-compose.prod.yml, Caddyfile, .env.example, PROD.md
 ```
 
 Подробные доки: `DEVELOPMENT.md` (как запускать/тестировать), `BACKEND_SPEC.md`
@@ -48,7 +48,7 @@ npx tsc --noEmit -p tsconfig.app.json && npx vite build
 ```
 
 Запуск полного локального стека со смоуком — проектный скилл `.claude/skills/run-local`.
-Деплой на stage (VPS, sslip.io-домены): образы собираются локально
+Деплой на прод (`yavay.uz`, нода в Ташкенте): образы собираются локально
 `docker buildx --platform linux/amd64` и переливаются по ssh — процедура в DEVELOPMENT.md.
 
 ## Архитектура — главное
@@ -80,7 +80,7 @@ npx tsc --noEmit -p tsconfig.app.json && npx vite build
 создаётся здесь с пустым именем, `is_new_user` велит клиенту спросить имя).
 Access JWT RS256 15 мин (роль зашита — после смены роли нужен перелогин/refresh),
 refresh 30 дней с ротацией и reuse-detection (повтор → отзыв всех сессий).
-Без `SMTP_URL` письма пишутся в лог целиком — так на стенде читают коды.
+Без `SMTP_URL` письма пишутся в лог целиком — так коды читают в разработке.
 
 **Роли и панель управления.** `user | partner | manager | admin`. Веб-панель — `/admin`
 (старый `/backoffice` редиректит), один кабинет, разделы по ролям: у сотрудника брони,
@@ -200,8 +200,8 @@ Rate-limit-плагин в NODE_ENV=test не регистрируется; ку
   она попадать не должна: показывать дату только под `hasAvailableDate`, иначе на
   карточке появляется «ближайшая дата 2099-12-31» рядом с «дат нет».
 - Даты выездов сид генерирует относительно дня запуска (+3/+10/+17/+24), поэтому
-  стенд протухает примерно через месяц: будущих дат не остаётся, кнопка брони
-  везде неактивна. Досыпать даты, не стирая каталог и брони (сид стирает!):
+  засеянная им база протухает примерно через месяц: будущих дат не остаётся, кнопка
+  брони везде неактивна. Досыпать даты, не стирая каталог и брони (сид стирает!):
   `INSERT INTO tour_dates (tour_id, starts_on, seats_total, seats_left)
    SELECT t.id, current_date + o, 12, 12 FROM tours t, unnest(ARRAY[3,10,17,24]) AS o
    ON CONFLICT (tour_id, starts_on) DO NOTHING;`

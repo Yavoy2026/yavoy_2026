@@ -64,7 +64,7 @@ EXPO_PUBLIC_API_URL=http://localhost:3002/v1 npx expo start --web --port 8081
 - **Почта**: без `SMTP_URL` письма идут в лог. Прод-переменные: `SMTP_URL`, `MAIL_FROM`, `ADMIN_EMAIL`.
   Язык писем — `MAIL_LOCALE` (ru/en/uz), один на установку.
 - **Языки клиентов**: `GET /v1/config` отдаёт `default_locale` и `supported_locales`
-  из `DEFAULT_LOCALE` / `SUPPORTED_LOCALES`. Меняются на стенде без пересборки приложений.
+  из `DEFAULT_LOCALE` / `SUPPORTED_LOCALES`. Меняются на сервере без пересборки приложений.
 - **JWT**: dev — эфемерные ключи; прод требует `JWT_PRIVATE_KEY_PEM`/`JWT_PUBLIC_KEY_PEM`
   (генерация: `npx tsx scripts/gen-keys.ts`).
 
@@ -199,79 +199,62 @@ docker exec yavoy_2026-postgres-1 psql -U yavoy -c "UPDATE users SET role='admin
 https://yavay.uz и https://api.yavay.uz. Каталог пуст, почты пока нет
 (аккаунт Mailgun не активирован) — остаток в `deploy/PROD.md`.
 
-## Stage-стенд
+### Выкатка
 
-Stage (не прод!) развёрнут на VPS `89.169.21.102` (Ubuntu 24.04), домены через sslip.io:
-- веб: https://89.169.21.102.sslip.io
-- API: https://api.89.169.21.102.sslip.io (Swagger: `/docs`)
-
-Сейчас стенд поднят **узбекской инсталляцией**: `DEFAULT_LOCALE=uz`, `CURRENCY=UZS`,
-`PAYMENT_PROVIDER=none` (ждём реквизиты OCTO). Каталог на нём остался демонстрационный,
-российский, — узбекского каталога пока нет, а сид стирает каталог и брони, поэтому
-пересев делается только осознанно. Вернуть стенд к российскому виду — три строки в
-`.env` и `up -d backend`, пересборка не нужна.
-
-Файлы на сервере: `/opt/yavoy` (compose, Caddyfile, .env с секретами).
-Сервисы: postgres + backend + caddy (веб-статика запечена в образ caddy, TLS автоматически).
-Compose один и тот же для stage и будущего прода (`deploy/docker-compose.prod.yml`) —
-окружения различаются только `.env` (домены, секреты) и сервером. Прод появится позже:
-свой домен, отдельный VPS, свежие секреты.
-
-Образы собираются **локально** (VPS 2 ГБ — на нём не собираем) и переливаются по ssh:
+Образы собираются локально (на ноде не собираем) и переливаются по ssh:
 
 ```bash
-docker buildx build --platform linux/amd64 -f apps/backend/Dockerfile -t yavoy-backend:latest --load .
+SHA=$(git rev-parse --short HEAD)
+docker buildx build --platform linux/amd64 -f apps/backend/Dockerfile -t yavoy-backend:$SHA --load .
 docker buildx build --platform linux/amd64 -f apps/web/Dockerfile \
-  --build-arg VITE_API_URL=https://api.89.169.21.102.sslip.io/v1 -t yavoy-web:latest --load .
-docker save yavoy-backend:latest yavoy-web:latest | gzip | ssh root@89.169.21.102 'gunzip | docker load'
-ssh root@89.169.21.102 'cd /opt/yavoy && docker compose -f docker-compose.prod.yml up -d --no-build'
+  --build-arg VITE_API_URL=https://api.yavay.uz/v1 -t yavoy-web:$SHA --load .
+docker save yavoy-backend:$SHA yavoy-web:$SHA | gzip -1 | ssh yavoy-prod 'gunzip | docker load'
+ssh yavoy-prod "docker tag yavoy-backend:$SHA yavoy-backend:latest \
+  && docker tag yavoy-web:$SHA yavoy-web:latest \
+  && cd /opt/yavoy && docker compose -f docker-compose.prod.yml up -d --no-build"
 ```
 
-Образ бэкенда сам прогоняет миграции при старте. **Строчки «Migrations applied»
-недостаточно**: drizzle сравнивает `when` из журнала с максимумом в БД, и миграция
-с меткой меньше уже применённой пропускается молча. После выкатки со схемными
-изменениями сверять саму схему:
+Тег по коммиту — это возможность отката: `:latest` перевешивается на нужный образ,
+`up -d` поднимает прежнюю версию. URL API зашивается в веб-образ **при сборке**,
+поэтому смена домена требует пересборки веба, а не только правки `.env`.
+
+### Миграции: сверять схему, а не строчку в логе
+
+Образ бэкенда прогоняет миграции при старте, но **«Migrations applied» ничего не доказывает**:
+drizzle сравнивает `when` из журнала с максимумом в БД, и миграция с меткой меньше уже
+применённой пропускается молча. После выкатки со схемными изменениями:
 
 ```bash
-ssh root@89.169.21.102 "docker exec yavoy-postgres-1 psql -U yavoy -d yavoy \
-  -c \"select count(*) from drizzle.__drizzle_migrations;\" \
-  -c \"select table_name from information_schema.tables where table_schema='public';\""
+ssh yavoy-prod "cd /opt/yavoy && docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U yavoy -d yavoy -c 'select count(*) from drizzle.__drizzle_migrations' \
+  -c \"select table_name from information_schema.tables where table_schema='public'\""
 ```
 
-Пропущенную миграцию доводят руками: `docker cp` файла в контейнер postgres и
-`psql -v ON_ERROR_STOP=1 -f`. После этого **дописать строку в журнал БД**, иначе
-счётчик разойдётся с числом файлов и следующего человека это собьёт:
+Число записей должно совпадать с числом файлов в `apps/backend/src/db/migrations`.
+Пропущенную доводят руками: `docker cp` файла в контейнер postgres и
+`psql -v ON_ERROR_STOP=1 -f`. После этого **дописать строку в журнал БД**, иначе счётчик
+разойдётся с числом файлов и следующего человека это собьёт:
 
 ```sql
 insert into drizzle.__drizzle_migrations (hash, created_at)
 values ('<sha256 файла миграции>', <when из _journal.json>);
 ```
 
-На поведение это не влияет (drizzle сравнивает только с максимумом), но запись
-становится честной. Сид каталога (одноразово, стирает
-каталог и брони!): `docker compose -f docker-compose.prod.yml exec backend node dist/seed.js`.
+На поведение это не влияет (сравнение идёт только с максимумом), но запись становится честной.
 
-**Стенд протухает примерно через месяц.** Сид раскладывает даты выездов относительно
-дня запуска (+3/+10/+17/+24), и когда все они уходят в прошлое, у туров не остаётся
-будущих дат: кнопка брони везде неактивна, а в карточке вместо ближайшей даты
-показывается пусто. Досыпать свежие даты, ничего не удаляя (в отличие от сида):
+### Сид на прод не запускать
 
-```bash
-ssh root@89.169.21.102 "cd /opt/yavoy && docker compose -f docker-compose.prod.yml \
-  exec -T postgres psql -U yavoy -d yavoy -c \
-  \"INSERT INTO tour_dates (tour_id, starts_on, seats_total, seats_left)
-     SELECT t.id, current_date + o, 12, 12 FROM tours t, unnest(ARRAY[3,10,17,24]) AS o
-     ON CONFLICT (tour_id, starts_on) DO NOTHING;\""
-```
-Для прода (свой домен): поменять `API_DOMAIN`/`WEB_DOMAIN`/`VITE_API_URL` в
-`.env` на сервере, пересобрать веб-образ (URL API зашивается при сборке).
+`seed.js` заливает демонстрационный каталог по России и **стирает существующий каталог
+вместе с бронями**. Для узбекской инсталляции он не годится ни содержимым, ни этим
+побочным эффектом. Даты выездов он к тому же раскладывает относительно дня запуска
+(+3/+10/+17/+24), поэтому засеянная им база через месяц остаётся без будущих дат.
 
-Язык и валюта стенда меняются без пересборки: `DEFAULT_LOCALE` / `SUPPORTED_LOCALES` /
-`MAIL_LOCALE` / `CURRENCY` в `.env` на сервере + `docker compose … up -d backend`. Клиенты
-берут и то и другое из `GET /v1/config`, поэтому ни веб-образ, ни APK трогать не нужно.
-Так же переключается и вся инсталляция целиком: узбекская витрина — это
-`DEFAULT_LOCALE=uz` + `CURRENCY=UZS` + `PAYMENT_PROVIDER=octo` и ничего больше.
-Валюта применяется к **новым** турам и броням; уже лежащие в базе строки хранят ту,
-с которой были созданы, — смена `CURRENCY` их не переписывает.
-`SUPPORTED_LOCALES` позволяет временно убрать язык из переключателя — например,
-пока узбекский не вычитан носителем.
+### Язык и валюта меняются без пересборки
+
+`DEFAULT_LOCALE` / `SUPPORTED_LOCALES` / `MAIL_LOCALE` / `CURRENCY` в `.env` на сервере
+плюс `docker compose … up -d backend`. Клиенты берут и то и другое из `GET /v1/config`,
+поэтому ни веб-образ, ни APK трогать не нужно. Так же переключается инсталляция целиком:
+узбекская витрина — это `DEFAULT_LOCALE=uz` + `CURRENCY=UZS` + `PAYMENT_PROVIDER=octo`
+и ничего больше. Валюта применяется к **новым** турам и броням; уже лежащие в базе строки
+хранят ту, с которой были созданы. `SUPPORTED_LOCALES` позволяет временно убрать язык
+из переключателя — например, пока узбекский не вычитан носителем.
