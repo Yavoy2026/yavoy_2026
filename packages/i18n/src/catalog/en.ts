@@ -33,12 +33,18 @@ export const en: Catalog = {
     notSet: "—",
   },
 
+  /** Падежей в английском нет — формы совпадают, структура общая с ru/uz */
+  countries: {
+    RU: { nom: "Russia", acc: "Russia", gen: "Russia", dat: "Russia" },
+    UZ: { nom: "Uzbekistan", acc: "Uzbekistan", gen: "Uzbekistan", dat: "Uzbekistan" },
+  },
   units: {
     tours: p({ one: "{{count}} tour", other: "{{count}} tours" }),
     excursions: p({ one: "{{count}} excursion", other: "{{count}} excursions" }),
     reviews: p({ one: "{{count}} review", other: "{{count}} reviews" }),
     trips: p({ one: "{{count}} trip", other: "{{count}} trips" }),
     people: p({ one: "{{count}} person", other: "{{count}} people" }),
+    cities: p({ one: "{{count}} city", other: "{{count}} cities" }),
     excursionsBare: p({ one: "excursion", other: "excursions" }),
     seats: "seats left: {{count}}",
     seatsTaken: "{{count}} booked",
@@ -112,8 +118,8 @@ export const en: Catalog = {
   },
 
   home: {
-    heroBadge: "500+ excursions · 50+ cities across Russia",
-    heroTitle: "Discover Russia through {{accent}}",
+    heroBadge: "{{tours}} · {{cities}} across {{countryNom}}",
+    heroTitle: "Discover {{countryAcc}} through {{accent}}",
     heroTitleAccent: "experiences",
     heroSubtitle:
       "Find and book unique excursions with verified guides — from city walks to multi-day adventures.",
@@ -144,7 +150,7 @@ export const en: Catalog = {
 
   advantages: {
     title: "Why YaVoy",
-    subtitle: "We bring together the best tour operators across Russia",
+    subtitle: "We bring together the best tour operators across {{countryNom}}",
     verifiedTitle: "Verified operators",
     verifiedText: "Every partner is verified and holds the required licences",
     instantTitle: "Instant confirmation",
@@ -154,7 +160,7 @@ export const en: Catalog = {
     supportTitle: "24/7 support",
     supportText: "Round-the-clock help on the route and while booking",
     catalogTitle: "1000+ excursions",
-    catalogText: "All across Russia, from verified guides",
+    catalogText: "From verified guides all across the country",
     priceTitle: "Best prices",
     priceText: "Best price guarantee or we refund the difference",
     guidesTitle: "Verified guides",
@@ -623,7 +629,7 @@ export const en: Catalog = {
     statusRejected: "Application declined",
     heroTitle: "Become a YaVoy partner",
     heroSubtitle:
-      "Add your excursions, manage bookings and earn with the largest tour aggregator in Russia.",
+      "Add your excursions, manage bookings and earn with the largest tour aggregator in {{countryNom}}.",
     authRequiredText: "Sign in to your account to access the partner dashboard.",
     fieldPhone: "Phone",
   },

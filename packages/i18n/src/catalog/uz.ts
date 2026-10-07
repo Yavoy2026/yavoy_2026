@@ -39,12 +39,18 @@ export const uz: Catalog = {
     notSet: "—",
   },
 
+  /** Аффиксы вместо падежей: -ni (винительный), -ning (родительный), -ga (дательный) */
+  countries: {
+    RU: { nom: "Rossiya", acc: "Rossiyani", gen: "Rossiyaning", dat: "Rossiyaga" },
+    UZ: { nom: "Oʻzbekiston", acc: "Oʻzbekistonni", gen: "Oʻzbekistonning", dat: "Oʻzbekistonga" },
+  },
   units: {
     tours: p({ one: "{{count}} tur", other: "{{count}} tur" }),
     excursions: p({ one: "{{count}} ekskursiya", other: "{{count}} ekskursiya" }),
     reviews: p({ one: "{{count}} sharh", other: "{{count}} sharh" }),
     trips: p({ one: "{{count}} sayohat", other: "{{count}} sayohat" }),
     people: p({ one: "{{count}} kishi", other: "{{count}} kishi" }),
+    cities: p({ one: "{{count}} shahar", other: "{{count}} shahar" }),
     excursionsBare: p({ one: "ekskursiya", other: "ekskursiya" }),
     seats: "boʻsh joy: {{count}}",
     seatsTaken: "band: {{count}}",
@@ -124,8 +130,8 @@ export const uz: Catalog = {
   },
 
   home: {
-    heroBadge: "500+ ekskursiya · Rossiyaning 50+ shahri",
-    heroTitle: "Rossiyani {{accent}} orqali kashf eting",
+    heroBadge: "{{tours}} · {{countryGen}} {{cities}}",
+    heroTitle: "{{countryAcc}} {{accent}} orqali kashf eting",
     heroTitleAccent: "taassurotlar",
     heroSubtitle:
       "Tekshirilgan gidlar bilan noyob ekskursiyalarni toping va band qiling. Shahar sayrlaridan koʻp kunlik sarguzashtlargacha.",
@@ -156,7 +162,7 @@ export const uz: Catalog = {
 
   advantages: {
     title: "Nega YaVoy",
-    subtitle: "Biz Rossiyaning eng yaxshi tur tashkilotchilarini birlashtiramiz",
+    subtitle: "Biz {{countryGen}} eng yaxshi tur tashkilotchilarini birlashtiramiz",
     verifiedTitle: "Tekshirilgan tashkilotchilar",
     verifiedText: "Barcha hamkorlar tekshiruvdan oʻtadi va litsenziyaga ega",
     instantTitle: "Bir zumda tasdiqlash",
@@ -166,7 +172,7 @@ export const uz: Catalog = {
     supportTitle: "24/7 qoʻllab-quvvatlash",
     supportText: "Yoʻlda ham, band qilishda ham kunu tun yordam",
     catalogTitle: "1000+ ekskursiya",
-    catalogText: "Butun Rossiya boʻylab, tekshirilgan gidlardan",
+    catalogText: "Butun mamlakat boʻylab, tekshirilgan gidlardan",
     priceTitle: "Eng yaxshi narxlar",
     priceText: "Eng yaxshi narx kafolati yoki farqni qaytaramiz",
     guidesTitle: "Tekshirilgan gidlar",
@@ -635,7 +641,7 @@ export const uz: Catalog = {
     statusRejected: "Ariza rad etildi",
     heroTitle: "YaVoy hamkori boʻling",
     heroSubtitle:
-      "Oʻz ekskursiyalaringizni qoʻshing, bandlovlarni boshqaring va Rossiyaning eng yirik tur agregatori bilan daromad qiling.",
+      "Oʻz ekskursiyalaringizni qoʻshing, bandlovlarni boshqaring va {{countryGen}} eng yirik tur agregatori bilan daromad qiling.",
     authRequiredText: "Hamkor kabinetiga kirish uchun hisobingizga kiring.",
     fieldPhone: "Telefon",
   },

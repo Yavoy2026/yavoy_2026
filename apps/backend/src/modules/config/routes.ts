@@ -20,6 +20,7 @@ export async function configRoutes(fastify: FastifyInstance) {
         ? env.SUPPORTED_LOCALES
         : [env.DEFAULT_LOCALE, ...env.SUPPORTED_LOCALES],
       currency: env.CURRENCY,
+      country: env.COUNTRY,
     }),
   );
 }

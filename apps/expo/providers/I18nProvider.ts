@@ -1,6 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import {
+  countryParams,
+  isCountry,
+  FALLBACK_COUNTRY,
+  type Country,
   CATALOGS,
   createTranslator,
   FALLBACK_LOCALE,
@@ -33,6 +37,7 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
   const [locale, setLocaleState] = useState<Locale>(FALLBACK_LOCALE);
   const [supported, setSupported] = useState<Locale[]>([...LOCALES]);
   const [currency, setCurrency] = useState<Currency>(FALLBACK_CURRENCY);
+  const [country, setCountry] = useState<Country>(FALLBACK_COUNTRY);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -57,6 +62,7 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
       else if (cached && isLocale(cached.default_locale)) setLocaleState(cached.default_locale);
       if (cached?.supported_locales?.length) setSupported(cached.supported_locales);
       if (cached?.currency) setCurrency(cached.currency);
+      if (isCountry(cached?.country)) setCountry(cached.country);
       // при наличии выбора или кэша сеть уже не блокирует первый кадр
       if (userChoice || cached) setReady(true);
 
@@ -66,6 +72,7 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
         await AsyncStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
         setSupported(cfg.supported_locales);
         setCurrency(cfg.currency);
+        if (isCountry(cfg.country)) setCountry(cfg.country);
         if (!userChoice) setLocaleState(cfg.default_locale);
       } catch {
         // офлайн или бэкенд лежит — остаёмся на кэше/фолбэке
@@ -96,6 +103,8 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
       supported,
       /** Валюта инсталляции; приходит с сервера вместе с языком */
       currency,
+      country,
+      countryForms: countryParams(locale, country),
       setLocale,
       ready,
       t,
@@ -104,7 +113,7 @@ export const [I18nProvider, useI18n] = createContextHook(() => {
       formatMoneyMinor: (minor: number, override?: Currency) => fmtMoneyMinor(minor, locale, override ?? currency),
       formatDate: (value: Date | string, options?: Intl.DateTimeFormatOptions) => fmtDate(value, locale, options),
     }),
-    [locale, supported, currency, setLocale, ready, t],
+    [locale, supported, currency, country, setLocale, ready, t],
   );
 });
 

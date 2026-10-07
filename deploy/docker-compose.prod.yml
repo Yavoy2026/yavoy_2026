@@ -63,6 +63,8 @@ services:
       # Эквайринг: none — оплаты нет, octo — узбекская инсталляция (YAV-21)
       PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-none}
       CURRENCY: ${CURRENCY:-RUB}
+      # Страна инсталляции: от неё зависят тексты витрины (packages/i18n → countries)
+      COUNTRY: ${COUNTRY:-RU}
       PUBLIC_API_URL: ${PUBLIC_API_URL:-}
       PAYMENT_RETURN_URL: ${PAYMENT_RETURN_URL:-}
       PAYMENT_TTL_MIN: ${PAYMENT_TTL_MIN:-30}

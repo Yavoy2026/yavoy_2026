@@ -1,4 +1,8 @@
 import {
+  countryParams,
+  isCountry,
+  FALLBACK_COUNTRY,
+  type Country,
   CATALOGS,
   createTranslator,
   FALLBACK_LOCALE,
@@ -28,6 +32,10 @@ interface I18nValue {
   supported: Locale[];
   /** Валюта инсталляции; приходит с сервера вместе с языком */
   currency: Currency;
+  /** Страна инсталляции: от неё зависят тексты витрины */
+  country: Country;
+  /** Формы названия страны для подстановки в строки (падежи русского) */
+  countryForms: ReturnType<typeof countryParams>;
   setLocale: (locale: Locale) => void;
   t: (key: TKey, params?: Params & { count?: number }) => string;
   formatMoney: (amount: number, currency?: Currency) => string;
@@ -66,6 +74,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(stored ?? cached?.default_locale ?? FALLBACK_LOCALE);
   const [supported, setSupported] = useState<Locale[]>(cached?.supported_locales ?? [...LOCALES]);
   const [currency, setCurrency] = useState<Currency>(cached?.currency ?? FALLBACK_CURRENCY);
+  const [country, setCountry] = useState<Country>(
+    isCountry(cached?.country) ? cached.country : FALLBACK_COUNTRY,
+  );
   // ждать сеть нужно только на самом первом запуске: ни выбора, ни кэша нет
   const [ready, setReady] = useState(stored !== null || cached !== null);
 
@@ -77,6 +88,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
         setSupported(cfg.supported_locales);
         setCurrency(cfg.currency);
+        if (isCountry(cfg.country)) setCountry(cfg.country);
         if (readStoredLocale() === null) setLocaleState(cfg.default_locale);
       })
       .catch(() => {
@@ -107,6 +119,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       locale,
       supported,
       currency,
+      country,
+      countryForms: countryParams(locale, country),
       setLocale,
       t: translate as I18nValue["t"],
       formatMoney: (amount, override) => fmtMoney(amount, locale, override ?? currency),
@@ -114,7 +128,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       formatNumber: (v) => fmtNumber(v, locale),
       formatDate: (v, options) => fmtDate(v, locale, options),
     };
-  }, [locale, supported, currency, setLocale]);
+  }, [locale, supported, currency, country, setLocale]);
 
   // короткий скелетон вместо мигания языка на первом кадре
   if (!ready) return <div className="min-h-screen bg-background" />;

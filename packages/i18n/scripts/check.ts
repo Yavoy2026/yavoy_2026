@@ -78,6 +78,14 @@ const filesIn = (dirs: string[]): string[] =>
 const files = filesIn(KEY_DIRS);
 const uiFiles = filesIn(UI_DIRS);
 
+/**
+ * Группы ключей, которые читает код напрямую, минуя t(). Каждая строка требует
+ * причины: иначе сюда сползёт всё, что лень поправить.
+ */
+const NON_T_GROUPS: Record<string, string> = {
+  countries: "формы названия страны достаёт countryParams() из каталога и подставляет в строки витрины",
+};
+
 const used = new Set<string>();
 /** Префиксы из шаблонных ключей: `enums.category.${c}` покрывает всю группу */
 const usedPrefixes = new Set<string>();
@@ -108,6 +116,10 @@ for (const file of files) {
 
 for (const key of defined) {
   if (used.has(key)) continue;
+  if (NON_T_GROUPS[key.split(".")[0]!]) {
+    used.add(key);
+    continue;
+  }
   for (const p of usedPrefixes) {
     if (key.startsWith(`${p}.`)) {
       used.add(key);

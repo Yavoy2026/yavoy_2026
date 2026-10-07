@@ -33,7 +33,7 @@ export default function PartnerScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { colors } = useTheme();
-  const { t, formatDate } = useI18n();
+  const { t, formatDate, countryForms } = useI18n();
   const auth = useAuth();
 
   const application = useQuery({
@@ -127,7 +127,7 @@ export default function PartnerScreen() {
     >
       {header}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t("partner.heroSubtitle")}</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t("partner.heroSubtitle", countryForms)}</Text>
 
         {current?.status === "rejected" ? (
           <View style={[styles.rejected, { backgroundColor: colors.coral + "1A", borderColor: colors.coral + "4D" }]}>

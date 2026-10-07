@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Shield, Headphones, CreditCard, Globe, Award, Zap } from "lucide-react-native";
 import { useTheme } from "@/providers/ThemeProvider";
-import { useT } from "@/providers/I18nProvider";
+import { useI18n, useT } from "@/providers/I18nProvider";
 import type { TKey } from "@/i18n/keys";
 
 const advantages: { icon: typeof Shield; title: TKey; desc: TKey; color: string }[] = [
@@ -17,11 +17,12 @@ const advantages: { icon: typeof Shield; title: TKey; desc: TKey; color: string 
 export default React.memo(function AdvantagesBlock() {
   const { colors, isDark } = useTheme();
   const t = useT();
+  const { countryForms } = useI18n();
   return (
     <View style={[styles.container, { backgroundColor: isDark ? colors.surfaceSecondary : colors.headerBg }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("advantages.title")}</Text>
-        <Text style={[styles.subtitle, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{t("advantages.subtitle")}</Text>
+        <Text style={[styles.subtitle, { color: isDark ? colors.textMuted : "#B0B8C4" }]}>{t("advantages.subtitle", countryForms)}</Text>
       </View>
       <View style={styles.grid}>
         {advantages.map((item, index) => {

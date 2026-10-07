@@ -71,7 +71,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { publishedReels, favoriteCities, toggleFavoriteCity } = useApp();
   const { tours, cities, cityNameMap, isLoading: catalogLoading } = useCatalog();
-  const { t } = useI18n();
+  const { t, countryForms } = useI18n();
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [duration, setDuration] = useState<DurationType | null>(null);
   const [transport, setTransport] = useState<TransportType | null>(null);
@@ -122,11 +122,16 @@ export default function Home() {
         <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
         <div className="relative max-w-2xl">
           <span className="mb-3 inline-block rounded-full bg-teal/10 px-3 py-1 text-xs font-semibold text-teal dark:bg-white/10 dark:text-teal-light">
-            {t("home.heroBadge")}
+            {/* числа настоящие: «500+ экскурсий» на каталоге из десятка туров — неправда */}
+            {t("home.heroBadge", {
+              tours: t("units.excursions", { count: tours.length }),
+              cities: t("units.cities", { count: cities.length }),
+              ...countryForms,
+            })}
           </span>
           <h1 className="mb-3 text-3xl font-extrabold leading-tight md:text-5xl">
             {withSlot(
-              t("home.heroTitle", { accent: SLOT }),
+              t("home.heroTitle", { accent: SLOT, ...countryForms }),
               <span className="text-teal dark:text-teal-light">{t("home.heroTitleAccent")}</span>,
             )}
           </h1>

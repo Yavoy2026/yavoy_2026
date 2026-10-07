@@ -1,4 +1,4 @@
-import { LOCALES, toCurrency, type Currency, type Locale } from "@yavoy/i18n";
+import { FALLBACK_COUNTRY, isCountry, LOCALES, toCurrency, type Country, type Currency, type Locale } from "@yavoy/i18n";
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:3000/v1";
 
@@ -7,6 +7,8 @@ export interface AppConfig {
   supported_locales: Locale[];
   /** Валюта инсталляции: РФ — RUB, узбекская витрина — UZS (YAV-21) */
   currency: Currency;
+  /** Страна инсталляции: от неё зависят тексты витрины */
+  country: Country;
 }
 
 const isLocaleArray = (v: unknown): v is Locale[] =>
@@ -21,6 +23,10 @@ export async function fetchAppConfig(): Promise<AppConfig> {
   if (!isLocaleArray(cfg.supported_locales) || !(LOCALES as readonly string[]).includes(cfg.default_locale)) {
     throw new Error("config: unknown locales");
   }
-  // валюта — не повод падать: незнакомый код деградирует до фолбэка
-  return { ...cfg, currency: toCurrency(cfg.currency) };
+  // валюта и страна — не повод падать: незнакомый код деградирует до фолбэка
+  return {
+    ...cfg,
+    currency: toCurrency(cfg.currency),
+    country: isCountry(cfg.country) ? cfg.country : FALLBACK_COUNTRY,
+  };
 }

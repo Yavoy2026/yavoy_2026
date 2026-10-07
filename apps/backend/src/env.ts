@@ -34,6 +34,8 @@ const EnvSchema = z.object({
   SUPPORTED_LOCALES: LocaleList.default(LOCALES.join(",")),
   /** Язык всех исходящих писем — один на установку (решение по YAV-25) */
   MAIL_LOCALE: LocaleEnum.default("ru"),
+  /** Страна инсталляции: от неё зависят тексты витрины (packages/i18n → countries) */
+  COUNTRY: z.enum(["RU", "UZ"]).default("RU"),
 
   // ─── Платежи (YAV-21) ──────────────────────────────────────
   /**
