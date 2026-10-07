@@ -14,12 +14,18 @@ packages/i18n/       Переводы ru/en/uz + плюрализация и ф�
 packages/legal/      Оферта и политика конфиденциальности; общий текст для веба и Expo
 apps/expo/           Мобильное приложение (Expo SDK 54, React Query) — npm, НЕ pnpm
 apps/web/            Веб-клиент (Vite + React + shadcn) + панель управления /admin — npm, НЕ pnpm
-deploy/              Прод: docker-compose.prod.yml, Caddyfile, .env.example, PROD.md, backup.sh
+deploy/              Прод: docker-compose.prod.yml, Caddyfile, backup.sh
+docs/                DEVELOPMENT.md, BACKEND_SPEC.md, ROADMAP.md, PROD.md
 ```
 
-Подробные доки: `DEVELOPMENT.md` (как запускать/тестировать), `BACKEND_SPEC.md`
-(модель данных, API, целевые фазы), `ROADMAP.md` (что сделано, backlog по триггерам).
-При изменении поведения обновлять их в том же коммите.
+Подробные доки в `docs/`: `DEVELOPMENT.md` (как запускать, тестировать, выкатывать),
+`BACKEND_SPEC.md` (модель данных, API, целевые фазы), `ROADMAP.md` (что сделано,
+backlog по триггерам), `PROD.md` (сервер, DNS, почта, бэкапы). При изменении
+поведения обновлять их в том же коммите.
+
+Окружение — единственный `.env` в корне по образцу `.env.example`: в нём и локальные
+ключи к внешним сервисам, и прод-переменные. На сервер уезжает только вторая часть
+как `/opt/yavoy/.env` — токену Serverspace на прод-ноде делать нечего.
 
 ## Команды
 
